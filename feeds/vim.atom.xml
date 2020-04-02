@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Pearls in Life</title><link href="http://jhshi.me/" rel="alternate"></link><link href="http://jhshi.me/feeds/vim.atom.xml" rel="self"></link><id>http://jhshi.me/</id><updated>2015-12-06T23:56:36-05:00</updated><entry><title>Troubleshooting Slow VIM Scrolling</title><link href="http://jhshi.me/2015/12/06/troubleshooting-slow-vim-scrolling/index.html" rel="alternate"></link><updated>2015-12-06T23:56:36-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2015-12-06:2015/12/06/troubleshooting-slow-vim-scrolling/index.html</id><summary type="html">&lt;p&gt;I was editing a LaTeX file using VIM and noticed that the scrolling is quite
+slow. Here is how I troubleshoot it.&lt;/p&gt;
+
+&lt;div class="section" id="the-symptom"&gt;
+&lt;h2&gt;The Symptom&lt;/h2&gt;
+&lt;p&gt;I made a small screen cast showing what I mean by &amp;quot;slow&amp;quot;. I opened the file,
+moved the cursor to the first line, and then pressed and held &lt;tt class="docutils literal"&gt;j&lt;/tt&gt;, until the
+cursor reached the end of the file. You can easily notice the lag starting from
+around line 80.&lt;/p&gt;
+&lt;img alt="Screencast of slow VIM scrolling." class="align-center" src="/images/vim_slow_scrolling.gif" /&gt;
+&lt;/div&gt;
+&lt;div class="section" id="first-attempt-plugins"&gt;
+&lt;h2&gt;First Attempt: Plugins&lt;/h2&gt;
+&lt;p&gt;At first, one could easily blame certain plugins (especially I recently
+installed &lt;a class="reference external" href="https://github.com/Valloric/YouCompleteMe"&gt;YouCompleteMe&lt;/a&gt;). I used &lt;a class="reference external" href="https://github.com/VundleVim/Vundle.vim"&gt;Vundle&lt;/a&gt; to manage my plugins so it is
+relatively easy to disable them. But this ends up nowhere: even after I disabled
+all plugins, the problem still persists.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="troubleshooting"&gt;
+&lt;h2&gt;Troubleshooting&lt;/h2&gt;
+&lt;p&gt;I found an excellent guide from &lt;a class="reference external" href="http://vim.wikia.com/wiki/Troubleshooting"&gt;VIM Wiki&lt;/a&gt; about how to troubleshoot VIM
+problems. Here are what I tried:&lt;/p&gt;
+&lt;ol class="arabic simple"&gt;
+&lt;li&gt;Run VIM without any customization---OK, no scrolling issue.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;vim -N -u NONE -i NONE main.tex
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;ol class="arabic simple" start="2"&gt;
+&lt;li&gt;Only load my &lt;tt class="docutils literal"&gt;.vimrc&lt;/tt&gt;---no luck, still sluggish.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;vim -N --noplugin -i NONE main.tex
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;ol class="arabic simple" start="3"&gt;
+&lt;li&gt;Binary searching issue inside &lt;tt class="docutils literal"&gt;.vimrc&lt;/tt&gt; using the &lt;tt class="docutils literal"&gt;finish&lt;/tt&gt; command, which
+tells VIM to stop loading further commands.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Finally, I was able to pinpoint this line inside my &lt;tt class="docutils literal"&gt;.vimrc&lt;/tt&gt;:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;set&lt;/span&gt; &lt;span class="nb"&gt;cursorline&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Then I did a &lt;tt class="docutils literal"&gt;:h cursorline&lt;/tt&gt; and found these:&lt;/p&gt;
+&lt;blockquote&gt;
+Highlight the screen line of the cursor with CursorLine
+|hl-CursorLine|.  Useful to easily spot the cursor.  &lt;strong&gt;Will make screen
+redrawing slower&lt;/strong&gt;.&lt;/blockquote&gt;
+&lt;p&gt;I suspect because I do have several large chunks (16 by 16) of &lt;tt class="docutils literal"&gt;tabular&lt;/tt&gt;
+environment inside the file, but it is still surprising that a modern computer
+can not handle such seemingly simple text editing.&lt;/p&gt;
+&lt;p&gt;I Googled online and did not found any useful solutions. I guess for now I will
+just have to live with it. Fortunately I do not have many such LaTeX files.&lt;/p&gt;
+&lt;/div&gt;
+</summary><category term="scroll"></category><category term="slow"></category><category term="cursorline"></category></entry><entry><title>Disable VIM Spell Checking for C String</title><link href="http://jhshi.me/2015/04/09/disable-vim-spell-checking-for-c-string/index.html" rel="alternate"></link><updated>2015-04-09T20:50:47-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2015-04-09:2015/04/09/disable-vim-spell-checking-for-c-string/index.html</id><summary type="html">&lt;p&gt;Vim has great built-in spell checking. Even better, when editing source code
+files, it is smart enough to know not do spell checking in source code, which is
+quite neat. However, it will still do spell checking for string literals. Most
+of the times, this is not desired. This post shows how to tell VIM only do spell
+checking in comments when editing code files. &lt;/p&gt;
+
+
+&lt;p&gt;Vim figures out which region of the contents need spell checking by inferring the
+syntax files. For example, for C files, the syntax file is located at
+&lt;code&gt;/usr/share/vim/vim74/syntax/c.vim&lt;/code&gt;. There, you will find several lines that
+defines the &lt;code&gt;cString&lt;/code&gt; region. One example is the following line:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;syn region  cString     start=+L\=&amp;quot;+ skip=+\\\\\|\\&amp;quot;+ end=+&amp;quot;+ contains=cSpecial,@Spell extend
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;You'll notice that at the end, it says &lt;code&gt;@Spell&lt;/code&gt;, which tells VIM that the string
+literals need spell check.&lt;/p&gt;
+&lt;p&gt;To override this behavior, and let VIM leave string literals alone when do spell
+checking, we can change the definition of &lt;code&gt;cString&lt;/code&gt; in our own syntax files.&lt;/p&gt;
+&lt;p&gt;For instance, you can put these lines in &lt;code&gt;~/.vim/after/syntax/c.vim&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;if exists(&amp;quot;c_no_cformat&amp;quot;)
+  syn region    cString     start=+L\=&amp;quot;+ skip=+\\\\\|\\&amp;quot;+ end=+&amp;quot;+ contains=cSpecial
+else
+  syn region    cString     start=+L\=&amp;quot;+ skip=+\\\\\|\\&amp;quot;+ end=+&amp;quot;+ contains=cSpecial,cFormat
+endif
+
+if !exists(&amp;quot;c_no_c11&amp;quot;) &amp;quot; ISO C11
+  if exists(&amp;quot;c_no_cformat&amp;quot;)
+    syn region  cString     start=+\%(U\|u8\=\)&amp;quot;+ skip=+\\\\\|\\&amp;quot;+ end=+&amp;quot;+ contains=cSpecial
+  else
+    syn region  cString     start=+\%(U\|u8\=\)&amp;quot;+ skip=+\\\\\|\\&amp;quot;+ end=+&amp;quot;+ contains=cSpecial,cFormat
+  endif
+endif
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;They are almost identical to the default definition in
+&lt;code&gt;/usr/share/vim/vim74/syntax/c.vim&lt;/code&gt;, just the trailing &lt;code&gt;@Spell&lt;/code&gt;s are removed.&lt;/p&gt;
+&lt;p&gt;This technique can also be applied to other languages, such as python or Java.&lt;/p&gt;</summary><category term="spell"></category></entry><entry><title>Persist and Synchroize VIM undo History using Dropbox</title><link href="http://jhshi.me/2013/10/02/persist-and-synchroize-vim-undo-history-using-dropbox/index.html" rel="alternate"></link><updated>2013-10-02T10:59:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-10-02:2013/10/02/persist-and-synchroize-vim-undo-history-using-dropbox/index.html</id><summary type="html">&lt;p&gt;It's extremely useful to 
+ - Have a &lt;em&gt;virtually&lt;/em&gt; unlimited undo history, and
+ - Have it persisted even after exiting VIM, and 
+ - Better, even have it synchronized across all your working machines using Dropbox.&lt;/p&gt;
+
+
+&lt;p&gt;Here is the &lt;code&gt;.vimrc&lt;/code&gt; snippet I used to do the trick.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="x"&gt;&amp;quot; Persist undo&lt;/span&gt;
+&lt;span class="x"&gt;set undofile&lt;/span&gt;
+&lt;span class="x"&gt;&amp;quot;maximum number of changes that can be undone&lt;/span&gt;
+&lt;span class="x"&gt;set undolevels=9999 &lt;/span&gt;
+&lt;span class="x"&gt;&amp;quot;maximum number lines to save for undo on a buffer reload&lt;/span&gt;
+&lt;span class="x"&gt;set undoreload=9999 &lt;/span&gt;
+
+&lt;span class="x"&gt;&amp;quot; If have Dropbox installed, create a undo dir in it&lt;/span&gt;
+&lt;span class="x"&gt;if isdirectory(expand(&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;$&lt;/span&gt;&lt;span class="nv"&gt;HOME&lt;/span&gt;&lt;span class="x"&gt;/Dropbox/&amp;quot;))&lt;/span&gt;
+&lt;span class="x"&gt;    silent !mkdir -p &lt;/span&gt;&lt;span class="p"&gt;$&lt;/span&gt;&lt;span class="nv"&gt;HOME&lt;/span&gt;&lt;span class="x"&gt;/Dropbox/.vimundo &amp;gt;/dev/null 2&amp;gt;&amp;amp;1&lt;/span&gt;
+&lt;span class="x"&gt;    set undodir=&lt;/span&gt;&lt;span class="p"&gt;$&lt;/span&gt;&lt;span class="nv"&gt;HOME&lt;/span&gt;&lt;span class="x"&gt;/Dropbox/.vimundo//&lt;/span&gt;
+&lt;span class="x"&gt;else&lt;/span&gt;
+&lt;span class="x"&gt;    &amp;quot; Otherwise, keep them in home&lt;/span&gt;
+&lt;span class="x"&gt;    silent !mkdir -p &lt;/span&gt;&lt;span class="p"&gt;$&lt;/span&gt;&lt;span class="nv"&gt;HOME&lt;/span&gt;&lt;span class="x"&gt;/.vimundo &amp;gt;/dev/null 2&amp;gt;&amp;amp;1&lt;/span&gt;
+&lt;span class="x"&gt;    set undodir=&lt;/span&gt;&lt;span class="p"&gt;$&lt;/span&gt;&lt;span class="nv"&gt;HOME&lt;/span&gt;&lt;span class="x"&gt;/.vimundo//&lt;/span&gt;
+&lt;span class="x"&gt;end&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Note the double slash after the &lt;code&gt;undodir&lt;/code&gt;, it tells VIM to name the undo file
+using the full path of the editing file, so no naming collision will occur.&lt;/p&gt;</summary><category term="vimrc"></category><category term="dropbox"></category><category term="undodir"></category></entry><entry><title>Vimium Not Working in Google Search Results Page</title><link href="http://jhshi.me/2013/03/15/vimium-not-working-in-google-search-results-page/index.html" rel="alternate"></link><updated>2013-03-15T06:50:16-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-03-15:2013/03/15/vimium-not-working-in-google-search-results-page/index.html</id><summary type="html">&lt;p&gt;If you're Vim user, then you must try &lt;a href="https://chrome.google.com/webstore/detail/vimium/dbepggeogbaibhgnhhndojpepiihcmeb?hl=en"&gt;Vimium&lt;/a&gt;. It makes your browsing 
+much much comfortable!&lt;/p&gt;
+
+
+&lt;p&gt;These days, I found that Vimium commands (&lt;code&gt;j&lt;/code&gt;, &lt;code&gt;k&lt;/code&gt;, &lt;code&gt;f&lt;/code&gt;) don't work on Google search
+results page. But works just in in any other pages. I tried turning the instant 
+search off, logging out my account in Google's homepage, turning of personalized 
+search results, etc. None of those work.&lt;/p&gt;
+&lt;p&gt;Then I found that Vimium only stop working if I use Chrome's Omnibox to search.
+That is, if I do the search in Google's home page instead of Chrome's Omnibox,
+then everything is fine. I suspect that some extra flags in Omnibox's default
+search pattern is the reason why Vimium refused to work.&lt;/p&gt;
+&lt;p&gt;But Omnibox is so convenience to use (&lt;code&gt;Alt+D&lt;/code&gt; to focus &amp;amp; search). Opening
+Google's homepage every time you need search will certainly be another pain. So
+I changed the default behavior of Chrome's Omnibox. Unfortunately, the built-in
+Google search pattern is unchangeable, so I added an new search engine entry
+and set it as default. Here is the fields of the new entry:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;Name&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Google&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;or&lt;/span&gt; &lt;span class="n"&gt;whatever&lt;/span&gt; &lt;span class="n"&gt;you&lt;/span&gt; &lt;span class="n"&gt;want&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; 
+&lt;span class="n"&gt;Keyword&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Google&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;or&lt;/span&gt; &lt;span class="n"&gt;whatever&lt;/span&gt; &lt;span class="n"&gt;you&lt;/span&gt; &lt;span class="n"&gt;want&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; 
+&lt;span class="n"&gt;Search&lt;/span&gt; &lt;span class="n"&gt;Pattern&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;http&lt;/span&gt;&lt;span class="o"&gt;://&lt;/span&gt;&lt;span class="n"&gt;www&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;google&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;com&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;search&lt;/span&gt;&lt;span class="o"&gt;?&lt;/span&gt;&lt;span class="n"&gt;q&lt;/span&gt;&lt;span class="o"&gt;=%&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt; 
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here is a more detailed information about Google's search URL. Add whatever you
+need, but keep it minimal, in case you screwed up with Vimium again :-)&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://moz.com/ugc/the-ultimate-guide-to-the-google-search-parameters"&gt;https://moz.com/ugc/the-ultimate-guide-to-the-google-search-parameters&lt;/a&gt;&lt;/p&gt;</summary><category term="chrome"></category><category term="omnibox"></category><category term="vimium"></category></entry><entry><title>Using Cscope INSIDE Vim</title><link href="http://jhshi.me/2013/02/21/using-cscope-inside-vim/index.html" rel="alternate"></link><updated>2013-02-21T04:35:58-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-02-21:2013/02/21/using-cscope-inside-vim/index.html</id><summary type="html">&lt;p&gt;The goal we want to accomplish here is, jumping to a function definition (maybe
+in another file,) finding out where a symbol is defined, finding out what
+function(s) call current function and what functions are called from this
+function, ALL WITHOUT LEAVING VIM.&lt;/p&gt;
+
+
+&lt;p&gt;First, make sure you have &lt;code&gt;cscope&lt;/code&gt; installed by issuing the following command:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;cscope --version
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;If bash complains "command not find", then install &lt;code&gt;cscope&lt;/code&gt;. In Ubuntu, the
+command is:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;sudo apt-get install cscope
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then, we need to generate &lt;code&gt;cscope&lt;/code&gt; database. If you're dealing with C files,
+then in the root directory of the source tree, using this command:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;cscope -RUbq
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;If you're dealing with Java files, before generating the database, we need to
+tell &lt;code&gt;cscope&lt;/code&gt; tracing which files:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;find . -name *.java &amp;gt; cscope.files
+&lt;span class="nv"&gt;$ &lt;/span&gt;cscope -RUbq
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The explanations are:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;-R: Recurse subdirectories during search for source files.
+-U: Check file time stamps. This option will update the time stamp on the database even if no files have changed.
+-b: Build the cross-reference only. We don&amp;#39;t want the interactive mode.
+-q: Enable fast symbol lookup via an inverted index
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;For more details, consult the &lt;code&gt;cscope&lt;/code&gt; manual:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;man cscope
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;After this step, several &lt;code&gt;cscope&lt;/code&gt; database files will be generated. If you're
+using git or hg to manage your code, you may want to ignore them in the git/hg
+repository. Do that by adding these lines into your .gitignore/.hgignore&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;cscope.*
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then we need to tell Vim how to interact with &lt;code&gt;cscope&lt;/code&gt;. Add the following lines
+into your &lt;code&gt;.vimrc&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="nx"&gt;has&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;cscope&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="nx"&gt;set&lt;/span&gt; &lt;span class="nx"&gt;csprg&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="err"&gt;/usr/bin/cscope&lt;/span&gt;
+    &lt;span class="nx"&gt;set&lt;/span&gt; &lt;span class="nx"&gt;csto&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="nx"&gt;set&lt;/span&gt; &lt;span class="nx"&gt;cst&lt;/span&gt;
+    &lt;span class="nx"&gt;set&lt;/span&gt; &lt;span class="nx"&gt;csverb&lt;/span&gt;
+    &lt;span class="s2"&gt;&amp;quot; C symbol&lt;/span&gt;
+&lt;span class="s2"&gt;    nmap &amp;lt;C-\&amp;gt;s :cs find s &amp;lt;C-R&amp;gt;=expand(&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;cword&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;)&amp;lt;CR&amp;gt;&amp;lt;CR&amp;gt;&lt;/span&gt;
+&lt;span class="s2"&gt;    &amp;quot;&lt;/span&gt; &lt;span class="nx"&gt;definition&lt;/span&gt;
+    &lt;span class="nx"&gt;nmap&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;C&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="err"&gt;\&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="nx"&gt;g&lt;/span&gt; &lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="nx"&gt;cs&lt;/span&gt; &lt;span class="nx"&gt;find&lt;/span&gt; &lt;span class="nx"&gt;g&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;C&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="nx"&gt;R&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;=&lt;/span&gt;&lt;span class="nx"&gt;expand&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&amp;lt;cword&amp;gt;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;CR&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;CR&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="s2"&gt;&amp;quot; functions that called by this function&lt;/span&gt;
+&lt;span class="s2"&gt;    nmap &amp;lt;C-\&amp;gt;d :cs find d &amp;lt;C-R&amp;gt;=expand(&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;cword&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;)&amp;lt;CR&amp;gt;&amp;lt;CR&amp;gt;&lt;/span&gt;
+&lt;span class="s2"&gt;    &amp;quot;&lt;/span&gt; &lt;span class="nx"&gt;funtions&lt;/span&gt; &lt;span class="nx"&gt;that&lt;/span&gt; &lt;span class="nx"&gt;calling&lt;/span&gt; &lt;span class="k"&gt;this&lt;/span&gt; &lt;span class="kd"&gt;function&lt;/span&gt;
+    &lt;span class="nx"&gt;nmap&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;C&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="err"&gt;\&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="nx"&gt;c&lt;/span&gt; &lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="nx"&gt;cs&lt;/span&gt; &lt;span class="nx"&gt;find&lt;/span&gt; &lt;span class="nx"&gt;c&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;C&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="nx"&gt;R&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;=&lt;/span&gt;&lt;span class="nx"&gt;expand&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&amp;lt;cword&amp;gt;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;CR&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;CR&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="s2"&gt;&amp;quot; test string&lt;/span&gt;
+&lt;span class="s2"&gt;    nmap &amp;lt;C-\&amp;gt;t :cs find t &amp;lt;C-R&amp;gt;=expand(&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;cword&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;)&amp;lt;CR&amp;gt;&amp;lt;CR&amp;gt;&lt;/span&gt;
+&lt;span class="s2"&gt;    &amp;quot;&lt;/span&gt; &lt;span class="nx"&gt;egrep&lt;/span&gt; &lt;span class="nx"&gt;pattern&lt;/span&gt;
+    &lt;span class="nx"&gt;nmap&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;C&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="err"&gt;\&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="nx"&gt;e&lt;/span&gt; &lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="nx"&gt;cs&lt;/span&gt; &lt;span class="nx"&gt;find&lt;/span&gt; &lt;span class="nx"&gt;e&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;C&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="nx"&gt;R&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;=&lt;/span&gt;&lt;span class="nx"&gt;expand&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&amp;lt;cword&amp;gt;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;CR&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;CR&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="s2"&gt;&amp;quot; file&lt;/span&gt;
+&lt;span class="s2"&gt;    nmap &amp;lt;C-\&amp;gt;f :cs find f &amp;lt;C-R&amp;gt;=expand(&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;cfile&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;)&amp;lt;CR&amp;gt;&amp;lt;CR&amp;gt;&lt;/span&gt;
+&lt;span class="s2"&gt;    &amp;quot;&lt;/span&gt; &lt;span class="nx"&gt;files&lt;/span&gt; &lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="nx"&gt;including&lt;/span&gt; &lt;span class="k"&gt;this&lt;/span&gt; &lt;span class="nx"&gt;file&lt;/span&gt;
+    &lt;span class="nx"&gt;nmap&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;C&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="err"&gt;\&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="nx"&gt;i&lt;/span&gt; &lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="nx"&gt;cs&lt;/span&gt; &lt;span class="nx"&gt;find&lt;/span&gt; &lt;span class="nx"&gt;i&lt;/span&gt; &lt;span class="o"&gt;^&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;C&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="nx"&gt;R&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;=&lt;/span&gt;&lt;span class="nx"&gt;expand&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&amp;lt;cfile&amp;gt;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;CR&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="nx"&gt;$&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;CR&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
+
+    &lt;span class="s2"&gt;&amp;quot; Automatically make cscope connections&lt;/span&gt;
+&lt;span class="s2"&gt;    function! LoadCscope()&lt;/span&gt;
+&lt;span class="s2"&gt;        let db = findfile(&amp;quot;&lt;/span&gt;&lt;span class="nx"&gt;cscope&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;out&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;, &amp;quot;&lt;/span&gt;&lt;span class="p"&gt;.;&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;)&lt;/span&gt;
+&lt;span class="s2"&gt;        if (!empty(db))&lt;/span&gt;
+&lt;span class="s2"&gt;            let path = strpart(db, 0, match(db, &amp;quot;&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="nx"&gt;cscope&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;out$&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;))&lt;/span&gt;
+&lt;span class="s2"&gt;            set nocscopeverbose &amp;quot;&lt;/span&gt; &lt;span class="nx"&gt;suppress&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;duplicate connection&amp;#39;&lt;/span&gt; &lt;span class="nx"&gt;error&lt;/span&gt;
+            &lt;span class="nx"&gt;exe&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;cs add &amp;quot;&lt;/span&gt; &lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="nx"&gt;db&lt;/span&gt; &lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot; &amp;quot;&lt;/span&gt; &lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="nx"&gt;path&lt;/span&gt;
+            &lt;span class="nx"&gt;set&lt;/span&gt; &lt;span class="nx"&gt;cscopeverbose&lt;/span&gt;
+        &lt;span class="nx"&gt;endif&lt;/span&gt;
+    &lt;span class="nx"&gt;endfunction&lt;/span&gt;
+    &lt;span class="nx"&gt;au&lt;/span&gt; &lt;span class="nx"&gt;BufEnter&lt;/span&gt; &lt;span class="o"&gt;/*&lt;/span&gt; &lt;span class="nx"&gt;call&lt;/span&gt; &lt;span class="nx"&gt;LoadCscope&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+&lt;span class="nx"&gt;endif&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;We're done! Now using Vim to edit a source code file. Put the cursor on a
+symbol (variable, function, etc.), First press &lt;code&gt;Ctrl+\&lt;/code&gt;, then press:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;find&lt;/span&gt; &lt;span class="n"&gt;all&lt;/span&gt; &lt;span class="n"&gt;appearance&lt;/span&gt; &lt;span class="n"&gt;of&lt;/span&gt; &lt;span class="k"&gt;this&lt;/span&gt; &lt;span class="n"&gt;symbol&lt;/span&gt;
+&lt;span class="n"&gt;g&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;go&lt;/span&gt; &lt;span class="n"&gt;to&lt;/span&gt; &lt;span class="n"&gt;the&lt;/span&gt; &lt;span class="n"&gt;definition&lt;/span&gt; &lt;span class="n"&gt;of&lt;/span&gt; &lt;span class="k"&gt;this&lt;/span&gt; &lt;span class="n"&gt;symbol&lt;/span&gt;
+&lt;span class="n"&gt;d&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;functions&lt;/span&gt; &lt;span class="n"&gt;that&lt;/span&gt; &lt;span class="n"&gt;called&lt;/span&gt; &lt;span class="n"&gt;by&lt;/span&gt; &lt;span class="k"&gt;this&lt;/span&gt; &lt;span class="kd"&gt;function&lt;/span&gt;
+&lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;functions&lt;/span&gt; &lt;span class="n"&gt;that&lt;/span&gt; &lt;span class="n"&gt;calling&lt;/span&gt; &lt;span class="k"&gt;this&lt;/span&gt; &lt;span class="kd"&gt;function&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;For more details about &lt;code&gt;cscope&lt;/code&gt;, inside Vim, press &lt;code&gt;:h cs&lt;/code&gt; to see the help
+message of &lt;code&gt;cscope&lt;/code&gt;.&lt;/p&gt;</summary><category term="cscope"></category></entry><entry><title>Quick switch between source and header files in Vim</title><link href="http://jhshi.me/2012/02/14/quick-switch-between-source-and-header-files-in-vim/index.html" rel="alternate"></link><updated>2012-02-14T15:34:36-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-02-14:2012/02/14/quick-switch-between-source-and-header-files-in-vim/index.html</id><summary type="html">&lt;p&gt;There are many ways to do this, as listed in &lt;a href="http://vim.wikia.com/wiki/Easily_switch_between_source_and_header_file"&gt;vim wiki&lt;/a&gt;.&lt;/p&gt;
+
+
+&lt;p&gt;I tried the script way (&lt;a href="http://www.vim.org/scripts/script.php?script_id=31"&gt;a.vim&lt;/a&gt;, but not feel comfortable. Because:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;I'm doing kernel development, so I have a bunch of my own &lt;code&gt;stdio.h&lt;/code&gt;, &lt;code&gt;stdlib.h&lt;/code&gt;, 
+etc. But &lt;code&gt;a.vim&lt;/code&gt; will bring you into the system include path, not my own &lt;/li&gt;
+&lt;li&gt;Even though I jumped to the right space, jump back is not easy&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Finally, I found the ctags way very usable. Issue this command in your source
+tree root,&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;ctags --extra&lt;span class="o"&gt;=&lt;/span&gt;+f -R .
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then in vim, you can just type &lt;code&gt;:tag header.h&lt;/code&gt; to jump to &lt;code&gt;header.h&lt;/code&gt; and use your 
+familiar &lt;code&gt;ctrl+t&lt;/code&gt; to jump back, very intuitive. Plus, I found a &lt;a href="http://vim.wikia.com/wiki/Open_file_under_cursor"&gt;&lt;code&gt;gf&lt;/code&gt; command of vim&lt;/a&gt;
+that can jump to the file under cursor, but with the same drawbacks as &lt;code&gt;a.vim&lt;/code&gt;, 
+thus not adorable.&lt;/p&gt;
+&lt;h3&gt;UPDATE&lt;/h3&gt;
+&lt;p&gt;Here is a &lt;a href="http://vim.wikia.com/wiki/Jumping_to_previously_visited_locations"&gt;Vim Wiki&lt;/a&gt; talking about how to jump back and forth using 
+{%key Ctrl %}-I and {%key Ctrl %}-O, which is kind of sweet. Thanks
+@Partha Bera for point that out.&lt;/p&gt;</summary></entry></feed>

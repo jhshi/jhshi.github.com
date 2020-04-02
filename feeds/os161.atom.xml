@@ -1,0 +1,2010 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Pearls in Life</title><link href="http://jhshi.me/" rel="alternate"></link><link href="http://jhshi.me/feeds/os161.atom.xml" rel="self"></link><id>http://jhshi.me/</id><updated>2014-04-08T20:45:00-04:00</updated><entry><title>OS161 Debug Tips</title><link href="http://jhshi.me/2014/04/08/os161-debug-tips/index.html" rel="alternate"></link><updated>2014-04-08T20:45:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-04-08:2014/04/08/os161-debug-tips/index.html</id><summary type="html">&lt;p&gt;In doing OS161 assignments, if you don't know how to use GDB and how to use it
+efficiently, you're screwed, and will die very ugly. It's a very important skill
+to use GDB to identify what's wrong with your code. That's the first step
+towards to fix the bug.&lt;/p&gt;
+
+
+&lt;h3&gt;db: Connect to sys161 with less key strokes&lt;/h3&gt;
+&lt;p&gt;The canonical way in GDB to connect to sys161 is using this command:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;target remote unix:.sockets/gdb
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;You really don't want to type that every time you restart sys161. You may
+wondered: &lt;strong&gt;there got be a better way to do this&lt;/strong&gt;. YES, there is.&lt;/p&gt;
+&lt;p&gt;Create a file named &lt;code&gt;.gdbinit&lt;/code&gt; inside your &lt;code&gt;~/root&lt;/code&gt; directory, or wherever you
+launch GDB. In that file, put these code:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;def db
+    target remote unix:.sockets/gdb
+end
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then in GDB, a simple &lt;code&gt;db&lt;/code&gt; command will connect GDB to sys161.&lt;/p&gt;
+&lt;p&gt;How it works? Well, we defined a custom command called &lt;code&gt;db&lt;/code&gt;, which does the
+dirty work. When GDB starts, it'll read the file named &lt;code&gt;.gdbinit&lt;/code&gt; in current
+working directory if it exists. So GDB will recognize the &lt;code&gt;db&lt;/code&gt; command and know
+what to do when we type &lt;code&gt;db&lt;/code&gt;.&lt;/p&gt;
+&lt;h3&gt;backtrace: WTF just happened?&lt;/h3&gt;
+&lt;p&gt;Have you ever seen the kernel panic out of nowhere and you got no clue what just
+happened? One of the purposes of the &lt;code&gt;panic&lt;/code&gt; function is to provide an universal
+endpoint of all kinds of messy errors. So when your kernel does panic, you know
+where to back trace the bug.&lt;/p&gt;
+&lt;p&gt;So whenever your kernel panics, you don't panic. Just set a breakpoint at the
+&lt;code&gt;panic&lt;/code&gt; function and do a &lt;code&gt;backtrace&lt;/code&gt; when your kernel got there. You'll find
+out exactly which line of code trigger the panic. Then you can fix it.&lt;/p&gt;
+&lt;p&gt;&lt;img src="/images/panic.png" alt="center" title="center"&gt;&lt;/p&gt;
+&lt;h3&gt;until: Jump out of the loop&lt;/h3&gt;
+&lt;p&gt;Have you ever try to jump out of a loop and just want to see the suspicious part
+after a loop? For example, you use a &lt;code&gt;for&lt;/code&gt; loop to initialize the file table, or
+process table, or whatever table. And you're pretty sure the loop is OK. But
+when you step into that function, you may need to hopelessly press &lt;code&gt;next&lt;/code&gt; N
+times to pass the loop.&lt;/p&gt;
+&lt;p&gt;Of course there is a better way to do this! You can use the &lt;code&gt;until&lt;/code&gt; command of
+GDB, which, as per GDB help message, "execute until the program reaches a source line greater than the current
+or a specified location (same args as break command) within the current frame."&lt;/p&gt;
+&lt;p&gt;Basically, it'll set a one-time breakpoint at the line you specified, and
+execute until the CPU reach that line of code. &lt;/p&gt;
+&lt;h3&gt;finish: Get the hell out of here&lt;/h3&gt;
+&lt;p&gt;In short, this command will let GDB keep executing until current function
+returns. It's useful when you accidentally step into a function which you know
+works well. Or at the end of the function is a &lt;code&gt;for&lt;/code&gt; loop which you're sure is
+OK.&lt;/p&gt;
+&lt;h3&gt;display: Show me this, period.&lt;/h3&gt;
+&lt;p&gt;You may know how to use &lt;code&gt;print&lt;/code&gt; command to print out variable values to make
+sure everything is as expected. But there're some variables you want to examine
+every time you hit a break point. For example, you may want to show the
+process's pid whenever you hit &lt;code&gt;sys_fork&lt;/code&gt; or &lt;code&gt;sys_waitpid&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;So, instead of type the &lt;code&gt;print&lt;/code&gt; command every time, you can use the &lt;code&gt;display&lt;/code&gt;
+command. Basically, the usage is the same with &lt;code&gt;print&lt;/code&gt;, just that every time you
+hit a breakpoint, GDB will display the variable's value.&lt;/p&gt;
+&lt;h3&gt;condition: Only stop here if...&lt;/h3&gt;
+&lt;p&gt;So you know how to set breakpoint, but some times you only want to hit that
+breakpoint when certain things happens. For example, when you debug &lt;code&gt;sys_lseek&lt;/code&gt;
+using &lt;code&gt;/testbin/fileonlytest&lt;/code&gt;, you may want to also check your &lt;code&gt;sys_write&lt;/code&gt; as
+well, because it also updates the file handle offset. But if you set a break
+point at &lt;code&gt;sys_write&lt;/code&gt;, you'll hit it every time the user program print something,
+i.e., write stdout, which is not very interesting, and kind of annoying because
+you don't really care about it.&lt;/p&gt;
+&lt;p&gt;The solution is to use &lt;code&gt;condition&lt;/code&gt; command. Basically it allows you to set a
+conditional breakpoint so GDB will only stop at the breakpoint if the condition
+is true.&lt;/p&gt;
+&lt;p&gt;For example, I only want to step into &lt;code&gt;sys_write&lt;/code&gt; when the &lt;code&gt;fd&lt;/code&gt; is 3. I can do
+this:&lt;/p&gt;
+&lt;p&gt;&lt;img src="/images/condition.png" alt="center" title="center"&gt;&lt;/p&gt;
+&lt;p&gt;If you have any other GDB tricks that you think is really awesome, welcome to
+comment below and I'd be happy to include them here.&lt;/p&gt;</summary><category term="gdb"></category><category term="debugging"></category></entry><entry><title>OS161: Unknown syscall -1</title><link href="http://jhshi.me/2014/03/06/os161-unknown-syscall-1/index.html" rel="alternate"></link><updated>2014-03-06T16:50:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-03-06:2014/03/06/os161-unknown-syscall-1/index.html</id><summary type="html">&lt;p&gt;When working on OS161 system calls, you'll probably see a bunch of this error,
+especially you haven't implemented &lt;code&gt;_exit&lt;/code&gt; syscall and try to do some basic user
+programs, e.g., &lt;code&gt;p /bin/true&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Note, this problem has been fixed in OS/161 version 1.99.07.&lt;/p&gt;
+
+
+&lt;p&gt;The code for &lt;code&gt;/bin/true&lt;/code&gt; is as follows.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;int&lt;/span&gt;
+&lt;span class="nf"&gt;main&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="cm"&gt;/* Just exit with success. */&lt;/span&gt;
+    &lt;span class="n"&gt;exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;It does nothing but just exit with 0. Because at this point, you may don't
+have &lt;code&gt;exit&lt;/code&gt; syscall implemented, so it'll fail, so you'll see one error message
+saying "Unknown syscall 3", in which 3 is just &lt;code&gt;SYS__exit&lt;/code&gt;. Then what happens?
+Why are there a bunch of "Unknown syscall -1" following that?&lt;/p&gt;
+&lt;p&gt;To understand this, you need to know about a bit of GCC optimization and also several
+&lt;a href="http://www.mrc.uidaho.edu/mrc/people/jff/digital/MIPSir.html"&gt;MIPS instructions&lt;/a&gt;, especially &lt;code&gt;jal&lt;/code&gt; and &lt;code&gt;jr&lt;/code&gt;.&lt;/p&gt;
+&lt;h3&gt;MIPS Function Call and Return&lt;/h3&gt;
+&lt;p&gt;Here is the MIPS assembly instruction that "calls" a function &lt;code&gt;foo&lt;/code&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;jal foo
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;code&gt;jal&lt;/code&gt; stands for "Jump And Link", it will first save &lt;code&gt;$epc+8&lt;/code&gt; into register
+&lt;code&gt;$ra&lt;/code&gt; (return address), and set &lt;code&gt;$epc&lt;/code&gt; to whatever address &lt;code&gt;foo&lt;/code&gt; are, to "jump"
+to that function.&lt;/p&gt;
+&lt;p&gt;Now you may wonder why &lt;code&gt;$ra&lt;/code&gt; is &lt;code&gt;$epc+8&lt;/code&gt;, since a natural next instruction
+would be &lt;code&gt;$epc+4&lt;/code&gt;. That's because &lt;code&gt;$epc+4&lt;/code&gt; is in &lt;code&gt;jal&lt;/code&gt;'s &lt;a href="http://en.wikipedia.org/wiki/Delay_slot"&gt;delay slot&lt;/a&gt;,
+which means the instruction will get executed &lt;strong&gt;before&lt;/strong&gt; the &lt;code&gt;jal&lt;/code&gt; instruction.
+So the real &lt;strong&gt;next&lt;/strong&gt; instruction after the function call should be &lt;code&gt;$epc+8&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;And when &lt;code&gt;foo&lt;/code&gt; is done and about to return, it just does this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;jr ra
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;code&gt;jr&lt;/code&gt; stands for "Jump Register". It just set &lt;code&gt;$epc&lt;/code&gt; to whatever value in that
+register. In this case, since &lt;code&gt;$ra&lt;/code&gt; contains the value of return address, the
+&lt;code&gt;foo&lt;/code&gt; functions "returns" to the next instruction after &lt;code&gt;jal&lt;/code&gt; in callee.&lt;/p&gt;
+&lt;h3&gt;GCC Optimization&lt;/h3&gt;
+&lt;p&gt;As per the comments in &lt;code&gt;$OS161_SRC/user/lib/libc/stdlib/exit.c&lt;/code&gt;, GCC is way too
+smart to know, without being explicitly told, that &lt;code&gt;exit&lt;/code&gt; doesn't return. So it
+actually omit the &lt;code&gt;jr&lt;/code&gt; instruction at the end of &lt;code&gt;exit&lt;/code&gt;. That is, if &lt;code&gt;exit&lt;/code&gt;
+&lt;em&gt;does&lt;/em&gt; return, the CPU will continue to execute whatever the following
+instructions.&lt;/p&gt;
+&lt;h3&gt;What really happened?&lt;/h3&gt;
+&lt;p&gt;Here is the assembly code of &lt;code&gt;/bin/true&lt;/code&gt;. You can obtain it by doing this in the
+&lt;code&gt;root&lt;/code&gt; directory:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;os161-objdump -d bin/true &amp;gt; true.S
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;00400100 &amp;lt;main&amp;gt;:
+  400100:   27bdffe8    addiu   sp,sp,-24
+  400104:   afbf0010    sw  ra,16(sp)
+  400108:   0c10004d    jal 400134 &amp;lt;exit&amp;gt;
+  40010c:   00002021    move    a0,zero
+
+00400110 &amp;lt;__exit_hack&amp;gt;:
+  400110:   27bdfff8    addiu   sp,sp,-8
+  400114:   24020001    li  v0,1
+  400118:   afa20000    sw  v0,0(sp)
+  40011c:   8fa20000    lw  v0,0(sp)
+  400120:   00000000    nop
+  400124:   1440fffd    bnez    v0,40011c &amp;lt;__exit_hack+0xc&amp;gt;
+  400128:   00000000    nop
+  40012c:   03e00008    jr  ra
+  400130:   27bd0008    addiu   sp,sp,8
+
+00400134 &amp;lt;exit&amp;gt;:
+  400134:   27bdffe8    addiu   sp,sp,-24
+  400138:   afbf0010    sw  ra,16(sp)
+  40013c:   0c100063    jal 40018c &amp;lt;_exit&amp;gt;
+  400140:   00000000    nop
+    ...
+
+00400150 &amp;lt;__syscall&amp;gt;:
+  400150:   0000000c    syscall
+  400154:   10e00005    beqz    a3,40016c &amp;lt;__syscall+0x1c&amp;gt;
+  400158:   00000000    nop
+  40015c:   3c010044    lui at,0x44
+  400160:   ac220430    sw  v0,1072(at)
+  400164:   2403ffff    li  v1,-1
+  400168:   2402ffff    li  v0,-1
+  40016c:   03e00008    jr  ra
+  400170:   00000000    nop
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;So &lt;code&gt;main&lt;/code&gt; calls &lt;code&gt;exit&lt;/code&gt; (0x400108), &lt;code&gt;exit&lt;/code&gt; calls &lt;code&gt;_exit&lt;/code&gt; (0x40013c). &lt;strong&gt;Note that
+at this point, &lt;code&gt;$ra=$epc+8=0x400144&lt;/code&gt;&lt;/strong&gt;. &lt;code&gt;_exit&lt;/code&gt; fails (because we haven't
+implemented it yet), &lt;code&gt;$v0&lt;/code&gt; is set to -1, and
+returns to &lt;code&gt;$ra&lt;/code&gt;. The memory between 0x400140 and 0x400150 are filled by 0,
+which is &lt;code&gt;nop&lt;/code&gt; instruction in MIPS. So the CPU get all the way down to the
+&lt;code&gt;__syscall&lt;/code&gt; function at 0x400150, and execute the &lt;code&gt;syscall&lt;/code&gt; instruction. At this
+point, the value of &lt;code&gt;$v0&lt;/code&gt; is -1. That's why we see the first &lt;code&gt;Unknown syscall
+-1&lt;/code&gt; error message.&lt;/p&gt;
+&lt;p&gt;And after the syscall fails, the CPU will continue execution at 0x400154, and
+finally do &lt;code&gt;jr ra&lt;/code&gt; (0x40016c). Since &lt;code&gt;$ra&lt;/code&gt; is still 0x400144, the whole process
+repeats again. That's why you keep seeing &lt;code&gt;Unknown syscall -1&lt;/code&gt; error.&lt;/p&gt;
+&lt;h3&gt;How to fix?&lt;/h3&gt;
+&lt;p&gt;The problem is, GCC assumes &lt;code&gt;exit&lt;/code&gt; does not return, thus doesn't generate the
+&lt;code&gt;jr ra&lt;/code&gt; instruction for &lt;code&gt;exit&lt;/code&gt;. But before we implement &lt;code&gt;_exit&lt;/code&gt; syscall, &lt;code&gt;exit&lt;/code&gt;
+&lt;em&gt;does&lt;/em&gt; return. Then we lose control and things get messy.&lt;/p&gt;
+&lt;p&gt;Then how to fix this? Well, the easiest way to fix this is...implement &lt;code&gt;_exit&lt;/code&gt;,
+of course. After all, that's what you suppose to do in ASST2 anyway.&lt;/p&gt;
+&lt;p&gt;In terms of the problem itself, the latest version of OS/161 (1.99.07) has fixed
+this. Here is how:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;void&lt;/span&gt;
+&lt;span class="nf"&gt;exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;code&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="cm"&gt;/*&lt;/span&gt;
+&lt;span class="cm"&gt;     * In a more complicated libc, this would call functions registered&lt;/span&gt;
+&lt;span class="cm"&gt;     * with atexit() before calling the syscall to actually exit.&lt;/span&gt;
+&lt;span class="cm"&gt;     */&lt;/span&gt;
+
+&lt;span class="cp"&gt;#ifdef __mips__&lt;/span&gt;
+    &lt;span class="cm"&gt;/*&lt;/span&gt;
+&lt;span class="cm"&gt;     * Because gcc knows that _exit doesn&amp;#39;t return, if we call it&lt;/span&gt;
+&lt;span class="cm"&gt;     * directly it will drop any code that follows it. This means&lt;/span&gt;
+&lt;span class="cm"&gt;     * that if _exit *does* return, as happens before it&amp;#39;s&lt;/span&gt;
+&lt;span class="cm"&gt;     * implemented, undefined and usually weird behavior ensues.&lt;/span&gt;
+&lt;span class="cm"&gt;     *&lt;/span&gt;
+&lt;span class="cm"&gt;     * As a hack (this is quite gross) do the call by hand in an&lt;/span&gt;
+&lt;span class="cm"&gt;     * asm block. Then gcc doesn&amp;#39;t know what it is, and won&amp;#39;t&lt;/span&gt;
+&lt;span class="cm"&gt;     * optimize the following code out, and we can make sure&lt;/span&gt;
+&lt;span class="cm"&gt;     * that exit() at least really does not return.&lt;/span&gt;
+&lt;span class="cm"&gt;     *&lt;/span&gt;
+&lt;span class="cm"&gt;     * This asm block violates gcc&amp;#39;s asm rules by destroying a&lt;/span&gt;
+&lt;span class="cm"&gt;     * register it doesn&amp;#39;t declare ($4, which is a0) but this&lt;/span&gt;
+&lt;span class="cm"&gt;     * hopefully doesn&amp;#39;t matter as the only local it can lose&lt;/span&gt;
+&lt;span class="cm"&gt;     * track of is &amp;quot;code&amp;quot; and we don&amp;#39;t use it afterwards.&lt;/span&gt;
+&lt;span class="cm"&gt;     */&lt;/span&gt;
+    &lt;span class="kr"&gt;__asm&lt;/span&gt; &lt;span class="k"&gt;volatile&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;jal _exit;&amp;quot;&lt;/span&gt; &lt;span class="cm"&gt;/* call _exit */&lt;/span&gt;
+               &lt;span class="s"&gt;&amp;quot;move $4, %0&amp;quot;&lt;/span&gt;    &lt;span class="cm"&gt;/* put code in a0 (delay slot) */&lt;/span&gt;
+               &lt;span class="o"&gt;:&lt;/span&gt;        &lt;span class="cm"&gt;/* no outputs */&lt;/span&gt;
+               &lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;r&amp;quot;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;code&lt;/span&gt;&lt;span class="p"&gt;));&lt;/span&gt;   &lt;span class="cm"&gt;/* code is an input */&lt;/span&gt;
+    &lt;span class="cm"&gt;/*&lt;/span&gt;
+&lt;span class="cm"&gt;     * Ok, exiting doesn&amp;#39;t work; see if we can get our process&lt;/span&gt;
+&lt;span class="cm"&gt;     * killed by making an illegal memory access. Use a magic&lt;/span&gt;
+&lt;span class="cm"&gt;     * number address so the symptoms are recognizable and&lt;/span&gt;
+&lt;span class="cm"&gt;     * unlikely to occur by accident otherwise.&lt;/span&gt;
+&lt;span class="cm"&gt;     */&lt;/span&gt;
+    &lt;span class="kr"&gt;__asm&lt;/span&gt; &lt;span class="k"&gt;volatile&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;li $2, 0xeeeee00f;&amp;quot;&lt;/span&gt; &lt;span class="cm"&gt;/* load magic addr into v0 */&lt;/span&gt;
+               &lt;span class="s"&gt;&amp;quot;lw $2, 0($2)&amp;quot;&lt;/span&gt;       &lt;span class="cm"&gt;/* fetch from it */&lt;/span&gt;
+               &lt;span class="o"&gt;::&lt;/span&gt; &lt;span class="p"&gt;);&lt;/span&gt;            &lt;span class="cm"&gt;/* no args */&lt;/span&gt;
+&lt;span class="cp"&gt;#else&lt;/span&gt;
+    &lt;span class="n"&gt;_exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;code&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="cp"&gt;#endif&lt;/span&gt;
+    &lt;span class="cm"&gt;/*&lt;/span&gt;
+&lt;span class="cm"&gt;     * We can&amp;#39;t return; so if we can&amp;#39;t exit, the only other choice&lt;/span&gt;
+&lt;span class="cm"&gt;     * is to loop.&lt;/span&gt;
+&lt;span class="cm"&gt;     */&lt;/span&gt;
+    &lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;So if &lt;code&gt;_exit&lt;/code&gt; returns for any reason, we just access an address we know is
+invalid, thus trigger an exception, and the kernel just panics.&lt;/p&gt;</summary><category term="syscall"></category></entry><entry><title>OS161 Tool Chain Setup</title><link href="http://jhshi.me/2013/12/15/os161-tool-chain-setup/index.html" rel="alternate"></link><updated>2013-12-15T18:01:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-12-15:2013/12/15/os161-tool-chain-setup/index.html</id><summary type="html">&lt;p&gt;This post shows how to install os161 toolchain, including &lt;code&gt;bmake&lt;/code&gt;, &lt;code&gt;sys161&lt;/code&gt;,
+etc. on your local machine.&lt;/p&gt;
+
+
+&lt;h3&gt;Why Even Bother?&lt;/h3&gt;
+&lt;p&gt;Some instructors [setup the environment on public machines][canada] that students can
+share; some &lt;a href="http://www.ops-class.org"&gt;distribute the whole os161 develop environment in a VM appliance&lt;/a&gt;, 
+in which the tool chain is already set up for you.  In both cases, students can 
+start working on the OS itself immediately, instead of taking down by the
+tool chain setting up process and loss confidence even before starting.&lt;/p&gt;
+&lt;p&gt;However, I think it's still beneficial that we setup the tool chain on our local
+machine by ourselves:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Virtual Machines typically suffer from performance degradation, especially when your
+   machine is not that high-end (4 or 8 cores, 8 or 16 Gig RAM, etc.). And most
+   people experienced video driver issues after accidentally upgrade the guest VM.&lt;/li&gt;
+&lt;li&gt;The setting up process can help us understand at least how each tools interact.&lt;/li&gt;
+&lt;li&gt;The cross-compiling experience could potentially useful in future projects/assignments.&lt;/li&gt;
+&lt;li&gt;You can gain some confidence if you can set up the tool chain successfully.
+   And confidence is the key to survive later assignments.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The following instructions are tested under &lt;code&gt;Ubuntu 13.10 x86_64&lt;/code&gt; with gcc
+version 4.8.1, they should, however, also work on other distros.&lt;/p&gt;
+&lt;h3&gt;Directory Setup&lt;/h3&gt;
+&lt;p&gt;Suppose you want to place the os161 related stuff in &lt;code&gt;~/projects/courses/os161&lt;/code&gt;,
+then you would have to set up the directory structure like this.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;mkdir -p ~/projects/courses/os161
+mkdir -p ~/projects/courses/os161/toolbuild
+mkdir -p ~/projects/courses/os161/tools/bin
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Eventually the &lt;code&gt;os161&lt;/code&gt; directory will be the top level directory for all our os161
+stuff. And &lt;code&gt;toolbuild&lt;/code&gt; will contain all the downloaded and extracted packages,
+and &lt;code&gt;tools&lt;/code&gt; will contain all the os161 environments, like the compiler, debugger, 
+simulator, etc.&lt;/p&gt;
+&lt;p&gt;To simplify further steps, we set up a few environment variables.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;export &lt;/span&gt;&lt;span class="nv"&gt;PREFIX&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;~/projects/courses/os161/tools
+&lt;span class="nb"&gt;export &lt;/span&gt;&lt;span class="nv"&gt;BUILD&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;~/projects/courses/os161/toolbuild
+&lt;span class="nb"&gt;export &lt;/span&gt;&lt;span class="nv"&gt;PATH&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nv"&gt;$PATH&lt;/span&gt;:&lt;span class="nv"&gt;$PREFIX&lt;/span&gt;/bin
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Of course you can install os161 tool chain anywhere you like, just make sure the
+directory structure is right. Note that:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;In the whole process of doing this, you don't need to touch any file outside
+   our &lt;code&gt;os161&lt;/code&gt; directory (unless explicitly stated). So if you must use &lt;code&gt;sudo&lt;/code&gt; 
+   to copy some stuff, then you probably typed something wrong.&lt;/li&gt;
+&lt;li&gt;If you choose to install the tool chain somewhere else, you need to adjust
+   the variables accordingly.&lt;/li&gt;
+&lt;li&gt;The environment variables (e.g., &lt;code&gt;PREFIX&lt;/code&gt;, &lt;code&gt;BUILD&lt;/code&gt;) are &lt;em&gt;only valid in current
+   session&lt;/em&gt;, so in case you want to take a break(e.g., play guitar) during the
+   process, make sure you still have those variables. You can do that by do
+   &lt;code&gt;echo $PREFIX&lt;/code&gt;, make sure it's &lt;code&gt;~/projects/courses/os161/tools&lt;/code&gt;. If they
+   disappear somehow, just redo the &lt;code&gt;export&lt;/code&gt; commands.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Download And Extract the Packages&lt;/h3&gt;
+&lt;p&gt;You can download all the required packages in &lt;a href="http://www.eecs.harvard.edu/~dholland/os161/download/"&gt;this page&lt;/a&gt;. As of writing
+this post, the latest packages are:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://www.eecs.harvard.edu/~dholland/os161/download/binutils-2.17+os161-2.0.1.tar.gz"&gt;binutils-2.17+os161-2.0.1.tar.gz&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://www.eecs.harvard.edu/~dholland/os161/download/gcc-4.1.2+os161-2.0.tar.gz"&gt;gcc-4.1.2+os161-2.0.tar.gz&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://www.eecs.harvard.edu/~dholland/os161/download/gdb-6.6+os161-2.0.tar.gz"&gt;gdb-6.6+os161-2.0.tar.gz&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://www.eecs.harvard.edu/~dholland/os161/download/bmake-20101215.tar.gz"&gt;bmake-20101215.tar.gz&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://www.eecs.harvard.edu/~dholland/os161/download/mk-20100612.tar.gz"&gt;mk-20100612.tar.gz&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://www.eecs.harvard.edu/~dholland/os161/download/sys161-1.99.06.tar.gz"&gt;sys161-1.99.06.tar.gz&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Download the above packages and put them in the &lt;code&gt;toolbuild&lt;/code&gt; directory we just
+created.&lt;/p&gt;
+&lt;p&gt;Extract the packages as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;cd&lt;/span&gt; &lt;span class="nv"&gt;$BUILD&lt;/span&gt;
+tar xvf binutils-2.17+os161-2.0.1.tar.gz
+tar xvf gcc-4.1.2+os161-2.0.tar.gz
+tar xvf gdb-6.6+os161-2.0.tar.gz
+tar xvf sys161-1.99.0.tar.gz
+tar xvf bmake.tar.gz
+&lt;span class="nb"&gt;cd &lt;/span&gt;bmake
+tar xvf ../mk.tar.gz
+&lt;span class="nb"&gt;cd&lt;/span&gt; ..
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Note that &lt;em&gt;we have to extract the &lt;code&gt;mk.tar.gz&lt;/code&gt; package &lt;em&gt;inside&lt;/em&gt; &lt;code&gt;bmake&lt;/code&gt; directory&lt;/em&gt;.&lt;/p&gt;
+&lt;h3&gt;Binutils&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;cd &lt;/span&gt;binutils-2.17+os161-2.0.1
+./configure --nfp --disable-werror --target&lt;span class="o"&gt;=&lt;/span&gt;mips-harvard-os161 --prefix&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nv"&gt;$PREFIX&lt;/span&gt;
+find . -name &lt;span class="s1"&gt;&amp;#39;*.info&amp;#39;&lt;/span&gt; &lt;span class="p"&gt;|&lt;/span&gt; xargs touch
+make
+make install
+&lt;span class="nb"&gt;cd&lt;/span&gt; ..
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Note how we set the &lt;code&gt;--prefix&lt;/code&gt; when configure. That option is to tell the
+Makefile where the generated binary or library files should go.&lt;/p&gt;
+&lt;p&gt;Also, we fool the &lt;code&gt;make&lt;/code&gt; command by touching all the &lt;code&gt;texinfo&lt;/code&gt; files to make 
+the &lt;code&gt;make&lt;/code&gt; think those files doesn't need to be rebuilt. Because:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;They really don't need to be regenerated.&lt;/li&gt;
+&lt;li&gt;We don't want to rebuilt them since it's highly possible that &lt;code&gt;makeinfo&lt;/code&gt; will
+   yell out some annoying errors on those doc files.&lt;/li&gt;
+&lt;li&gt;And we don't really care the docs...&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4&gt;Checkpoint&lt;/h4&gt;
+&lt;p&gt;After this step, you should have some &lt;code&gt;mips-harvard-os161-*&lt;/code&gt; binary files in the
+&lt;code&gt;tools/bin&lt;/code&gt; directory.&lt;/p&gt;
+&lt;h3&gt;GCC&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;cd &lt;/span&gt;gcc-4.1.2+os161-2.0
+./configure --nfp --disable-shared --disable-threads --disable-libmudflap&lt;span class="se"&gt;\&lt;/span&gt;
+        --disable-libssp --target&lt;span class="o"&gt;=&lt;/span&gt;mips-harvard-os161 --prefix&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nv"&gt;$PREFIX&lt;/span&gt;
+make -j 8
+make install
+&lt;span class="nb"&gt;cd&lt;/span&gt; ..
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Note that:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;The backslash in the &lt;code&gt;configure&lt;/code&gt; command is just to tell our shell that we
+   haven't done typing, so do not execute the command just yet. If you type the
+   whole command in one line, you don't need backslash.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;make -j 8&lt;/code&gt; means use 8 threads when compile. Usually this will speed up the
+   compilation process quite a little bit.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4&gt;Checkpoint&lt;/h4&gt;
+&lt;p&gt;After this step, you should see &lt;code&gt;mips-harvard-os161-gcc&lt;/code&gt; in the &lt;code&gt;tools/bin&lt;/code&gt;
+directory.&lt;/p&gt;
+&lt;h3&gt;GDB&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;cd &lt;/span&gt;gdb-6.6+os161-2.0
+./configure --target&lt;span class="o"&gt;=&lt;/span&gt;mips-harvard-os161 --disable-werror --prefix&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nv"&gt;$PREFIX&lt;/span&gt;
+find . -name &lt;span class="s1"&gt;&amp;#39;*.info&amp;#39;&lt;/span&gt; &lt;span class="p"&gt;|&lt;/span&gt; xargs touch
+make
+make install
+&lt;span class="nb"&gt;cd&lt;/span&gt; ..
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Note that:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;We need to &lt;code&gt;--disable-werror&lt;/code&gt; when configure. Because later version of gcc
+   will report warnings that older version of gcc will not.&lt;/li&gt;
+&lt;li&gt;Same as &lt;code&gt;binutils&lt;/code&gt;, we avoid rebuilding doc files here.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;If you see this error when do configure.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;configure&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;error&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;no&lt;/span&gt; &lt;span class="n"&gt;termcap&lt;/span&gt; &lt;span class="n"&gt;library&lt;/span&gt; &lt;span class="n"&gt;found&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;You probably need to install the &lt;code&gt;libncurses5-dev&lt;/code&gt; package.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;sudo apt-get install libncurses5-dev
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h4&gt;Checkpoint&lt;/h4&gt;
+&lt;p&gt;After this step, you should see &lt;code&gt;mips-harvard-os161-gdb&lt;/code&gt; in the &lt;code&gt;tools/bin&lt;/code&gt;
+directory.&lt;/p&gt;
+&lt;h3&gt;SYS161&lt;/h3&gt;
+&lt;p&gt;Sys161 is the simulator that our os161 will be running in.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;cd &lt;/span&gt;sys161-1.99.06
+./configure --prefix&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nv"&gt;$PREFIX&lt;/span&gt; mipseb
+make
+make install
+&lt;span class="nb"&gt;cd&lt;/span&gt; ..
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h4&gt;Checkpoint&lt;/h4&gt;
+&lt;p&gt;After this step, you should see &lt;code&gt;sys161&lt;/code&gt;, &lt;code&gt;hub161&lt;/code&gt;, &lt;code&gt;stat161&lt;/code&gt; and &lt;code&gt;trace161&lt;/code&gt;
+symlinks in the &lt;code&gt;tools/bin&lt;/code&gt; directory. &lt;/p&gt;
+&lt;h3&gt;Bmake&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;cd &lt;/span&gt;bmake
+./boot-strap --prefix&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nv"&gt;$PREFIX&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;At the end of &lt;code&gt;boot-strap&lt;/code&gt; command output, you should see instructions on how to
+install &lt;code&gt;bmake&lt;/code&gt; properly. In our case, it look like these:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;mkdir -p /home/jhshi/projects/courses/os161/tools/bin
+cp /home/jhshi/projects/courses/os161/toolbuild/bmake/Linux/bmake /home/jhshi/projects/courses/os161/tools/bin/bmake-20101215
+rm -f /home/jhshi/projects/courses/os161/tools/bin/bmake
+ln -s bmake-20101215 /home/jhshi/projects/courses/os161/tools/bin/bmake
+mkdir -p /home/jhshi/projects/courses/os161/tools/share/man/cat1
+cp /home/jhshi/projects/courses/os161/toolbuild/bmake/bmake.cat1 /home/jhshi/projects/courses/os161/tools/share/man/cat1/bmake.1
+sh /home/jhshi/projects/courses/os161/toolbuild/bmake/mk/install-mk /home/jhshi/projects/courses/os161/tools/share/mk
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Just do the commands &lt;em&gt;one by one&lt;/em&gt; in the order given.&lt;/p&gt;
+&lt;h4&gt;Checkpoint&lt;/h4&gt;
+&lt;p&gt;After this step, you should see &lt;code&gt;bmake&lt;/code&gt; symlink in &lt;code&gt;tools/bin&lt;/code&gt; directory. And a
+bunch of &lt;code&gt;*.mk&lt;/code&gt; files in &lt;code&gt;tools/share/mk&lt;/code&gt; directory.&lt;/p&gt;
+&lt;h3&gt;Create Symbolic Links&lt;/h3&gt;
+&lt;p&gt;Now if you take a look at &lt;code&gt;$PREFIX/bin&lt;/code&gt;, you will see a list of executables
+named like &lt;code&gt;mips-harvard-os161-*&lt;/code&gt;, it's convenient to give them shorter name so
+that we can save a few keystrokes later.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;cd&lt;/span&gt; &lt;span class="nv"&gt;$PREFIX&lt;/span&gt;/bin
+sh -c &lt;span class="s1"&gt;&amp;#39;for i in mips-*; do ln -s $i os161-`echo $i | cut -d- -f4-`; done&amp;#39;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Note that the symbol around &lt;code&gt;echo $i $ cut -d- -f4-&lt;/code&gt; is the key that under 
+{%key Esc %} (the same key with tilde (&lt;code&gt;~&lt;/code&gt;)).&lt;/p&gt;
+&lt;h4&gt;Checkpoint&lt;/h4&gt;
+&lt;p&gt;After this step, you should see a bunch of &lt;code&gt;os161-*&lt;/code&gt; symlinks in &lt;code&gt;tools/bin&lt;/code&gt;
+directory. &lt;/p&gt;
+&lt;h3&gt;PATH Setup&lt;/h3&gt;
+&lt;p&gt;Now we've set up all required tools to build and run os161. &lt;/p&gt;
+&lt;p&gt;In the first step, we change our &lt;code&gt;PATH&lt;/code&gt; environment variable to include the
+&lt;code&gt;tools/bin&lt;/code&gt; directory. Now is the time to make it permanent so that we won't
+need to type &lt;code&gt;export PATH=$PATH:~/projects/courses/os161/tools/bin&lt;/code&gt; every time we open terminal.
+Add this line to your &lt;code&gt;.bashrc&lt;/code&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;export &lt;/span&gt;&lt;span class="nv"&gt;PATH&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nv"&gt;$PATH&lt;/span&gt;:~/projects/courses/os161/tools/bin
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h4&gt;Checkpoint&lt;/h4&gt;
+&lt;p&gt;Close current terminal and open an new one. Type this commands, and check if the
+output matches.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;which sys161
+&lt;span class="c"&gt;# should be something like /home/jhshi/projects/courses/os161/tools/bin&lt;/span&gt;
+which bmake
+&lt;span class="c"&gt;# should be something like /home/jhshi/projects/courses/os161/tools/bin&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;Configure OS161&lt;/h3&gt;
+&lt;p&gt;Now let's get to real business. Obtain a copy of the os161 source tree according
+to your course's instruction. In this case, we'll use the one from
+&lt;a href="http://www.ops-class.org"&gt;ops-class.org&lt;/a&gt;. &lt;/p&gt;
+&lt;p&gt;Suppose you've registered an account on &lt;a href="http://www.ops-class.org"&gt;ops-class.org&lt;/a&gt; and uploaded your 
+public key. Then you can clone the source tree and configure as follows.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;cd&lt;/span&gt; ~/projects/courses/os161
+mkdir root
+git clone ssh://src@src.ops-class.org/src/os161 src
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;If you encounter errors like this.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;cloning into &lt;span class="s1"&gt;&amp;#39;src&amp;#39;&lt;/span&gt;...
+Permission denied &lt;span class="o"&gt;(&lt;/span&gt;publickey&lt;span class="o"&gt;)&lt;/span&gt;.
+fatal: Could not &lt;span class="nb"&gt;read &lt;/span&gt;from remote repository.
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then you probably didn't set up your key right. Make sure you put the private
+key (normally &lt;code&gt;id_rsa&lt;/code&gt;) inside &lt;code&gt;~/.ssh/&lt;/code&gt;, and copy the content of &lt;code&gt;id_rsa.pub&lt;/code&gt;
+to &lt;a href="http://www.ops-class.org"&gt;ops-class.org&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Now we have the source tree, let's move on and configure it.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;cd &lt;/span&gt;src
+./configure --ostree&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nv"&gt;$HOME&lt;/span&gt;/projects/courses/os161/root
+bmake
+bmake install
+&lt;span class="nb"&gt;cd&lt;/span&gt; ..
+cp tools/share/examples/sys161/sys161.conf.sample root/sys161.conf
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Note that:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;We create an &lt;code&gt;root&lt;/code&gt; directory under &lt;code&gt;os161&lt;/code&gt;, this will be where the
+   compiled user space binaries, and also the compiled kernel image will go.&lt;/li&gt;
+&lt;li&gt;When configure the os, we specify the &lt;code&gt;--ostree&lt;/code&gt; argument, so that the
+   binaries will be copied to the &lt;code&gt;root&lt;/code&gt; directory we just created. The default
+   location is &lt;code&gt;~/root&lt;/code&gt;, which is probably not what you want.&lt;/li&gt;
+&lt;li&gt;We must use &lt;code&gt;$HOME/projects/courses/os161/root&lt;/code&gt;, instead of
+   &lt;code&gt;~/projects/courses/os161/root&lt;/code&gt;. Otherwise, &lt;code&gt;bmake&lt;/code&gt; will complain.&lt;/li&gt;
+&lt;li&gt;We copy the sys161 configuration example to the &lt;code&gt;root&lt;/code&gt; directory. This
+   configuration file is needed by &lt;code&gt;sys161&lt;/code&gt; - the simulator.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4&gt;Checkpoint&lt;/h4&gt;
+&lt;p&gt;Go to &lt;code&gt;~/projects/courses/os161/root&lt;/code&gt;, you should see some directories there, e.g.,
+&lt;code&gt;bin&lt;/code&gt;, &lt;code&gt;hostbin&lt;/code&gt;, &lt;code&gt;lib&lt;/code&gt;, &lt;code&gt;man&lt;/code&gt;, etc.&lt;/p&gt;
+&lt;h3&gt;Compile and Run the Kernel&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;cd&lt;/span&gt; ~/projects/courses/os161/src/kern/conf
+./config ASST0
+&lt;span class="nb"&gt;cd&lt;/span&gt; ../compile/ASST0
+bmake depend
+bmake &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; bmake install
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Now let's fire up the kernel.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;cd&lt;/span&gt; ~/projects/courses/os161/root
+sys161 kernel
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h4&gt;Checkpoint&lt;/h4&gt;
+&lt;p&gt;You should see outputs like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;sys161: System/161 release 1.99.06, compiled Dec &lt;span class="m"&gt;15&lt;/span&gt; &lt;span class="m"&gt;2013&lt;/span&gt; 17:42:02
+
+OS/161 base system version 1.99.05
+Copyright &lt;span class="o"&gt;(&lt;/span&gt;c&lt;span class="o"&gt;)&lt;/span&gt; 2000, 2001, 2002, 2003, 2004, 2005, 2008, 2009
+President and Fellows of Harvard College.  All rights reserved.
+
+Put-your-group-name-here&lt;span class="err"&gt;&amp;#39;&lt;/span&gt;s system version &lt;span class="m"&gt;0&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;ASST0 &lt;span class="c"&gt;#7)&lt;/span&gt;
+
+320k physical memory available
+Device probe...
+lamebus0 &lt;span class="o"&gt;(&lt;/span&gt;system main bus&lt;span class="o"&gt;)&lt;/span&gt;
+emu0 at lamebus0
+ltrace0 at lamebus0
+ltimer0 at lamebus0
+beep0 at ltimer0
+rtclock0 at ltimer0
+lrandom0 at lamebus0
+random0 at lrandom0
+lhd0 at lamebus0
+lhd1 at lamebus0
+lser0 at lamebus0
+con0 at lser0
+
+cpu0: MIPS r3000
+OS/161 kernel &lt;span class="o"&gt;[&lt;/span&gt;? &lt;span class="k"&gt;for&lt;/span&gt; menu&lt;span class="o"&gt;]&lt;/span&gt;:
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;Resources&lt;/h3&gt;
+&lt;p&gt;You can find more instructions on tool chain setup and os161 configuration in these pages.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://www.student.cs.uwaterloo.ca/~cs350/common/Install161NonCS.html"&gt;Installing OS/161 On Your Own Machine&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://www.eecs.harvard.edu/~dholland/os161/resources/setup.html"&gt;OS/161 Toolchain Setup&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://www.cs.hmc.edu/~geoff/classes/hmc.cs134.201209/buildos161.html"&gt;Building System/161 and the OS/161 Toolchain&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://www.ops-class.org/asst/0"&gt;ASST0: Introduction to OS/161&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</summary><category term="toolchain"></category><category term="bmake"></category><category term="sys161"></category><category term="texinfo"></category><category term="binutils"></category><category term="gcc"></category><category term="gdb"></category></entry><entry><title>OS161 Synchronization Primitives: RWLock</title><link href="http://jhshi.me/2013/04/05/os161-synchronization-primitives-rwlock/index.html" rel="alternate"></link><updated>2013-04-05T13:30:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-04-05:2013/04/05/os161-synchronization-primitives-rwlock/index.html</id><summary type="html">&lt;p&gt;The idea of &lt;a href="http://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock"&gt;Reader-Writer Lock&lt;/a&gt; is quite simple. In normal &lt;a href="/2013/04/04/os161-synchronization-primitives-lock"&gt;lock&lt;/a&gt;,
+we don't differentiate the threads. That said, each thread who wants to enter the
+critical section must first acquire the lock. But on a second thought, you may
+find that threads actually have different behavior inside the critical section:
+some threads just want to see the values of shared variable, while others really
+want to update those variables.&lt;/p&gt;
+
+
+&lt;h3&gt;An Example&lt;/h3&gt;
+&lt;p&gt;Suppose we have a book database in a library, each reader who wants to query the
+database must first acquire the lock before he can actually do the query. The
+library manager, who wants to update some book info also need to acquire the
+lock before he can do the actual update. In this case, we can see that the
+queries of multiple readers in fact have no conflict. So ideally they should be
+allowed to be in the critical section at the same time. On the other hand, the
+library manager must have exclusive access to the database while he's updating.
+No readers, no other managers can enter the critical section until the first
+manager leaves.&lt;/p&gt;
+&lt;p&gt;So, two rules for rwlock:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Multiple readers can be in the critical section at the same time&lt;/li&gt;
+&lt;li&gt;One and only one writer can in the critical section at any time&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3&gt;Starvation&lt;/h3&gt;
+&lt;p&gt;Suppose the coming sequence of threads are "RWRRRRR...", in which R denotes reader
+and W denotes writer. The first reader arrives, and found no one in the critical
+section, and he happily comes in. Before he leaves, the writer arrives, but
+found there is a reader inside the critical section, so the writer wait. While
+the write is waiting, the second reader comes and find there is one reader
+inside the critical section, literally, it's OK for him to come in according to
+the rules, right? The same case applies to the third, forth,..., readers.&lt;/p&gt;
+&lt;p&gt;So without special attention, we see readers come and go, while the poor writer
+keeps waiting, for virtually a "unbounded" time. In this case, the writer is
+starved.&lt;/p&gt;
+&lt;p&gt;The thing is, the second, third, forth..., readers shouldn't enter critical section 
+since there is a write waiting before them!&lt;/p&gt;
+&lt;h3&gt;Implementation&lt;/h3&gt;
+&lt;p&gt;There are many ways to implement rwlock. You can use any of the semaphore, cv or 
+lock. Here I introduce one using semaphore and lock. It's very simple, yet has
+the limitation that only support at most a  certain number of readers in
+the critical section.&lt;/p&gt;
+&lt;p&gt;Let's imagine the critical section as a set of resources. The initial capacity
+is &lt;code&gt;MAX_READERS&lt;/code&gt;. The idea is each reader needs one of these resources to enter 
+the critical section, while each writer needs all of these resources (to prevent other
+readers or writers) to enter.&lt;/p&gt;
+&lt;p&gt;To let the readers be aware of the waiting writers, each thread should first
+acquire a lock before he can acquire the resource. &lt;/p&gt;
+&lt;p&gt;So for &lt;code&gt;rwlock_acquire_read&lt;/code&gt;:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Acquire the lock&lt;/li&gt;
+&lt;li&gt;Acquire a resource using &lt;code&gt;P&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Release the lock&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;For &lt;code&gt;rwlock_release_read&lt;/code&gt;, just release the resource using &lt;code&gt;V&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;In &lt;code&gt;rwlock_acquire_write&lt;/code&gt;:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Acquire the lock, so that no other readers/writer would be able to acquire
+   the rwlock&lt;/li&gt;
+&lt;li&gt;Acquire &lt;strong&gt;ALL&lt;/strong&gt; the resources by doing &lt;code&gt;P&lt;/code&gt; &lt;code&gt;MAX_READERS&lt;/code&gt; times&lt;/li&gt;
+&lt;li&gt;Release the lock. It's safe now since we got all the resources.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;For &lt;code&gt;rwlock_release_write&lt;/code&gt;, just release all the resources.&lt;/p&gt;</summary><category term="rwlock"></category><category term="synchronization"></category></entry><entry><title>OS161 Synchronization Primitives: CV</title><link href="http://jhshi.me/2013/04/05/os161-synchronization-primitives-cv/index.html" rel="alternate"></link><updated>2013-04-05T12:37:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-04-05:2013/04/05/os161-synchronization-primitives-cv/index.html</id><summary type="html">&lt;p&gt;&lt;a href="http://en.wikipedia.org/wiki/Monitor_(synchronization)"&gt;Condition variable&lt;/a&gt; is used for a thread to wait for some condition to be
+true before continuing. The implementation is quite simple compared to
+&lt;a href="/2013/04/04/os161-synchronization-primitives-lock"&gt;lock&lt;/a&gt;, yet the difficult part is to understand how a CV is supposed to
+used.&lt;/p&gt;
+
+
+&lt;h3&gt;CV Interface&lt;/h3&gt;
+&lt;p&gt;Condition variable has two interfaces: &lt;code&gt;cv_wait&lt;/code&gt; and &lt;code&gt;cv_signal&lt;/code&gt;. &lt;code&gt;cv_wait&lt;/code&gt; is
+used to wait for a condition to be true, and &lt;code&gt;cv_signal&lt;/code&gt; is used to notify other
+threads that a certain condition is true.&lt;/p&gt;
+&lt;p&gt;So what?&lt;/p&gt;
+&lt;p&gt;Let's consider a producer-consumer case, where a bunch of threads share a
+resource pool, some of them (producer) is responsible to put stuff to the pool
+and others (consumer) are responsible to take stuff from the pool. Obviously, we
+have two rules.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;If the pool is full, then producers can not put to the pool&lt;/li&gt;
+&lt;li&gt;If the pool is empty, then consumers can not take stuff from the pool&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;And we use two condition variables for each of these rules: &lt;code&gt;pool_full&lt;/code&gt; and
+&lt;code&gt;pool_empty&lt;/code&gt;. Here is the pseudo code for producer and consumer:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;producer&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;void&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;lock_acquire&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pool_lock&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pool_is_full&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="n"&gt;cv_wait&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pool_full&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;pool_lock&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="n"&gt;produce&lt;/span&gt;&lt;span class="p"&gt;();&lt;/span&gt;
+    &lt;span class="cm"&gt;/* notify that the pool now is not empty, so if any one is waiting&lt;/span&gt;
+&lt;span class="cm"&gt;     * on the pool_empty cv, wake them up &lt;/span&gt;
+&lt;span class="cm"&gt;     */&lt;/span&gt;
+    &lt;span class="n"&gt;cv_signal&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pool_empty&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;pool_lock&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;lock_release&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pool_lock&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;consumer&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;void&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;lock_acquire&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pool_lock&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pool_is_empty&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="n"&gt;cv_wait&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pool_empty&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;pool_lock&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="n"&gt;consume&lt;/span&gt;&lt;span class="p"&gt;();&lt;/span&gt;
+    &lt;span class="cm"&gt;/* notify that the pool now is not full, so if any one is waiting&lt;/span&gt;
+&lt;span class="cm"&gt;     * on the pool_full cv, wake them up &lt;/span&gt;
+&lt;span class="cm"&gt;     */&lt;/span&gt;
+
+    &lt;span class="n"&gt;cv_signal&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pool_full&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;pool_lock&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;lock_release&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pool_lock&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here we also use a lock to protect access to the pool. We can see from this
+example:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Condition variable is virtually a wait channel&lt;/li&gt;
+&lt;li&gt;Condition variable is normally used together with lock, but &lt;strong&gt;condition
+   variable itself doesn't contain a lock&lt;/strong&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3&gt;What's in &lt;code&gt;cv&lt;/code&gt; structure?&lt;/h3&gt;
+&lt;p&gt;Obviously, we need a wait channel. And that's it (probably plus a &lt;code&gt;cv_name&lt;/code&gt;).&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;cv_wait&lt;/code&gt; and &lt;code&gt;cv_signal&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;Now let's get to business. The comment in &lt;code&gt;$OS161_SRC/kern/inlucde/synch.h&lt;/code&gt;
+basically told you everything you need to do. &lt;/p&gt;
+&lt;p&gt;In &lt;code&gt;cv_wait&lt;/code&gt;, we need to:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Lock the wait channel&lt;/li&gt;
+&lt;li&gt;Release the lock passed in&lt;/li&gt;
+&lt;li&gt;Sleep on the wait channel&lt;/li&gt;
+&lt;li&gt;When waked up, re-acquire the lock.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;So before &lt;code&gt;cv_wait&lt;/code&gt;, we should already hold the lock (so that we can release
+it). And after &lt;code&gt;cv_wait&lt;/code&gt;, we still hold the lock.&lt;/p&gt;
+&lt;p&gt;In &lt;code&gt;cv_signal&lt;/code&gt;, we just wake up somebody in the wait channel using
+&lt;code&gt;wchan_wakeone&lt;/code&gt;.&lt;/p&gt;</summary><category term="cv"></category><category term="synchronization"></category></entry><entry><title>OS161 Synchronization Primitives: Lock</title><link href="http://jhshi.me/2013/04/04/os161-synchronization-primitives-lock/index.html" rel="alternate"></link><updated>2013-04-04T15:23:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-04-04:2013/04/04/os161-synchronization-primitives-lock/index.html</id><summary type="html">&lt;p&gt;Lock is basically just a semaphore whose initial counter is 1. &lt;code&gt;lock_acquire&lt;/code&gt; is
+like &lt;code&gt;P&lt;/code&gt;, while &lt;code&gt;lock_release&lt;/code&gt; is like &lt;code&gt;V&lt;/code&gt;. You probably want to go over 
+&lt;a href="/2013/04/04/os161-synchronization-primitives-semaphore"&gt;my previous post about semaphore&lt;/a&gt;&lt;/p&gt;
+
+
+&lt;h3&gt;Lock's holder&lt;/h3&gt;
+&lt;p&gt;However, since only one can hold the lock at any given time, that guy is
+considered to be the &lt;strong&gt;holder&lt;/strong&gt; of this lock. While in semaphore, we don't have
+such a holder concept since multiple thread can "hold" the semaphore at the same
+time.&lt;/p&gt;
+&lt;p&gt;Thus we need to store the holder information in our lock structure, along with the
+conventional spin lock and wait channel. Intuitively, you may tempted to use the
+thread name (&lt;code&gt;curthread-&amp;gt;t_name&lt;/code&gt;) as the thread's identifier. Nevertheless, same
+with the case in real world, the thread's name isn't necessarily unique. The 
+OS161 doesn't forbidden us to create a bunch of threads with the same name.&lt;/p&gt;
+&lt;p&gt;There is a global variable defined in &lt;code&gt;$OS161_SRC/kern/include/current.h&lt;/code&gt;
+named &lt;code&gt;curthread&lt;/code&gt;, which is a pointer to the kernel data structure of current
+thread. Two different threads definitely have different thread structures
+(hence different pointers), which makes the pointer to thread structure a good
+enough thread identifier.&lt;/p&gt;
+&lt;h3&gt;Reentrant Lock&lt;/h3&gt;
+&lt;p&gt;Another trick thing is to decide whether we support &lt;a href="http://en.wikipedia.org/wiki/Reentrant_mutex"&gt;reentrant lock&lt;/a&gt; or not.
+Basically, a process can acquire a reentrant lock multiple times without
+blocking itself.&lt;/p&gt;
+&lt;p&gt;At first glance, you may wonder what kind of dumb thread would acquire a lock
+multiple times anyway? Well, that kind of thread does exist, and they may not be
+dumb at all. Reentrant lock is useful when it's difficult for a thread to track
+whether it has grabbed the lock. Suppose we have multiple threads that traverse
+a graph simultaneously, and each thread need to first grab the lock of a node
+before it can visit that node. If the graph has a circle or there are multiple
+paths leads to the same node, then it's possible that a thread visit the same
+node twice. Although there is a function named &lt;code&gt;lock_do_i_hold&lt;/code&gt; that can tell
+whether a thread holds a lock or not, unfortunately it's not a public interface of lock.&lt;/p&gt;
+&lt;p&gt;In OS161, it's OK that you choose to not support reentrant lock, so when you
+detect a thread try to acquire a lock while it's the lock's holder, just panic.
+But if you want to support reentrant lock, &lt;strong&gt;you need to make sure a thread won't
+accidentally loose a lock.&lt;/strong&gt; For example,&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;A&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;void&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;lock_acquire&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lock1&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+
+    &lt;span class="n"&gt;B&lt;/span&gt;&lt;span class="p"&gt;();&lt;/span&gt;
+
+    &lt;span class="n"&gt;lock_release&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lock1&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;B&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;void&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;lock_acquire&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lock1&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+
+    &lt;span class="n"&gt;printf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;Hello world!&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+
+    &lt;span class="n"&gt;lock_release&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lock1&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;In this case, the thread is supposed to still hold the lock &lt;strong&gt;after&lt;/strong&gt; B
+returns.&lt;/p&gt;
+&lt;p&gt;The simplest way would be, keep a counter (initial value 0) for each lock. When 
+a thread acquires a lock, increase that counter. When it release the lock, decrease 
+the counter, only actually release a lock when the counter reaches 0.&lt;/p&gt;</summary><category term="synchronization"></category><category term="lock"></category></entry><entry><title>OS161 Synchronization Primitives: Semaphore</title><link href="http://jhshi.me/2013/04/04/os161-synchronization-primitives-semaphore/index.html" rel="alternate"></link><updated>2013-04-04T14:52:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-04-04:2013/04/04/os161-synchronization-primitives-semaphore/index.html</id><summary type="html">&lt;p&gt;&lt;a href="http://en.wikipedia.org/wiki/Semaphore_(programming)"&gt;Semaphore&lt;/a&gt; denotes a certain number of shared resources. Basically, it's
+one counter and two operations on this counter, namely &lt;code&gt;P&lt;/code&gt; and &lt;code&gt;V&lt;/code&gt;. &lt;code&gt;P&lt;/code&gt; is used
+to acquire one resource (thus decrementing the counter) while &lt;code&gt;V&lt;/code&gt; is used to
+release one resource (thus incrementing the counter).&lt;/p&gt;
+
+
+&lt;h3&gt;A Metaphor&lt;/h3&gt;
+&lt;p&gt;My favorite example is the printer. Say we have three printers in a big lab,
+where everybody in the lab shared those printers. Obviously only one printing
+job can be conducted by one printer at any time, otherwise, the printed content
+would be messed up. &lt;/p&gt;
+&lt;p&gt;However, we can not use a single lock to protect the access of all these three
+printers. It'll be very dumb. An intuitive way is to use three locks, one for
+each printer. Yet more elegantly, we use a semaphore with initial counter as 3.
+Every time before a user submit a print job, he need to first &lt;code&gt;P&lt;/code&gt; this semaphore
+to acquire one printer. And after he is done, he need to &lt;code&gt;V&lt;/code&gt; this semaphore to
+release the printer. If there is already one print job at each printer, then the
+following poor guys who want to &lt;code&gt;P&lt;/code&gt; this semaphore would have to wait.&lt;/p&gt;
+&lt;h3&gt;What should a semaphore structure contain?&lt;/h3&gt;
+&lt;p&gt;Apparently, we need an &lt;strong&gt;counter&lt;/strong&gt; to record how many resources available. Since
+this counter is a shared variable, we need a &lt;strong&gt;lock&lt;/strong&gt; to protect it. At this point,
+we only have the &lt;code&gt;spinlock&lt;/code&gt; provided in &lt;code&gt;$OS161_SRC/kern/include/spinlock.h&lt;/code&gt;.
+That's fine since our critical section is short anyway. In order to let the poor
+guys have a place to wait, we also need an &lt;strong&gt;wait channel&lt;/strong&gt; (in
+&lt;code&gt;OS161_SRC/kern/include/wchan.h&lt;/code&gt;)&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;P&lt;/code&gt; Operation&lt;/h3&gt;
+&lt;p&gt;The flow of &lt;code&gt;P&lt;/code&gt; would be:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Acquire the spin lock&lt;/li&gt;
+&lt;li&gt;Check if there are some resources available (&lt;code&gt;counter &amp;gt; 0&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;If yes, we're lucky. Happily go to step 8. &lt;/li&gt;
+&lt;li&gt;If no, then we first grab the lock of the wait channel, since the wait
+   channel is also shared.&lt;/li&gt;
+&lt;li&gt;Release the spin lock, and wait on the wait channel by calling &lt;code&gt;wchan_sleep&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;We're sleeping...&lt;/li&gt;
+&lt;li&gt;After wake up, first grab the spin lock, and go to step 2&lt;/li&gt;
+&lt;li&gt;At this point, the &lt;code&gt;counter&lt;/code&gt; should be positive, decrement it by 1&lt;/li&gt;
+&lt;li&gt;Release the spin lock, and return&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3&gt;&lt;code&gt;V&lt;/code&gt; Operation&lt;/h3&gt;
+&lt;p&gt;&lt;code&gt;V&lt;/code&gt; is much simpler compared to &lt;code&gt;P&lt;/code&gt;. The flow is:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Acquire the spin lock&lt;/li&gt;
+&lt;li&gt;Increment the &lt;code&gt;counter&lt;/code&gt; by 1&lt;/li&gt;
+&lt;li&gt;Wake up some poor guy in the wait channel by calling &lt;code&gt;wchan_wakeone&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;Release the spin lock and return&lt;/li&gt;
+&lt;/ol&gt;</summary><category term="semaphore"></category><category term="synchronization"></category></entry><entry><title>Console Input Messed up in OS161</title><link href="http://jhshi.me/2013/03/15/console-input-messed-up-in-os161/index.html" rel="alternate"></link><updated>2013-03-15T04:26:57-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-03-15:2013/03/15/console-input-messed-up-in-os161/index.html</id><summary type="html">&lt;p&gt;When you finished the process system call (e.g., &lt;code&gt;fork&lt;/code&gt;, &lt;code&gt;execv&lt;/code&gt;) and test your
+system call by executing some user program, you'll probably find that the
+console input behavior is messed up. &lt;/p&gt;
+
+
+&lt;p&gt;For example, when you executing user shell from OS161 kernel menu, and then 
+executing &lt;code&gt;/bin/true&lt;/code&gt; from the shell, you may see this&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;OS/161 kernel &lt;span class="o"&gt;[&lt;/span&gt;? &lt;span class="k"&gt;for&lt;/span&gt; menu&lt;span class="o"&gt;]&lt;/span&gt;: s 
+Operation took 0.000285120 seconds 
+OS/161 kernel &lt;span class="o"&gt;[&lt;/span&gt;? &lt;span class="k"&gt;for&lt;/span&gt; menu&lt;span class="o"&gt;]&lt;/span&gt;: &lt;span class="o"&gt;(&lt;/span&gt;program name unknown&lt;span class="o"&gt;)&lt;/span&gt;: Timing enabled. 
+OS/161&lt;span class="nv"&gt;$ &lt;/span&gt;/bin/true 
+&lt;span class="o"&gt;(&lt;/span&gt;program name unknown&lt;span class="o"&gt;)&lt;/span&gt;: bntu: No such file or directory 
+&lt;span class="o"&gt;(&lt;/span&gt;program name unknown&lt;span class="o"&gt;)&lt;/span&gt;: subprocess &lt;span class="nb"&gt;time&lt;/span&gt;: 0.063300440 seconds 
+Exit 1
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;In this case, the shell program only receive the input "bnut" instead of your
+input (&lt;code&gt;/bin/true&lt;/code&gt;).&lt;/p&gt;
+&lt;p&gt;To find out why, we need to dig into how kernel menu (&lt;code&gt;$OS161_SRC/kern/startup/menu.c&lt;/code&gt;)
+works a little bit. When you hit "s" in the kernel menu. What happens?&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;cmd_dispatch&lt;/code&gt; will look up the &lt;code&gt;cmd_table&lt;/code&gt; and call &lt;code&gt;cmd_shell&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;cmd_shell&lt;/code&gt; just call &lt;code&gt;common_prog&lt;/code&gt; with the shell path argument&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;common_prog&lt;/code&gt; will first create a child thread with the start function
+&lt;code&gt;cmd_progthread&lt;/code&gt;, then return&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;In the child thread, &lt;code&gt;cmd_progthread&lt;/code&gt; will try to run the actual program
+(in our case, the shell)&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Note that the shell program is run in a separate child thread, and the parent
+thread (i.e., the menu thread) will continue to run after he "forked" the child
+thread.&lt;/p&gt;
+&lt;p&gt;So now there are actually two thread that want to read console input, which
+leads to race condition. This is why the shell program receive corrupted input:
+the menu thread eaten some of the inputs!&lt;/p&gt;
+&lt;p&gt;To solve this problem, we need to let the menu thread wait for the child
+thread to complete, then return. So what we need to do is in &lt;code&gt;common_prog&lt;/code&gt;, we
+need to do a &lt;code&gt;waitpid&lt;/code&gt; operation after we call &lt;code&gt;thread_fork&lt;/code&gt;. And at the end of
+&lt;code&gt;cmd_progthread&lt;/code&gt;, we need to explicitly call &lt;code&gt;exit&lt;/code&gt; with proper exit code in
+case the user program doesn't do this.&lt;/p&gt;
+&lt;p&gt;Also note that &lt;code&gt;waitpid&lt;/code&gt; and &lt;code&gt;exit&lt;/code&gt; are in fact user land system call, and we can
+not directly call them in kernel, so you may need to make some "shortcuts" in
+your system call implementation to let the kernel be able to call &lt;code&gt;sys_waitpid&lt;/code&gt;
+and &lt;code&gt;sys_exit&lt;/code&gt;.&lt;/p&gt;</summary><category term="console"></category><category term="exit"></category><category term="waitpid"></category><category term="syscall"></category></entry><entry><title>OS161 SAME_STACK Check Fail in Trap</title><link href="http://jhshi.me/2012/05/02/os161-same_stack-check-fail-in-trap/index.html" rel="alternate"></link><updated>2012-05-02T18:02:11-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-05-02:2012/05/02/os161-same_stack-check-fail-in-trap/index.html</id><summary type="html">&lt;p&gt;There are several &lt;code&gt;SAME_STACK&lt;/code&gt; asserts in &lt;code&gt;$OS161_SRC/kern/arch/mips/locore/trap.c&lt;/code&gt; to
+ensure that &lt;strong&gt;current thread did not run out of kernel stack&lt;/strong&gt;. &lt;/p&gt;
+
+
+&lt;p&gt;A typical assert may looks like:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;KASSERT&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;SAME_STACK&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;cpustacks&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;curcpu&lt;/span&gt;&lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;&lt;span class="n"&gt;c_number&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;vaddr_t&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="n"&gt;tf&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; 
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;The purpose of &lt;code&gt;SAME_STACK&lt;/code&gt; assertion&lt;/h3&gt;
+&lt;p&gt;In OS161, each thread has its own kernel stack. When interrupts or exceptions
+occur, the CPU will first switch to current thread's kernel stack, both to avoid
+polluting user's normal stack, and protect the stack from malicious user
+program.&lt;/p&gt;
+&lt;p&gt;The stack is allocated in &lt;code&gt;thread_fork&lt;/code&gt; and in &lt;code&gt;cpu_create&lt;/code&gt; (but not both). The
+initial stack size is defined in &lt;code&gt;$OS161_SRC/kern/include/thread.h&lt;/code&gt; as
+&lt;code&gt;STACK_SIZE&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Since stack grows downwards, to check if we run out of the stack, we put a few
+magic values at the bottom of the stack (&lt;code&gt;thread_checkstack_init&lt;/code&gt;), so that we
+can check if the values are the same with what we filled it
+(&lt;code&gt;thread_checkstack&lt;/code&gt;) to see if we run out of kernel stack.&lt;/p&gt;
+&lt;p&gt;In &lt;code&gt;$OS161_SRC/kern/arch/mips/locore/trap.c&lt;/code&gt;, there are a few &lt;code&gt;SAME_STACK&lt;/code&gt;
+assertions to make sure the trap frame at the right place.&lt;/p&gt;
+&lt;h3&gt;Why would we run out of kernel stack?&lt;/h3&gt;
+&lt;p&gt;Remember that any variables you define in your syscall functions are allocated
+in current thread's kernel stack. So if you allocated large variables, such as a
+big array buffer, you'll probably have a stack "downflow".&lt;/p&gt;
+&lt;p&gt;So, either try to shrink your declared buffer size, or use &lt;code&gt;kmalloc&lt;/code&gt; instead.&lt;/p&gt;
+&lt;p&gt;Or, you can enlarge the stack size to temporally solve your pain, but this is
+not recommended since each thread will have a stack, if it's too large, then
+you'll soon run out of physical memory if you have lots of threads.&lt;/p&gt;
+&lt;h3&gt;Problem of the macro&lt;/h3&gt;
+&lt;p&gt;During the lab, I sometimes fail this assert. At first, I thought I've run
+out of kernel stack so I enlarge the &lt;code&gt;STACK_SIZE&lt;/code&gt; 
+to 16 KB. But I still fail this assert after that. Then I take a look at the
+definition of the &lt;code&gt;SAME_STACK&lt;/code&gt; macro:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#define SAME_STACK(p1, p2) (((p1) &amp;amp; STACK_MASK) == ((p2) &amp;amp; STACK_MASK)) &lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;I found this macro problematic. Suppose &lt;code&gt;STACK_SIZE = 0X00004000&lt;/code&gt;, then
+&lt;code&gt;STACK_MASK = ~(STACK_SIZE-1) = 0XFFFFC000&lt;/code&gt;. Assume &lt;code&gt;p1 (stack top) =
+0X80070FFF&lt;/code&gt;, &lt;code&gt;p2 (stack pointer) = 0x8006FFFF&lt;/code&gt;, then we've only used 0x00001000
+bytes stack but &lt;code&gt;SAME_STACK&lt;/code&gt; macro will fail, since &lt;code&gt;p1 &amp;amp; STACK_MASK =
+0X80070000, p2 &amp;amp; STACK_MASK = 0X8006C000.&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;The point here is the stack top address may not be STACK_SIZE aligned. So we
+can not do the same stack check by simply checking their base addresss.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;So we need to modify this part to get our kernel work. This is not your fault
+but probably a bug shipped with the kernel.&lt;/p&gt;
+&lt;p&gt;You can use any tricky macros here but a simple pair of comparison will be
+suffice.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;KASSERT&lt;/span&gt;&lt;span class="p"&gt;(((&lt;/span&gt;&lt;span class="kt"&gt;vaddr_t&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="n"&gt;tf&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;=&lt;/span&gt; &lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="kt"&gt;vaddr_t&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="n"&gt;curthread&lt;/span&gt;&lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;&lt;span class="n"&gt;t_stack&lt;/span&gt;&lt;span class="p"&gt;));&lt;/span&gt; 
+&lt;span class="n"&gt;KASSERT&lt;/span&gt;&lt;span class="p"&gt;(((&lt;/span&gt;&lt;span class="kt"&gt;vaddr_t&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="n"&gt;tf&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="kt"&gt;vaddr_t&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="n"&gt;curthread&lt;/span&gt;&lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;&lt;span class="n"&gt;t_stack&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="n"&gt;STACK_SIZE&lt;/span&gt;&lt;span class="p"&gt;));&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="stack"></category></entry><entry><title>OS161 Duplicated TLB entries</title><link href="http://jhshi.me/2012/05/02/os161-duplicated-tlb-entries/index.html" rel="alternate"></link><updated>2012-05-02T17:18:47-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-05-02:2012/05/02/os161-duplicated-tlb-entries/index.html</id><summary type="html">&lt;p&gt;Sys161 will panic if you try to write a TLB entry with a &lt;code&gt;entryhi&lt;/code&gt;, but
+there are already a TLB entry with the same &lt;code&gt;entryhi&lt;/code&gt; but in a different TLB
+slot. This is because &lt;strong&gt;entryhi should be a UNIQUE key in the TLB bank.&lt;/strong&gt;&lt;/p&gt;
+
+
+&lt;p&gt;When you want to update a TLB entry (e.g., shoot down a TLB entry, or set the
+Dirty bit, etc.), you need to first use &lt;code&gt;tlb_probe&lt;/code&gt; to query the TLB bank to get
+the TLB slot index and then use &lt;code&gt;tlb_read&lt;/code&gt; to read the original value, and then
+use &lt;code&gt;tlb_write&lt;/code&gt; to write the updated TLB entry value to this slot. &lt;strong&gt;But what
+if there is a interrupt after you &lt;code&gt;tlb_probe&lt;/code&gt; but before &lt;code&gt;tlb_read&lt;/code&gt;?&lt;/strong&gt; Chance
+maybe that the TLB bank is totally refreshed so that you read a stale value
+and also write a stale value. Things get totally messed up and errors such as
+"Duplicated TLB entries" may occur.&lt;/p&gt;
+&lt;p&gt;To resolve this, &lt;strong&gt;you need to protect your whole "&lt;code&gt;tlb_probe&lt;/code&gt;-&amp;gt;&lt;code&gt;tlb_read&lt;/code&gt;-&amp;gt;
+&lt;code&gt;tlb_write&lt;/code&gt;" flow and make sure that this flow won't get interrupted.&lt;/strong&gt; So you 
+really want to disable interrupt (&lt;code&gt;int x = splhigh()&lt;/code&gt;) before you do &lt;code&gt;tlb_probe&lt;/code&gt; 
+and re-enable it (&lt;code&gt;splx(x)&lt;/code&gt;) after &lt;code&gt;tlb_write&lt;/code&gt;. Alternatively, you can also use a
+spin lock to protect your access to TLB.&lt;/p&gt;</summary><category term="tlb"></category><category term="vm"></category></entry><entry><title>OS161 Swapping</title><link href="http://jhshi.me/2012/04/28/os161-swapping/index.html" rel="alternate"></link><updated>2012-04-28T17:27:39-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-28:2012/04/28/os161-swapping/index.html</id><summary type="html">&lt;p&gt;Now that you can &lt;a href="/2012/04/24/os161-physical-page-management"&gt;allocate/free physical pages&lt;/a&gt;, and you have &lt;a href="/2012/04/27/os161-tlb-miss-and-page-fault"&gt;demand paging
+through handling TLB miss&lt;/a&gt;. Let's get the final part work: swapping.&lt;/p&gt;
+
+
+&lt;h2&gt;UPDATE (2016-04-26)&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;You should only use the disk to store the swapped pages.&lt;/strong&gt;&lt;/p&gt;
+&lt;h3&gt;Three basic operations for a physical page&lt;/h3&gt;
+&lt;p&gt;The first is called &lt;strong&gt;evict&lt;/strong&gt;. In a nutshell, &lt;code&gt;evict&lt;/code&gt; a physical page means we
+modify the page table entry so that this page is not Present (&lt;code&gt;PTE_P&lt;/code&gt;), but
+Swapped (&lt;code&gt;PTE_S&lt;/code&gt;). And we also need to shoot down the relative TLB entry. But in
+&lt;code&gt;evict&lt;/code&gt;, we will not write the page's content to disk. Apparently, &lt;strong&gt;evict can
+only operate on clean pages&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;The second operation is &lt;strong&gt;swapout&lt;/strong&gt;. We first write this page's content to
+disk, which makes the page from dirty to clean. And the we just evict it.
+&lt;strong&gt;swapout operation is for dirty pages&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;The last operations is &lt;strong&gt;swapin&lt;/strong&gt;. Basically, it's for read some virtual page
+from swap disk and place it in some physical page, and also need to modify
+the relevant page table entry, making this page Present (&lt;code&gt;PTE_P&lt;/code&gt;) instead of
+Swapped(&lt;code&gt;PTE_S&lt;/code&gt;).&lt;/p&gt;
+&lt;h3&gt;How to store the swapped pages&lt;/h3&gt;
+&lt;p&gt;By default, sys161 provide two disks through lamebus, i.e., &lt;code&gt;lhd0&lt;/code&gt; and &lt;code&gt;lhd1&lt;/code&gt;. If
+you want to store the pages in the raw disk, you should open the swap space.&lt;/p&gt;
+&lt;p&gt;Note that the file name must be &lt;code&gt;lhd0raw:&lt;/code&gt; or &lt;code&gt;lhd1raw&lt;/code&gt; and the open flag must
+be &lt;code&gt;O_RDWR&lt;/code&gt;, since the disk is there, and needn't to be created or trunked.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Update&lt;/strong&gt;: Actually, I didn't realize that we can actually change the RPM of
+the disks to make swapping faster then write to &lt;code&gt;emufs&lt;/code&gt;. So my suggestion would
+be: use disk to store swapped pages and set RPM to a large enough value in
+&lt;code&gt;sys161.conf&lt;/code&gt; (e.g., 28800).&lt;/p&gt;
+&lt;p&gt;For the same reason why we can not open consoles in &lt;code&gt;thread_create&lt;/code&gt;, you can not 
+do this in &lt;code&gt;vm_bootstrap&lt;/code&gt; since at that point, VFS system 
+was not initialized yet (see &lt;code&gt;$OS161_SRC/kern/startup/main.c&lt;/code&gt; for boot sequence, 
+especially line 125~130). But it's OK, we can &lt;strong&gt;open the file until we really 
+need to write pages&lt;/strong&gt;, e.g., when we swap out the first page. &lt;/p&gt;
+&lt;p&gt;We'll leverage the file operation to manipulate swapped pages. You may want to
+review the file operation system calls to get familiar with VFS operations. We
+use a lot &lt;code&gt;uio_kinit&lt;/code&gt; and &lt;code&gt;VOP_READ&lt;/code&gt;/&lt;code&gt;VOP_WRITE&lt;/code&gt; here. But before all these, we need
+to first create a swap file. &lt;/p&gt;
+&lt;p&gt;We also need some data structure to record each page's location in the swap
+file. This data structure should be something like a map. The key is (address
+space, va) pair, and the value is the location of the page. As usual, for
+simplicity, we can just use a statically allocated array. &lt;strong&gt;Each array element
+contains the (address space, va) pair, and this element's index is the page's
+location&lt;/strong&gt;. Of course, we need to set up a limit of maximum swapped page number
+if we adopt this silly manner. When swap out a page, we first look up this
+array (by comparing &lt;code&gt;as&lt;/code&gt; and &lt;code&gt;va&lt;/code&gt;) and find out if the swap file has already
+contain a copy of this page, if yes then we directly overwrite that page and if
+no, we just find a available slot and write the page to that slot.&lt;/p&gt;
+&lt;p&gt;A important note is that you want to &lt;strong&gt;create ONE swap file for all process&lt;/strong&gt;,
+instead of one swap file for each process. Since by doing the later, you also
+have to allocate a mapping structure for each process and you'll run out of
+memory very quickly (kernel pages are fixed, right?). Now the swap file and the
+mapping data structure is a shared resource among all processes. So you need to
+protect them with a lock.&lt;/p&gt;
+&lt;h3&gt;Two I/O operations on the swap disk&lt;/h3&gt;
+&lt;p&gt;These two operations is quite straightforward. The first is called &lt;code&gt;write_page&lt;/code&gt;,
+which is responsible to &lt;strong&gt;write a page content to a specified location of the
+swap file&lt;/strong&gt;. The second is &lt;code&gt;read_page&lt;/code&gt;, which is to &lt;strong&gt;read a specified page in
+the swap file and copy the content to a physical page&lt;/strong&gt;. We do not necessarily
+have to have these to utility functions but it's always good to abstract low level
+operations and encapsulate to a convenient interface.&lt;/p&gt;
+&lt;h3&gt;The Swapping Work flow&lt;/h3&gt;
+&lt;p&gt;In your paging algorithm, you certainly will first look for free physical
+pages. But once you fail to find such a page, you have to swap some page out
+to get a free page. That's what the magic function &lt;code&gt;MAKE_PAGE_AVAIL&lt;/code&gt; do in 
+&lt;a href="/2012/04/24/os161-physical-page-management"&gt;my previous post about physical page allocation&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Now let's take a look at the magic function. Denote the page that was to
+swapped out as victim. If it's state is &lt;code&gt;PAGE_STATE_CLEAN&lt;/code&gt;, it means that this
+page already have a copy in disk and was not ever modified since swapped in. So
+we can safely discard it's content. We use the &lt;code&gt;evict&lt;/code&gt; operation to deal with it.
+And after that, this page is available.&lt;/p&gt;
+&lt;p&gt;If this page is dirty, which means either this page do not have a copy in swap
+file or this page was modified since it's swapped in, in both case, we need to
+write its content to swap file. We can use the &lt;code&gt;swapout&lt;/code&gt; operation here.&lt;/p&gt;
+&lt;p&gt;In &lt;code&gt;vm_fault&lt;/code&gt; with fault type &lt;code&gt;VM_FAULT_READ&lt;/code&gt; or &lt;code&gt;VM_FAULT_WRITE&lt;/code&gt;, when we find that
+this page is not Present (&lt;code&gt;PTE_P&lt;/code&gt;), instead of allocate a new page for it, we
+need to further check if this page was swapped (&lt;code&gt;PTE_S&lt;/code&gt;), if yes then we need to
+swap it in, if no then we can allocate a new physical page for it.&lt;/p&gt;</summary><category term="swap"></category><category term="vm"></category></entry><entry><title>OS161 TLB Miss and Page Fault</title><link href="http://jhshi.me/2012/04/27/os161-tlb-miss-and-page-fault/index.html" rel="alternate"></link><updated>2012-04-27T23:27:26-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-27:2012/04/27/os161-tlb-miss-and-page-fault/index.html</id><summary type="html">&lt;p&gt;Now we've set up user address space, it's time to handle TLB/page faults. Note
+that there is a difference between TLB and page faults:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;TLB fault means the hardware don't know how to translate a virtual address
+  since the translation didn't present in any TLB entry. So the hardware raise a
+  TLB fault to let the kernel decide how to translate that address.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Page fault means the user program tries to access a page that is not in
+  memory, either not yet allocated or swapped out.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+
+
+&lt;h3&gt;TLB Entry Format&lt;/h3&gt;
+&lt;p&gt;In sys161, which simulates MIPS R3000, there are totally 64 TLB entries. Each
+entry is a 64-bit value that has the following format:&lt;/p&gt;
+&lt;p&gt;&lt;img src="/images/2012-04-27-mipsr3000-tlb.png" class="center"&gt;&lt;/p&gt;
+&lt;p&gt;Section 18.6 of &lt;a href="http://pages.cs.wisc.edu/~remzi/OSFEP/vm-tlbs.pdf"&gt;this document&lt;/a&gt; contains a detailed description of the 
+meaning of each bits. But briefly, VPN (abbr. for Virtual Page Frame Number) 
+is the high 20 bits of a virtual address and PPN is the high 20 bits of a 
+physical address space. &lt;strong&gt;When Dirty bit is 1, it means this page is writable, 
+otherwise, it's read-only.&lt;/strong&gt; When Valid bit is 1, it means this TLB entry 
+contains a valid translation.&lt;/p&gt;
+&lt;p&gt;In OS161, we can just ignore the ASID part and Global bit, unless you really
+want to do some tricks such as multiplex TLB among processes instead of just
+shoot down all TLB entries when context switch. Also, we can ignore the NoCache
+bit.&lt;/p&gt;
+&lt;h3&gt;TLB Miss Type&lt;/h3&gt;
+&lt;p&gt;When translation a virtual address, the hardware will issue a parallel search
+in all the TLB entries, using the VPN as a search key. If the hardware failed to
+find a entry or find a entry but with Valid bit is 0, a TLB Miss will be
+issued. The miss type could be &lt;code&gt;VM_FAULT_READ&lt;/code&gt; or &lt;code&gt;VM_FAULT_WRITE&lt;/code&gt;, depending on
+whether it's a read or write operation. On the other hand, if it's a write
+operation and hardware find a valid TLB entry of VPN, but the Dirty bit is 0,
+then this is also a TLB miss with type &lt;code&gt;VM_FAULT_READONLY&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;If none of above cases happen, then this is a TLB hit, everybody is happy :-)&lt;/p&gt;
+&lt;h3&gt;TLB Manipulate Utils&lt;/h3&gt;
+&lt;p&gt;Before we discuss how to handle a TLB fault. We first take a look at how
+to manipulate the TLB entries. The functions that access TLB can be found
+at &lt;code&gt;$OS161_SRC/kern/arch/mips/include/tlb.h&lt;/code&gt;. Four routines are provided. And the
+comments there are quite clear. We use &lt;code&gt;tlb_probe&lt;/code&gt; to query the TLB bank, and use
+&lt;code&gt;tlb_read&lt;/code&gt;/&lt;code&gt;tlb_write&lt;/code&gt; to read/write a specific TLB entry, and use &lt;code&gt;tlb_random&lt;/code&gt; to
+let the hardware decide which entry to write to.&lt;/p&gt;
+&lt;h3&gt;Finally, handle TLB Miss&lt;/h3&gt;
+&lt;p&gt;On a TLB fault, the first thing to do is to check whether the faulting address
+is a valid user space address. Since it's possible that the fault is caused by
+&lt;code&gt;copyin&lt;/code&gt;/&lt;code&gt;copyout&lt;/code&gt;, which expect an TLB fault. So what's an "valid" user space
+address?&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;User code or date segment&lt;/li&gt;
+&lt;li&gt;User heap, between &lt;code&gt;heap_start&lt;/code&gt; and &lt;code&gt;heap_end&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;User stack&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;If the address is invalid, then we directly return some non-zero error code, to
+let the &lt;code&gt;badfault_func&lt;/code&gt; capture the fault.&lt;/p&gt;
+&lt;p&gt;For &lt;code&gt;VM_FAULT_READ&lt;/code&gt; or &lt;code&gt;VM_FAULT_WRITE&lt;/code&gt;, we just walk current address space's page
+table, and see if that page actually exists (by checking the &lt;code&gt;PTE_P&lt;/code&gt; bit). If no then we just
+allocate a new page and modify the page table entry to insert the mapping
+(since we haven't turn on swap yet, so &lt;strong&gt;not exist means this is the first time
+we access this page&lt;/strong&gt;). The permissions of the newly allocated page should be
+set according to the region information we stored in &lt;code&gt;struct addrspace&lt;/code&gt;.
+Finally we just use &lt;code&gt;tlb_random&lt;/code&gt; to insert this mapping to TLB. Of course,
+you can adopt some TLB algorithm here that choosing a specific TLB victim. But
+&lt;strong&gt;only do this when you have all your VM system working.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;For &lt;code&gt;VM_FAULT_READONLY&lt;/code&gt;, &lt;strong&gt;this page is already in memory and the mapping is
+already in TLB bank&lt;/strong&gt;, just that the Dirty bit is 0 and user try to write
+this page. So &lt;strong&gt;we first check if user can really write this page&lt;/strong&gt;, maybe
+by the access bits in the low 12 bits of page table entry. (Recall that in
+&lt;code&gt;as_define_region&lt;/code&gt;, user passed in some attributes like readable, writable and
+executable. You should record them down there and use them to check here).&lt;/p&gt;
+&lt;p&gt;If user want to write a page that he has no rights to write, then this is a
+access violation. You can just panic here or more gracefully, kill current
+process. But if user can actually write this page, then we first query TLB
+bank to get the index of the TLB entry, set the Dirty bit of &lt;code&gt;entrylo&lt;/code&gt; and write
+it back use &lt;code&gt;tlb_write&lt;/code&gt;. Don't forget to change the physical page's state to
+&lt;code&gt;PAGE_STATE_DIRTY&lt;/code&gt; (It's useless now but will be useful in swapping)&lt;/p&gt;
+&lt;p&gt;The above are pretty much what &lt;code&gt;vm_fault&lt;/code&gt; does. Three extra tips:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Since TLB is also a shared resource, so you'd better &lt;strong&gt;use a lock to
+protect the access to it&lt;/strong&gt;. And it's better be a &lt;code&gt;spinlock&lt;/code&gt; since sometimes we
+perform TLB operations in interrupt handler, where we don't want to sleep.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Do not print anything inside &lt;code&gt;vm_fault&lt;/code&gt;.&lt;/strong&gt; &lt;code&gt;kprintf&lt;/code&gt; may touch some of the
+TLB entry so that the TLB has been changed between the miss and &lt;code&gt;vm_fault&lt;/code&gt;, which
+can lead to some really weird bugs.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Assumption is the source of all evil. Use a lot KASSET to make your
+assumption explicit and check if they are right.&lt;/strong&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;</summary><category term="tlb"></category><category term="page fault"></category><category term="vm"></category></entry><entry><title>OS161 sbrk System Call</title><link href="http://jhshi.me/2012/04/27/os161-sbrk-system-call/index.html" rel="alternate"></link><updated>2012-04-27T22:17:36-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-27:2012/04/27/os161-sbrk-system-call/index.html</id><summary type="html">&lt;p&gt;If you're not familiar with &lt;code&gt;sbrk&lt;/code&gt; system call, here is &lt;a href="http://en.wikipedia.org/wiki/Sbrk"&gt;it's wiki&lt;/a&gt;, 
+and its &lt;a href="http://www.cs.utah.edu/flux/moss/node39.html"&gt;interface description&lt;/a&gt;. In a nutshell,
+&lt;code&gt;malloc&lt;/code&gt; will use &lt;code&gt;sbrk&lt;/code&gt; to get heap space.&lt;/p&gt;
+
+
+&lt;p&gt;In &lt;code&gt;as_define_region&lt;/code&gt;, we've find the highest address that user text and data
+segment occupy, and based on this, we've set the &lt;code&gt;heap_start&lt;/code&gt; in &lt;code&gt;struct
+addrspace&lt;/code&gt;. This makes the &lt;code&gt;sbrk&lt;/code&gt; system call implementation quite easy: almost
+just parameter checking work. Several points:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;inc&lt;/code&gt; could be negative, so make sure &lt;code&gt;heap_end+inc&lt;/code&gt; &amp;gt;= &lt;code&gt;heap_start&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Better to round up inc by 4. This is optional but can lower the chance
+of unaligned pointers&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;After all these checking, just return &lt;code&gt;heap_end&lt;/code&gt; as a &lt;code&gt;void*&lt;/code&gt; pointer and increase
+&lt;code&gt;heap_end&lt;/code&gt; by &lt;code&gt;inc&lt;/code&gt;. Of course, like any other system calls, you need to add a 
+case entry in the &lt;code&gt;syscall&lt;/code&gt; function.&lt;/p&gt;</summary><category term="heap"></category><category term="sbrk"></category><category term="syscall"></category><category term="vm"></category></entry><entry><title>OS161 User Address Space</title><link href="http://jhshi.me/2012/04/24/os161-user-address-space/index.html" rel="alternate"></link><updated>2012-04-24T23:14:14-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-24:2012/04/24/os161-user-address-space/index.html</id><summary type="html">&lt;p&gt;Now we've set up our coremap and also have the routines to allocate and free
+physical pages. It's the time to set up user's virtual address space.&lt;/p&gt;
+&lt;p&gt;Basically, we'll adopt &lt;em&gt;two-level page table&lt;/em&gt;. If you're not
+already familiar with this, you can check out the &lt;a href="http://en.wikipedia.org/wiki/Page_table"&gt;page table wiki&lt;/a&gt; 
+and &lt;a href="http://pages.cs.wisc.edu/~remzi/OSFEP/vm-tlbs.pdf"&gt;this document talking about MIPS and X86 paging&lt;/a&gt;.&lt;/p&gt;
+
+
+&lt;p&gt;The page table entry format will be much alike those in X86. For a page
+directory entry, the upper 20 bits indicates the base physical address of the
+page table, and &lt;em&gt;we use one bit in the lower 12 bits to indicate whether this
+page table exist or not&lt;/em&gt;. For a page table entry, the upper 20 bits stores
+the base physical address of the actual page, while the lower 12 bits contain
+some attribute of this page, e.g., readable, writable, executable, etc. You are
+free to define all these (format of page directory and page table entry)
+though, since the addressing process are totally done by software in MIPS, but
+following the conventions is still better for compatibility as well as easy
+programming.&lt;/p&gt;
+&lt;h3&gt;What to store in the &lt;code&gt;addrspace&lt;/code&gt; structure?&lt;/h3&gt;
+&lt;p&gt;&lt;em&gt;An address space is actually just a page directory&lt;/em&gt;: we can use this
+directory and page table to translate all the addresses inside the address
+space. And we also need to keep some other information like user heap start,
+user heap end, etc. But that's all, and no more.&lt;/p&gt;
+&lt;p&gt;So in &lt;code&gt;as_create&lt;/code&gt;, we just allocate a &lt;code&gt;addrspace&lt;/code&gt; structure using &lt;code&gt;kmalloc&lt;/code&gt;,
+and allocate a physical page (using &lt;code&gt;page_alloc&lt;/code&gt;) as page directory and store
+it's address (either &lt;code&gt;KVADDR&lt;/code&gt; or &lt;code&gt;PADDR&lt;/code&gt; is OK, but you can just choose one).&lt;/p&gt;
+&lt;p&gt;Besides, we need to record somewhere in the &lt;code&gt;addrspace&lt;/code&gt; structure the valid
+regions user defined using &lt;code&gt;as_define_region&lt;/code&gt;, since we're going to need that
+information during page fault handing to check whether the faulted address is
+valid or not.&lt;/p&gt;
+&lt;h3&gt;Address Translating with &lt;code&gt;pgdir_walk&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;&lt;em&gt;This is another most important and core function in this lab.&lt;/em&gt; Basically,
+given an address space and virtual address, we want to find the corresponding
+physical address. This is what &lt;code&gt;pgdir_walk&lt;/code&gt; does. We first extract the page
+directory index (top 10 bits) from the &lt;code&gt;va&lt;/code&gt; and use it to index the page
+directory, thus we get the base physical address of the page table. Then we
+extract the page table index (middle 10 bits) from &lt;code&gt;va&lt;/code&gt; and use it to index the
+page directory, thus we get the base physical address of the actual page.&lt;/p&gt;
+&lt;p&gt;Several points to note:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Instead of return the physical address, &lt;em&gt;you may want to return the page
+table entry pointer&lt;/em&gt; instead. Since in most cases, we use &lt;code&gt;pgdir_walk&lt;/code&gt; to get
+page table entries and modify it&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;We'll also need to pass &lt;code&gt;pgdir_walk&lt;/code&gt; a flag, indicating that whether we want
+to create a page table if non-exist (remember the &lt;em&gt;present bit&lt;/em&gt; of page
+directory entry?). Since sometimes, we want to make sure that a &lt;code&gt;va&lt;/code&gt; is mapped to
+a physical page when calling &lt;code&gt;pgdir_walk&lt;/code&gt;. But most of the time, we just want to
+query if a &lt;code&gt;va&lt;/code&gt; is mapped.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Think clearly about which is physical address, and which is virtual
+address. Page directory entry and page table entry should store the physical
+address base. You'll need a lot &lt;code&gt;PADDR_TO_KVADDR&lt;/code&gt; here.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Copy address space using &lt;code&gt;as_copy&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;This part is easy if you decide not support Copy-On-Write pages. Basically, you
+just &lt;code&gt;pgdir_walk&lt;/code&gt; old address space's page table, and copy all the present pages.
+Only one point, don't forget to &lt;em&gt;copy all the attribute bits (low 12 bits) of
+the old page table entry&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;You'll get some extra work when you enable swapping: you need to copy all the
+swapped pages beside present pages as well.&lt;/p&gt;
+&lt;h4&gt;Destroy address space with &lt;code&gt;as_destroy&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;Same easy as &lt;code&gt;as_copy&lt;/code&gt;, just &lt;code&gt;pgdir_walk&lt;/code&gt; the page table and free all the present
+pages. Also same with &lt;code&gt;as_copy&lt;/code&gt;, you need to free the swapped pages latter&lt;/p&gt;
+&lt;h3&gt;Define regions using &lt;code&gt;as_define_region&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;Since we'll do &lt;em&gt;on-demand paging&lt;/em&gt;, so we won't allocate any pages in
+&lt;code&gt;as_define_region&lt;/code&gt; Instead, we just walk through the
+page table, and set the attribute bits accordingly. One point, remember the
+&lt;code&gt;heap_start&lt;/code&gt; and &lt;code&gt;heap_end&lt;/code&gt; field in &lt;code&gt;struct addrspace&lt;/code&gt;? Question: &lt;em&gt;where should
+user heap start? Immediately after user bss segment!&lt;/em&gt; And how would we know the
+end of user bss segment? In &lt;code&gt;as_define_region&lt;/code&gt;! So each time in &lt;code&gt;as_define_region&lt;/code&gt;,
+we just compare addrspace's current hew&lt;code&gt;and the region end, and set
+the&lt;/code&gt;heap_start&lt;code&gt;right after (&lt;/code&gt;vaddr+sz&lt;code&gt;). Don't forget to _proper align the&lt;/code&gt;heap_start`(by page bound)_, of course.&lt;/p&gt;
+&lt;p&gt;This should also be the place we record each region information (e.g., base,
+size, permission, etc) so that we can check them in &lt;code&gt;vm_fault&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;img src="/images/2012-04-24-mips-as1.png" class="center"&gt;&lt;/p&gt;
+&lt;h3&gt;Miscellaneous&lt;/h3&gt;
+&lt;p&gt;In &lt;code&gt;as_activate&lt;/code&gt;, if you don't use the ASID field of TLB entry, then you can just
+shoot down all the tlb entries. It's the easiest to way to go.&lt;/p&gt;
+&lt;p&gt;In &lt;code&gt;as_prepare_load&lt;/code&gt;, we need to change each regions' page table permision as read-write
+since we're going to load content (code, date) into them. And in
+&lt;code&gt;as_complete_load&lt;/code&gt;, we need to change their page table permissions back to
+whatever the original value.&lt;/p&gt;
+&lt;p&gt;In &lt;code&gt;as_define_stack&lt;/code&gt;, we just return &lt;code&gt;USERSTACKTOP&lt;/code&gt;.&lt;/p&gt;</summary><category term="addrspace"></category><category term="vm"></category><category term="page table"></category></entry><entry><title>OS161 Physical Page Management</title><link href="http://jhshi.me/2012/04/24/os161-physical-page-management/index.html" rel="alternate"></link><updated>2012-04-24T22:11:05-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-24:2012/04/24/os161-physical-page-management/index.html</id><summary type="html">&lt;p&gt;We'll talk about &lt;code&gt;page_alloc&lt;/code&gt;, &lt;code&gt;page_free&lt;/code&gt;, &lt;code&gt;alloc_kpages&lt;/code&gt; and &lt;code&gt;free_kpages&lt;/code&gt;.&lt;/p&gt;
+
+
+&lt;h3&gt;Allocate one single physical page with &lt;code&gt;page_alloc&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;This is relatively easy once you've decided which paging algorithm to use. FIFO
+seems good enough in in terms of simplicity as well as acceptable performance.
+We just scan the coremap, find out if there is any FREE page, or find out the
+oldest page. At this stage (before swapping), I will use a magic function
+called &lt;code&gt;MAKE_PAGE_AVAIL&lt;/code&gt;, which obviously makes a page available, by flushing or
+swapping, we don't care :-). Once we find a victim (maybe free, clean, or
+dirty, but &lt;strong&gt;must not be fixed&lt;/strong&gt;), we call &lt;code&gt;MAKE_PAGE_AVAIL&lt;/code&gt; on it, and update
+it's internal fields like time stamp, &lt;code&gt;as&lt;/code&gt;, &lt;code&gt;va&lt;/code&gt;, etc. And don't forget to zero the
+page before we return.&lt;/p&gt;
+&lt;p&gt;A trade-off here is what parameters should we pass to &lt;code&gt;page_alloc&lt;/code&gt;? One
+choice is nothing: I just tell you to give me a page, and I'll deal with
+the page meta-info by myself. But this manner will probably cause page-info
+inconsistency, e.g., caller forget to set page's state. So to avoid this case,
+I prefer caller tell &lt;code&gt;page_alloc&lt;/code&gt; all he needs, like &lt;code&gt;as&lt;/code&gt;, &lt;code&gt;va&lt;/code&gt;, whether the
+allocate page need to keep in memory, etc. And let &lt;code&gt;page_alloc&lt;/code&gt; set the page's
+meta info accordingly.&lt;/p&gt;
+&lt;p&gt;BTW, since coremap is a globally share data structure, so &lt;strong&gt;you really want to
+use lock to protect it every time you read/write it.&lt;/strong&gt;&lt;/p&gt;
+&lt;h3&gt;Allocate n continuous pages with &lt;code&gt;page_nalloc&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;Since kernel address will bypass TLB and are directly-mapped. (See
+&lt;a href="http://www.eecs.harvard.edu/~mdw/course/cs161/handouts/mips.html#segments"&gt;this&lt;/a&gt; and &lt;a href="http://cgi.cse.unsw.edu.au/~cs3231/10s1/os161/man/sys161/mips.html"&gt;this&lt;/a&gt; for details), when we're asked to allocate 
+n (where n &amp;gt; 1) pages by &lt;code&gt;alloc_kpages&lt;/code&gt;, we must &lt;strong&gt;allocate n continuous pages&lt;/strong&gt;! 
+To do this, we need to first find a chunk of n available (i.e., not fixed) continuous 
+pages, and then call &lt;code&gt;MAKE_PAGE_AVAILABLE&lt;/code&gt; on these pages. Like &lt;code&gt;page_alloc&lt;/code&gt;, we 
+also need to update the coremap and zero the allocated memory.&lt;/p&gt;
+&lt;p&gt;As mentioned in &lt;a href="/2012/04/24/os161-coremap"&gt;my previous blog about coremap&lt;/a&gt;, in &lt;code&gt;alloc_kpages&lt;/code&gt;, 
+&lt;strong&gt;we need to first check whether vm has bootstrapped&lt;/strong&gt;: if not, we just use 
+&lt;code&gt;get_ppages&lt;/code&gt;, otherwise, we use our powerful &lt;code&gt;page_nalloc&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Also, we need to record how many pages we allocated so that when calling &lt;code&gt;free_kpages&lt;/code&gt;, 
+we can free all these &lt;code&gt;npages&lt;/code&gt;page.&lt;/p&gt;
+&lt;h3&gt;Free a page with &lt;code&gt;page_free&lt;/code&gt; and &lt;code&gt;free_kpages&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;We just need to mark this page as FREE. But if this page was mapped to user
+address space (&lt;code&gt;page-&amp;gt;as != NULL&lt;/code&gt;), then we need first unmap it, and shoot down
+the TLB entry if needed. We'll talk about user address space management lately.&lt;/p&gt;
+&lt;p&gt;Only one tip for this part, &lt;strong&gt;do not forget to protect every access to coremap
+using lock (but not spinlock).&lt;/strong&gt;&lt;/p&gt;</summary><category term="vm"></category><category term="coremap"></category></entry><entry><title>OS161 Coremap</title><link href="http://jhshi.me/2012/04/24/os161-coremap/index.html" rel="alternate"></link><updated>2012-04-24T21:35:28-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-24:2012/04/24/os161-coremap/index.html</id><summary type="html">&lt;p&gt;The first concern of OS161 virtual memory system is how to manage physical
+pages. Generally, we can pack a physical page's information into a structure
+(called &lt;code&gt;struct coremap_entry&lt;/code&gt;) and &lt;strong&gt;use this struct to represent a physical page&lt;/strong&gt;. 
+&lt;strong&gt;We use an array of &lt;code&gt;struct coremap_entry&lt;/code&gt; to keep all physical pages information.&lt;/strong&gt; 
+This array, aka, &lt;strong&gt;coremap&lt;/strong&gt;, will be one of the most important data structure in this lab.&lt;/p&gt;
+
+
+&lt;h3&gt;What should we store in coremap entry structure?&lt;/h3&gt;
+&lt;p&gt;For each physical page, we want to know:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Where is this page mapped? (For swapping)&lt;/li&gt;
+&lt;li&gt;What's this pages status? (free, fixed, clean, dirty...)&lt;/li&gt;
+&lt;li&gt;Other info (e.g. need by paging algorithm)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;A page can have for different states, as shown below.&lt;/p&gt;
+&lt;p&gt;&lt;img src="/images/2012-04-24-page-state.png" class="center"&gt;&lt;/p&gt;
+&lt;p&gt;This diagram is quite clear. Several points to note:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;When a physical page is first allocated, its state is DIRTY, not CLEAN. Since this
+ page do not have a copy in swap file (disk). Remember that in a virtual memory
+ system, memory is just a cache of disk.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;For some reason, we may want to always keep a certain page in memory, e.g.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;kernel pages, since these pages are direct mapped.&lt;/li&gt;
+&lt;li&gt;user stack and code segment pages which we already knew will be frequently accessed. &lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;So we have a special state called "fixed", means that &lt;strong&gt;we'll never swap out these 
+  pages to disk&lt;/strong&gt;.&lt;/p&gt;
+&lt;h3&gt;Coremap Initialization&lt;/h3&gt;
+&lt;p&gt;We need to initiate our coremap in &lt;code&gt;vm_bootstrap&lt;/code&gt;. First, we need to find out
+how many physical pages in system. We can do this using &lt;code&gt;ram_getsize&lt;/code&gt;. There
+is a big trick here. Since we will only know the physical page number, i.e.
+coremap array length at runtime, so we'd better just define a &lt;code&gt;struct coremap_entry&lt;/code&gt;
+pointer and allocate the actually array at runtime after we got the physical
+page number, rather than use a statically defined array with some MACRO like
+&lt;code&gt;MAX_PHY_PAGE_NUM&lt;/code&gt;. So at first glance, we may write:&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;But the above code will definitly fail&lt;/strong&gt;. &lt;/p&gt;
+&lt;p&gt;Take a look at &lt;code&gt;ram_getsize&lt;/code&gt;,
+we can see that this function will destroy its &lt;code&gt;firstaddr&lt;/code&gt; and &lt;code&gt;lastaddr&lt;/code&gt;
+before return. So after that, if we call &lt;code&gt;kmalloc&lt;/code&gt;, which call &lt;code&gt;alloc_kpage&lt;/code&gt;,
+&lt;code&gt;get_ppages&lt;/code&gt; and &lt;code&gt;ram_stealmem&lt;/code&gt; to get memory, &lt;code&gt;ram_stealmem&lt;/code&gt; will fail. The
+contradiction is: &lt;strong&gt;we need to call &lt;code&gt;ram_getsize&lt;/code&gt; to get physical page number
+so that we can allocate our coremap(&lt;code&gt;pages&lt;/code&gt;), but once we call &lt;code&gt;ram_getsize&lt;/code&gt; we
+will not be able allocate any pages!&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;To resolve this contradiction, on one hand, we should &lt;strong&gt;initialize all other
+data structures, e.g., locks, before we call &lt;code&gt;ram_getsize&lt;/code&gt;&lt;/strong&gt;. Then we call
+&lt;code&gt;ram_getsize&lt;/code&gt; to get &lt;code&gt;firstaddr&lt;/code&gt; and &lt;code&gt;lastaddr&lt;/code&gt;. After that, instead of using
+&lt;code&gt;kmalloc&lt;/code&gt;, we must &lt;strong&gt;allocate our coremap manually&lt;/strong&gt;, without invoking any
+other malloc routines. A possible solution may be:&lt;/p&gt;
+&lt;p&gt;Now we allocated our core map just between &lt;code&gt;firstaddr&lt;/code&gt; and &lt;code&gt;freeaddr&lt;/code&gt;, and
+[&lt;code&gt;freeaddr&lt;/code&gt;, &lt;code&gt;lastaddr&lt;/code&gt;] will be system's free memory.&lt;/p&gt;
+&lt;p&gt;Then we initialize the coremap array, we need to mark any pages between [0,
+&lt;code&gt;freeaddr&lt;/code&gt;) as fixed, since this memory contains important kernel code and
+data, or memory mapped I/Os. And we just mark pages between [&lt;code&gt;freeaddr&lt;/code&gt;,
+&lt;code&gt;astaddr&lt;/code&gt;] as free.&lt;/p&gt;
+&lt;p&gt;At the end of &lt;code&gt;vm_bootstrap&lt;/code&gt;, we may want to &lt;strong&gt;set some flags to indicate that
+vm has already bootstrapped,&lt;/strong&gt; since functions like &lt;code&gt;alloc_kpages&lt;/code&gt; may call
+different routines to get physical page before and after &lt;code&gt;vm_bootstrap&lt;/code&gt;.&lt;/p&gt;</summary><category term="vm"></category><category term="coremap"></category></entry><entry><title>OS161 Virtual Memory Resources</title><link href="http://jhshi.me/2012/04/19/os161-virtual-memory-resources/index.html" rel="alternate"></link><updated>2012-04-19T18:29:56-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-19:2012/04/19/os161-virtual-memory-resources/index.html</id><summary type="html">&lt;p&gt;Here are various documents that I found helpful for implementing OS161 virtual
+memory system. &lt;/p&gt;
+
+
+&lt;p&gt;These are two other blogs that also talking about VM of OS161:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://asmarkhalid.blogspot.com/"&gt;http://asmarkhalid.blogspot.com/&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://flounderingz.blogspot.com/"&gt;http://flounderingz.blogspot.com/&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;A very good document introducing MIPS TLB:&lt;/p&gt;
+&lt;p&gt;&lt;a href="http://pages.cs.wisc.edu/~remzi/OSFEP/vm-tlbs.pdf"&gt;http://pages.cs.wisc.edu/~remzi/OSFEP/vm-tlbs.pdf&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Lecture notes about MIPS TLB and paging.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://frankdrews.com/public_filetree/cs458_558_SQ10/Slides/mm.pdf"&gt;http://frankdrews.com/public_filetree/cs458_558_SQ10/Slides/mm.pdf&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://people.csail.mit.edu/rinard/osnotes/h11.html"&gt;http://people.csail.mit.edu/rinard/osnotes/h11.html&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://people.csail.mit.edu/rinard/osnotes/h10.html"&gt;http://people.csail.mit.edu/rinard/osnotes/h10.html&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;A lecture note about MIPS stack and heap, helpful when implementing &lt;code&gt;sbrk&lt;/code&gt; system call.&lt;/p&gt;
+&lt;p&gt;&lt;a href="http://www.howardhuang.us/teaching/cs232/04-Functions-in-MIPS.pdf"&gt;http://www.howardhuang.us/teaching/cs232/04-Functions-in-MIPS.pdf&lt;/a&gt;&lt;/p&gt;</summary><category term="vm"></category><category term="resources"></category></entry><entry><title>OS161: Arguments Passing in System Call</title><link href="http://jhshi.me/2012/03/28/os161-arguments-passing-in-system-call/index.html" rel="alternate"></link><updated>2012-03-28T21:59:26-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-28:2012/03/28/os161-arguments-passing-in-system-call/index.html</id><summary type="html">&lt;p&gt;One principle of kernel programming is that: &lt;strong&gt;do not trust anything users
+passed in&lt;/strong&gt;. Since we assume that users are bad, they will do anything they can
+to crash the kernel (just as &lt;code&gt;$OS161_SRC/user/testbin/badcall/badcall.c&lt;/code&gt; do). So 
+we need pay special attention to the arguments of the system calls, &lt;strong&gt;especially the
+pointers&lt;/strong&gt;.&lt;/p&gt;
+
+
+&lt;p&gt;&lt;code&gt;$OS161_SRC/kern/vm/copyinout.c&lt;/code&gt; provides several useful facilities to safely copy user
+level arguments into kernel or vice versa. They assure that &lt;strong&gt;even if user arguments is
+illegal, the kernel can still get control and handle the error, instead of just
+crash&lt;/strong&gt;. So let's see how can they be applied in the system calls.&lt;/p&gt;
+&lt;h3&gt;User space strings&lt;/h3&gt;
+&lt;p&gt;Some system call, e.g. &lt;code&gt;open&lt;/code&gt;, &lt;code&gt;chdir&lt;/code&gt;, &lt;code&gt;execv&lt;/code&gt;, requires a user level string as
+arguments. We can use &lt;code&gt;copyinstr&lt;/code&gt; to do this. See the prototype of &lt;code&gt;copyinstr&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;copyinstr&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;const_userptr_t&lt;/span&gt; &lt;span class="n"&gt;usersrc&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;dest&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;size_t&lt;/span&gt; &lt;span class="n"&gt;len&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;size_t&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;actual&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; 
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;code&gt;const_userptr_t&lt;/code&gt; is just a signpost that make &lt;code&gt;usersrc&lt;/code&gt; explicitly looks like a user
+pointer. So basically, this function copies a &lt;code&gt;\0&lt;/code&gt; terminated user
+space string into kernel buffer &lt;code&gt;dest&lt;/code&gt;, and copy as much as &lt;code&gt;len&lt;/code&gt; bytes, and
+return the actual bytes copied in &lt;code&gt;actual&lt;/code&gt;. Note that &lt;code&gt;copyinstr&lt;/code&gt; will also
+copy the last &lt;code&gt;\ 0&lt;/code&gt;. Suppose we have a function that takes a user space string
+as argument.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;foo&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt; 
+    &lt;span class="kt"&gt;char&lt;/span&gt; &lt;span class="n"&gt;kbuf&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;BUF_SIZE&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt; 
+    &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;err&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="kt"&gt;size_t&lt;/span&gt; &lt;span class="n"&gt;actual&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;err&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;copyinstr&lt;/span&gt;&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="kt"&gt;const_userptr_t&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;kbuf&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;BUF_SIZE&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;actual&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="p"&gt;{&lt;/span&gt; 
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;err&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; 
+    &lt;span class="p"&gt;}&lt;/span&gt; 
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; 
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then if we call &lt;code&gt;foo("hello")&lt;/code&gt;, on success, &lt;code&gt;actual&lt;/code&gt; will be 6, &lt;strong&gt;including the
+last &lt;code&gt;\0&lt;/code&gt;&lt;/strong&gt;.&lt;/p&gt;
+&lt;h3&gt;User space buffer&lt;/h3&gt;
+&lt;p&gt;In system calls like &lt;code&gt;read&lt;/code&gt; or &lt;code&gt;write&lt;/code&gt;, we need to read from or write to user space
+buffers. We can use &lt;code&gt;copyin&lt;/code&gt; or &lt;code&gt;copyout&lt;/code&gt; here. For example:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;foo_read&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;unsigned&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;ubuf&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;size_t&lt;/span&gt; &lt;span class="n"&gt;len&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; 
+&lt;span class="p"&gt;{&lt;/span&gt; 
+    &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;err&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+    &lt;span class="kt"&gt;void&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;kbuf&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;kmalloc&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;len&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt; 
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;err&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;copyin&lt;/span&gt;&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="kt"&gt;const_userptr_t&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="n"&gt;ubuf&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;kbuf&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;len&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; 
+    &lt;span class="p"&gt;{&lt;/span&gt; 
+        &lt;span class="n"&gt;kfree&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;kbuf&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;err&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; 
+    &lt;span class="p"&gt;}&lt;/span&gt;
+
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;err&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;copyout&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;kbuf&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;userptr_t&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="n"&gt;ubuf&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;len&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; 
+    &lt;span class="p"&gt;{&lt;/span&gt; 
+        &lt;span class="n"&gt;kfree&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;kbuf&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;err&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; 
+    &lt;span class="p"&gt;}&lt;/span&gt;
+
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; 
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="syscall"></category><category term="argument passing"></category><category term="copyin"></category><category term="copyout"></category></entry><entry><title>OS161: General Tips for System Call</title><link href="http://jhshi.me/2012/03/21/os161-general-tips-for-system-call/index.html" rel="alternate"></link><updated>2012-03-21T14:45:32-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-21:2012/03/21/os161-general-tips-for-system-call/index.html</id><summary type="html">&lt;p&gt;Here are some practice that will hopefully make you feel more comfortable and
+more productive when you poking around with os161 syscalls.&lt;/p&gt;
+
+
+&lt;h3&gt;Tired of bmake &amp;amp; bmake install every time?&lt;/h3&gt;
+&lt;p&gt;Edit &lt;code&gt;$OS161_SRC/mk/os161.kernel.mk&lt;/code&gt;, find this line:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;all&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;includelinks&lt;/span&gt; &lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;WAIT&lt;/span&gt; &lt;span class="n"&gt;$&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;KERNEL&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; 
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Add some lines below it:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;all&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;includelinks&lt;/span&gt; &lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;WAIT&lt;/span&gt; &lt;span class="n"&gt;$&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;KERNEL&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; 
+    &lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="n"&gt;generate&lt;/span&gt; &lt;span class="n"&gt;tags&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;ctags&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;excluding&lt;/span&gt; &lt;span class="n"&gt;some&lt;/span&gt; &lt;span class="n"&gt;directories&lt;/span&gt;
+    &lt;span class="n"&gt;cd&lt;/span&gt; &lt;span class="n"&gt;$&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;TOP&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;&lt;span class="n"&gt;ctags&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;R&lt;/span&gt; &lt;span class="o"&gt;--&lt;/span&gt;&lt;span class="n"&gt;exclude&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;.git&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;--&lt;/span&gt;&lt;span class="n"&gt;exclude&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;build&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;--&lt;/span&gt;&lt;span class="n"&gt;exclude&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;kern/compile&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;.;&lt;/span&gt; &lt;span class="n"&gt;cd&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; 
+    &lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="n"&gt;automatically&lt;/span&gt; &lt;span class="n"&gt;execute&lt;/span&gt; &lt;span class="n"&gt;bmake&lt;/span&gt; &lt;span class="n"&gt;install&lt;/span&gt; &lt;span class="n"&gt;after&lt;/span&gt; &lt;span class="n"&gt;bmake&lt;/span&gt;
+    &lt;span class="n"&gt;bmake&lt;/span&gt; &lt;span class="n"&gt;install&lt;/span&gt; 
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then a single &lt;code&gt;bmake&lt;/code&gt; will automatically generate tags for your source file as
+well as install the executable.&lt;/p&gt;
+&lt;h3&gt;Work on file system calls first&lt;/h3&gt;
+&lt;p&gt;Work on file system calls and make them work correctly first, since user level
+I/O functions (most importantly &lt;code&gt;printf&lt;/code&gt;) rely heavily on &lt;code&gt;sys_write&lt;/code&gt; and
+&lt;code&gt;sys_read&lt;/code&gt; of console. If you first work on the process system calls, how would
+you assure your code is right? Without a working and correct &lt;code&gt;printf&lt;/code&gt;, most of
+the test programs won't work.&lt;/p&gt;
+&lt;h3&gt;Test your code&lt;/h3&gt;
+&lt;p&gt;Test programs in &lt;code&gt;$OS161_SRC/user/testbin&lt;/code&gt; are very helpful when you want
+to test your code, especially &lt;code&gt;badcall(asst2)&lt;/code&gt;, &lt;code&gt;filetest&lt;/code&gt;, &lt;code&gt;crash&lt;/code&gt; (for
+&lt;code&gt;kill_curthread&lt;/code&gt;), &lt;code&gt;argtest&lt;/code&gt; (for &lt;code&gt;execv&lt;/code&gt;) and &lt;code&gt;forktest&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;You can use the &lt;code&gt;p&lt;/code&gt; command provided by os161 kernel menu to execute this test
+programs:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nf"&gt;OS/161 kernel [? for menu]&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;p&lt;/span&gt; /&lt;span class="n"&gt;testbin&lt;/span&gt;/&lt;span class="n"&gt;argtest&lt;/span&gt; &lt;span class="n"&gt;abc&lt;/span&gt; &lt;span class="n"&gt;def&lt;/span&gt; &lt;span class="n"&gt;ghi&lt;/span&gt; &lt;span class="n"&gt;jkl&lt;/span&gt; &lt;span class="n"&gt;mno&lt;/span&gt; &lt;span class="n"&gt;p&lt;/span&gt; 
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;Use GDB&lt;/h3&gt;
+&lt;p&gt;Without GDB, you're dead. It's really worth spending some time to learn the
+basic usage of gdb. An upset fact is that you can not watch user level code (or
+you don't want to bother), so use the "&lt;code&gt;printf&lt;/code&gt; debug method" in user code.&lt;/p&gt;
+&lt;p&gt;Here are a few excellent gdb tutorials that you'll probably find helpful.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://www.cs.cmu.edu/~gilpin/tutorial/"&gt;GDB Tutorial from CMU&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://www.eecs.harvard.edu/~mdw/course/cs161/handouts/gdb.html"&gt;Tips from Harvard&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</summary><category term="bmake"></category><category term="ctags"></category><category term="gdb"></category><category term="syscall"></category></entry><entry><title>OS161: How to Add a System Call</title><link href="http://jhshi.me/2012/03/21/os161-how-to-add-a-system-call/index.html" rel="alternate"></link><updated>2012-03-21T14:15:41-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-21:2012/03/21/os161-how-to-add-a-system-call/index.html</id><summary type="html">&lt;p&gt;Let's use the &lt;code&gt;fork&lt;/code&gt; system call as an example. For convinience, let's assume
+&lt;code&gt;$OS161_SRC&lt;/code&gt; is your os161 source root directory.&lt;/p&gt;
+
+
+&lt;h3&gt;How is a system call defined?&lt;/h3&gt;
+&lt;p&gt;Take a look at &lt;code&gt;$OS161_SRC/user/lib/libc/arch/mips/syscalls-mips.S&lt;/code&gt;. We can see
+that a macro called &lt;code&gt;SYSCALL(sym, num)&lt;/code&gt; is defined. Basically, this macro does
+a very simple thing: fill &lt;code&gt;$v0&lt;/code&gt; with &lt;code&gt;SYS_##sym&lt;/code&gt; and jump to the common code at
+&lt;code&gt;__syscall&lt;/code&gt;. Two points to note here:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;SYS_##sym&lt;/code&gt; is a little compiler trick. &lt;code&gt;##sym&lt;/code&gt; will be replaced by the
+actual name of &lt;code&gt;sym&lt;/code&gt;. In our case (&lt;code&gt;SYSCALL(fork, SYS_fork)&lt;/code&gt;), here &lt;code&gt;sym&lt;/code&gt; is
+actually &lt;code&gt;fork&lt;/code&gt;, so &lt;code&gt;SYS_##sym&lt;/code&gt; will be replaced by &lt;code&gt;SYS_fork&lt;/code&gt;. See &lt;a href="http://gcc.gnu.org/onlinedocs/cpp/Concatenation.html#Concatenation"&gt;this gcc
+document&lt;/a&gt; if you want know more details about it.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The second argument of the macro, &lt;code&gt;num&lt;/code&gt;, is unused here.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Then in &lt;code&gt;__syscall&lt;/code&gt;, the first instruction is the &lt;a href="http://www.mrc.uidaho.edu/mrc/people/jff/digital/MIPSir.html"&gt;MIPS syscall instruction&lt;/a&gt;. 
+We'll discuss the details of this instruction later.
+After this, we check &lt;code&gt;$a3&lt;/code&gt; value to see if the syscall is successful and store
+the error number (&lt;code&gt;$v0&lt;/code&gt;) to &lt;code&gt;errno&lt;/code&gt; if not.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;$OS161_SRC/build/user/lib/libc/syscall.S&lt;/code&gt; is generated according to
+&lt;code&gt;$OS161_SRC/user/lib/libc/arch/mips/syscall-mips.S&lt;/code&gt; during compiling, and this
+file is the actual file that be compiled and linked to user library. We can
+see that besides the &lt;code&gt;SYSCALL&lt;/code&gt; macro and the &lt;code&gt;__syscall&lt;/code&gt; code, declarations of
+all the syscalls are added here. So when we call &lt;code&gt;fork&lt;/code&gt; in user program, we
+actually called the assembly functions defined in this file.&lt;/p&gt;
+&lt;h3&gt;How a system call get called?&lt;/h3&gt;
+&lt;p&gt;The MIPS &lt;code&gt;syscall&lt;/code&gt; instruction will cause a software interruption. (See
+&lt;a href="http://courses.missouristate.edu/KenVollmar/MARS/Help/SyscallHelp.html"&gt;MIPS syscall function&lt;/a&gt;). After this instruction, the hardware
+will automatically turn off interrupts, then jump to the code located at
+&lt;code&gt;0x80000080&lt;/code&gt;. From &lt;code&gt;$OS161_SRC/kern/arch/mips/locore/exception-mips1.S&lt;/code&gt;, we can
+see that &lt;code&gt;mips_general_handler&lt;/code&gt; is the code that defined at &lt;code&gt;0x80000080&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;The assembly code here do a lot of stuff that we don't need to care. All we
+need to know that they will save a trapframe on current thread's kernel stack
+and call &lt;code&gt;mips_trap&lt;/code&gt; in &lt;code&gt;$OS161_SRC/kern/arch/mips/locore/trap.c&lt;/code&gt;. Then if this
+trap (or interruption) is caused by &lt;code&gt;syscall&lt;/code&gt; instruction, &lt;code&gt;mips_trap&lt;/code&gt; will
+call &lt;code&gt;syscall&lt;/code&gt; in &lt;code&gt;$OS161_SRC/kern/arch/mips/syscall/syscall.c&lt;/code&gt; to handle. Then
+we go to our familiar &lt;code&gt;syscall&lt;/code&gt; function, we dispatch the syscall according to
+the call number, then collect the results and return. If every thing is OK, we
+go back to &lt;code&gt;mips_trap&lt;/code&gt;, then to the assembly code &lt;code&gt;common_exception&lt;/code&gt; and then
+go back to user mode.&lt;/p&gt;
+&lt;h3&gt;How to add a system call&lt;/h3&gt;
+&lt;p&gt;To add a system call, a typical flow would be:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Add a case branch in the syscall function:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt; &lt;span class="k"&gt;case&lt;/span&gt; &lt;span class="nl"&gt;SYS_fork&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; 
+     &lt;span class="n"&gt;err&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;sys_fork&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;retval&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;tf&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt; 
+     &lt;span class="k"&gt;break&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Add a new header file in &lt;code&gt;$OS161_SRC/kern/include/kern&lt;/code&gt;, declare your
+&lt;code&gt;sys_fork&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Include your header file in &lt;code&gt;$OS161_SRC/kern/include/syscall.h&lt;/code&gt; so that the
+compiler can find the definition of &lt;code&gt;sys_fork&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Add a new c file in &lt;code&gt;$OS161_SRC/kern/syscall&lt;/code&gt;, implement your &lt;code&gt;sys_fork&lt;/code&gt;
+function&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Add your c file's full path to &lt;code&gt;$OS161_SRC/kern/conf/conf.kern&lt;/code&gt; so that
+your c file will be compiled. See &lt;code&gt;loadelf.c&lt;/code&gt; and &lt;code&gt;runprogram.c&lt;/code&gt; entries in that
+file for examples.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Then in &lt;code&gt;$OS161_SRC/kern/conf&lt;/code&gt;, &lt;strong&gt;reconfigure the kernel&lt;/strong&gt;:&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;./config ASST3
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="syscall"></category></entry><entry><title>OS161 Process Scheduling</title><link href="http://jhshi.me/2012/03/18/os161-process-scheduling/index.html" rel="alternate"></link><updated>2012-03-18T15:19:27-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-18:2012/03/18/os161-process-scheduling/index.html</id><summary type="html">&lt;p&gt;OS161 provides a simple round-robin scheduler by default. It works like this: &lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;hardclock&lt;/code&gt; from &lt;code&gt;$OS161_SRC/kern/thread/clock.c&lt;/code&gt; will be periodically called 
+(from hardware clock interrupt handler)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Two functions may be called there after:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;schedule&lt;/code&gt; to change the order the threads in ready queue, which currently
+  does nothing&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;thread_consider_migraton&lt;/code&gt; to enable thread migration among CPU cores&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Then it will call &lt;code&gt;thread_yield&lt;/code&gt; to cause the current thread yield to another
+  thread&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;We need to play with the &lt;code&gt;schedule&lt;/code&gt; function to give interactive threads higher
+priority.&lt;/p&gt;
+
+
+&lt;h3&gt;Why give priority to interactive threads?&lt;/h3&gt;
+&lt;p&gt;There are two reasons about this (at least the two in my mind) :&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Your time is more valuable than computer's&lt;/strong&gt;. So in general, we
+should first serve those threads that interact with you. For example, you don't
+want to wait the computer in a shell while it's busy doing backup, right?&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Interactive threads tend to be I/O bound, which means they often get stuck
+waiting for input or output. So they normally fail to consume their granted
+time slice. Thus we can switch to computation bound threads when they stuck and
+boost computer utilization.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;How can we know whether a thread is interactive or not?&lt;/h3&gt;
+&lt;p&gt;As said above, interactive threads are normally I/O bound. &lt;strong&gt;So they often need
+to sleep a lot.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;In &lt;code&gt;$OS161_SRC/kern/thread/thread.c&lt;/code&gt;, we can see that &lt;code&gt;thread_switch&lt;/code&gt; is used to actually
+switch between threads. The first argument is &lt;code&gt;newstate&lt;/code&gt;, which give some hints
+about the current thread.&lt;/p&gt;
+&lt;p&gt;If &lt;code&gt;newstate&lt;/code&gt; is &lt;code&gt;S_READY&lt;/code&gt;, it means that &lt;strong&gt;current thread has consumed all
+its time slice and is forced to yield to another thread&lt;/strong&gt; (by hardware clock).
+So we can guess that it's not interactive, or, it's computation intensive.
+However, if &lt;code&gt;newstate&lt;/code&gt; is &lt;code&gt;S_SLEEP&lt;/code&gt;, then it means &lt;strong&gt;current thread offers to
+yield to another thread&lt;/strong&gt;, maybe waiting for I/O or a mutex. Thus we can guess
+that this thread is more interactive, or, it's I/O intensive.&lt;/p&gt;
+&lt;p&gt;So by the &lt;code&gt;newstate&lt;/code&gt;, we can make a good guess of current thread.&lt;/p&gt;
+&lt;h3&gt;How to implement it?&lt;/h3&gt;
+&lt;p&gt;&lt;a href="http://en.wikipedia.org/wiki/Multilevel_feedback_queue"&gt;Multi-Level Feedback Queue&lt;/a&gt; seems to be a good enough algorithm in
+this case.&lt;/p&gt;
+&lt;p&gt;We can add a priority field in &lt;code&gt;struct thread&lt;/code&gt; and initiate it as medium
+priority in &lt;code&gt;thread_create&lt;/code&gt;. Then in &lt;code&gt;thread_swith&lt;/code&gt;, we can adjust current
+thread's priority by the &lt;code&gt;newstate&lt;/code&gt;. &lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;If it's &lt;code&gt;S_SLEEP&lt;/code&gt; then we increase current thread's priority. &lt;/li&gt;
+&lt;li&gt;Otherwise, if it's &lt;code&gt;S_READY&lt;/code&gt; then we decrease current thread's priority. &lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Of course, we can only support a finite priority level here, &lt;strong&gt;so be careful 
+with boundary case&lt;/strong&gt;. For example, if current thread is
+already the highest priority and still request &lt;code&gt;S_SLEEP&lt;/code&gt;, then we just leave it
+in that priority.&lt;/p&gt;
+&lt;p&gt;Then in &lt;code&gt;schedule&lt;/code&gt;, we need to &lt;strong&gt;find the thread with highest priority
+among all the threads in &lt;code&gt;curcpu-&amp;gt;c_runqueue&lt;/code&gt;, and bring it to head&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;Current CPU's run queue is organized as a double linked list with head
+element. &lt;code&gt;$OS161_SRC/kern/include/threadlist.h&lt;/code&gt; provides several useful interface to
+let us manipulate the list. Find a maximum/minimum number among a list
+is so simple that I won't provide any details here. But note that &lt;strong&gt;the
+head element is just a place holder&lt;/strong&gt;. So you may want to start from
+&lt;code&gt;curcpu-&amp;gt;c_runqueue.tl_head.tln_Next&lt;/code&gt; and stop when &lt;code&gt;elem-&amp;gt;tln_next == NULL&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Once find the thread, we need to bring it to list head so we can
+leave &lt;code&gt;thread_switch&lt;/code&gt; unchanged. A &lt;code&gt;threadlist_remove&lt;/code&gt; followed by
+&lt;code&gt;threadlist_addhead&lt;/code&gt; will be sufficient here.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;One problem of MLFQ is starvation&lt;/strong&gt;. So you may want to periodically reset all
+threads' priority to medium level for fairness.&lt;/p&gt;
+&lt;p&gt;That's all. Here's just a work solution. Much work has be done if you want
+better scheduling for performance.&lt;/p&gt;</summary><category term="scheduling"></category><category term="MLFQ"></category></entry><entry><title>OS161 File System Calls</title><link href="http://jhshi.me/2012/03/14/os161-file-system-calls/index.html" rel="alternate"></link><updated>2012-03-14T21:19:17-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-14:2012/03/14/os161-file-system-calls/index.html</id><summary type="html">&lt;p&gt;Assume you've read my previous post on &lt;a href="/2012/03/14/os161-file-operation-overview/"&gt;file operations in OS161&lt;/a&gt;,
+then everything is quite straightforward. One more thing, remember to protect
+every access to the file descriptor data structure using lock!&lt;/p&gt;
+&lt;p&gt;Let's get started.&lt;/p&gt;
+
+
+&lt;h3&gt;&lt;code&gt;sys_open&lt;/code&gt; and &lt;code&gt;sys_close&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;We'll rely on &lt;code&gt;vfs_open&lt;/code&gt; to do most of the work. But before that, we need to
+check:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Is &lt;code&gt;filename&lt;/code&gt; a valid pointer? (alignment, NULL, kernel pointer, etc.)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Is flags valid? flags can only contain exactly one of &lt;code&gt;O_RDONLY&lt;/code&gt;, &lt;code&gt;O_WRONLY&lt;/code&gt;
+  and &lt;code&gt;O_RDWR&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;After these, we need to allocate a fd to the opened file: just scan the
+&lt;code&gt;curthread-&amp;gt;t_fdtable&lt;/code&gt; and find a available slot (&lt;code&gt;NULL&lt;/code&gt;). Then we need to
+actually open the file using &lt;code&gt;vfs_open&lt;/code&gt;. Note that we need to copy &lt;code&gt;filename&lt;/code&gt;
+into kernel buffer using &lt;code&gt;copyinstr&lt;/code&gt;, for both security reasons, and that
+&lt;code&gt;vfs_open&lt;/code&gt; may destroy the pathname passed in.&lt;/p&gt;
+&lt;p&gt;Once &lt;code&gt;vfs_open&lt;/code&gt; successfully returns, we can initialize a &lt;code&gt;struct fdesc&lt;/code&gt;. Pay
+special attention to &lt;code&gt;fdesc-&amp;gt;offset&lt;/code&gt;. Without &lt;code&gt;O_APPEND&lt;/code&gt;, it should be zero.
+But with &lt;code&gt;O_APPEND&lt;/code&gt;, it should be file size. So we need to check it and use
+&lt;code&gt;VOP_STAT&lt;/code&gt; to get file size if necessary.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;sys_close&lt;/code&gt; is quite easy. We first decrease the file reference counter. And
+close the file using &lt;code&gt;vfs_close&lt;/code&gt; and free the &lt;code&gt;struct fdesc&lt;/code&gt; if the counter
+reaches 0.&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;sys_read&lt;/code&gt; and &lt;code&gt;sys_write&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;As usual, before do anything, first check the parameters.&lt;/p&gt;
+&lt;p&gt;The main work here is using &lt;code&gt;VOP_READ&lt;/code&gt; or &lt;code&gt;VOP_WRITE&lt;/code&gt; together with &lt;code&gt;struct
+iovec&lt;/code&gt; and &lt;code&gt;struct uio&lt;/code&gt;. &lt;code&gt;kern/syscall/loadelf.c&lt;/code&gt; is a good start point.
+&lt;strong&gt;However, we need to initialize the &lt;code&gt;uio&lt;/code&gt; for read/write for user space
+buffers&lt;/strong&gt;. That means the &lt;code&gt;uio-&amp;gt;uio_segflg&lt;/code&gt; should be &lt;code&gt;UIO_USERSPACE&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Note that &lt;code&gt;uio-&amp;gt;uio_resid&lt;/code&gt; is how many bytes left after the IO operation. So you
+can calculate how many bytes are actually read/written by &lt;code&gt;len - uio-&amp;gt;uio_resid&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Since we've carefully handled std files when initialization. Here we just treat
+them as normal files and pay no special attention to them.&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;sys_dup2&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;The hardest thing here is not how to write &lt;code&gt;sys_dup2&lt;/code&gt;, but instead how &lt;code&gt;dup2&lt;/code&gt;
+is supposed to be used. Here is a typical code snippet of how to use &lt;code&gt;dup2&lt;/code&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;logfd&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;open&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;logfile&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;O_WRONLY&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+
+&lt;span class="cm"&gt;/* note the sequence of parameter */&lt;/span&gt; 
+&lt;span class="n"&gt;dup2&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;logfd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;STDOUT_FILENO&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt; 
+&lt;span class="n"&gt;close&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;logfd&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+
+&lt;span class="cm"&gt;/* now all print content will go to log file */&lt;/span&gt; 
+&lt;span class="n"&gt;printf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;Hello, OS161.&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;We can see that in &lt;code&gt;dup2(oldfd, newfd)&lt;/code&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;After &lt;code&gt;dup2&lt;/code&gt;, &lt;code&gt;oldfd&lt;/code&gt; and &lt;code&gt;newfd&lt;/code&gt; points to the same file. But we can call 
+&lt;code&gt;close&lt;/code&gt; on any of them and do not influence the other.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;After &lt;code&gt;dup2&lt;/code&gt;, all read/write to &lt;code&gt;newfd&lt;/code&gt; will be actually performed on
+&lt;code&gt;oldfd&lt;/code&gt;. (Of course, they points to the same file!!)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;If &lt;code&gt;newfd&lt;/code&gt; is previous opened, it should be closed in &lt;code&gt;dup2&lt;/code&gt; ( according
+to &lt;a href="http://linux.die.net/man/2/dup2"&gt;&lt;code&gt;dup2&lt;/code&gt; man page&lt;/a&gt;).&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Once we're clear about these. Coding &lt;code&gt;sys_dup2&lt;/code&gt; is a piece of cake. Just don't
+forget to maintain the &lt;code&gt;fdesc-&amp;gt;ref_count&lt;/code&gt; accordingly.&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;sys_lseek&lt;/code&gt;, &lt;code&gt;sys_chdir&lt;/code&gt; and &lt;code&gt;sys__getcwd&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;Nothing to say. Use &lt;code&gt;VOP_TRYSEEK&lt;/code&gt;, &lt;code&gt;vfs_chidr&lt;/code&gt; and &lt;code&gt;vfs_getcwd&lt;/code&gt; respectively.
+Only one thing, if &lt;code&gt;SEEK_END&lt;/code&gt; is used. use &lt;code&gt;VOP_STAT&lt;/code&gt; to get the file size, as
+we did in &lt;code&gt;sys_open&lt;/code&gt;&lt;/p&gt;
+&lt;h3&gt;64-bit parameter and return value in lseek&lt;/h3&gt;
+&lt;p&gt;This is just a minor trick. Let's first see the definition of &lt;code&gt;lseek&lt;/code&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;off_t&lt;/span&gt; &lt;span class="n"&gt;lseek&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;off_t&lt;/span&gt; &lt;span class="n"&gt;pos&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;whence&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;And from &lt;code&gt;$OS161_SRC/kern/include/types.h&lt;/code&gt;, we can see that &lt;code&gt;off_t&lt;/code&gt; is type-defined as
+64-bit integer (&lt;code&gt;i64&lt;/code&gt;). So the question here is: how to pass 64-bit parameter
+to &lt;code&gt;sys_lseek&lt;/code&gt; and how get the 64-bit return value of it.&lt;/p&gt;
+&lt;h4&gt;Pass 64-bit argument to sys_lseek&lt;/h4&gt;
+&lt;p&gt;From the comment in &lt;code&gt;$OS161_SRC/kern/arch/mips/syscall/syscall.c&lt;/code&gt;, we can see that, &lt;code&gt;fd&lt;/code&gt;
+should be in &lt;code&gt;$a0&lt;/code&gt;, &lt;code&gt;pos&lt;/code&gt; should be in (&lt;code&gt;$a2:$a3&lt;/code&gt;) (&lt;strong&gt;&lt;code&gt;$a2&lt;/code&gt; stores high 32-bit and
+&lt;code&gt;$a3&lt;/code&gt; stores low 32-bit)&lt;/strong&gt;, and &lt;code&gt;whence&lt;/code&gt; should be in &lt;code&gt;sp+16&lt;/code&gt;. Here, &lt;code&gt;$a1&lt;/code&gt; is not
+used due to alignment.&lt;/p&gt;
+&lt;p&gt;So in the switch branch of &lt;code&gt;sys_lseek&lt;/code&gt;, we should first pack (&lt;code&gt;$a2:$a3&lt;/code&gt;) into a 64-bit
+variable, say &lt;code&gt;sys_pos&lt;/code&gt;. Then we use &lt;code&gt;copyin&lt;/code&gt; to copy &lt;code&gt;whence&lt;/code&gt; from user stack (&lt;code&gt;tf-&amp;gt;tf_sp+16&lt;/code&gt;).&lt;/p&gt;
+&lt;h3&gt;Get 64-bit return value of &lt;code&gt;sys_lseek&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;Also from the comment, we know that a 64-bit return value is stored in
+(&lt;code&gt;$v0:$v1&lt;/code&gt;) (&lt;code&gt;$v0&lt;/code&gt; stores high 32-bit and &lt;code&gt;$v1&lt;/code&gt; stores low 32-bit). And note that
+after the &lt;code&gt;switch&lt;/code&gt; statement, &lt;code&gt;retval&lt;/code&gt; will be assigned to $v0, so here we just
+need to copy the low 32-bit of &lt;code&gt;sys_lseek&lt;/code&gt;'s return value to $v1, and high
+32-bit to &lt;code&gt;retval&lt;/code&gt;.&lt;/p&gt;</summary><category term="open"></category><category term="read"></category><category term="write"></category><category term="close"></category><category term="dup2"></category><category term="lseek"></category><category term="syscall"></category></entry><entry><title>OS161 File Operation Overview</title><link href="http://jhshi.me/2012/03/14/os161-file-operation-overview/index.html" rel="alternate"></link><updated>2012-03-14T20:33:50-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-14:2012/03/14/os161-file-operation-overview/index.html</id><summary type="html">&lt;p&gt;In user space, when open a file, user program will get a file descriptor (a
+integer) that represent that file. User can use this descriptor to perform various
+operations on this file: read, write, seek, etc. As I see it, this design is
+quite clean in that:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Hide most of the details from user, for both safety and simplicity&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Enable more high level abstraction: everything (socket, pipe..) is a file&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The file descriptor is actually an index to kernel space structure that
+contains all the details of opened files. So at kernel side, we need to do a
+lot bookkeeping stuff.&lt;/p&gt;
+
+
+&lt;h3&gt;What information should be kept?&lt;/h3&gt;
+&lt;p&gt;It's helpful to take a look at &lt;code&gt;$OS161_SRC/kern/include/vnode.h&lt;/code&gt;. In a nutshell, a file
+is represented by a &lt;code&gt;struct vnode&lt;/code&gt; in kernel space. And most of the underlying
+interfaces that help us to manage files have already been provided. &lt;strong&gt;All we
+need to do is just bookkeeping.&lt;/strong&gt; So basically, we need to record the following
+details about a file:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;File name. We don't actually need this, but just in case. For example, we
+may want to print a file's name when debuging.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Open flags. We need to keep the flags passed by &lt;code&gt;open&lt;/code&gt; so that later on we can check
+permissions on read or write.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;File offset. We definitely need this.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;File's reference counter. Mainly for &lt;code&gt;dup2&lt;/code&gt; and &lt;code&gt;fork&lt;/code&gt; system call&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;A lock to protect the access to this file descriptor. Since it's possible that two
+threads share the same copy of this bookkeeping data structure (e.g., after &lt;code&gt;fork&lt;/code&gt;)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Actual pointer to the file's &lt;code&gt;struct vnode&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Why we didn't record the file's fd? Please see next section.&lt;/p&gt;
+&lt;h3&gt;File descriptor Allocation&lt;/h3&gt;
+&lt;p&gt;There are some common rules about file descriptor:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;0, 1 and 2 are special file descriptors. They are stdin, stdout and stderr
+respectively. (Defined in &lt;code&gt;$OS161_SRC/kern/include/kern/unistd.h&lt;/code&gt; as
+&lt;code&gt;STDIN_FILENO&lt;/code&gt;, &lt;code&gt;STDOUT_FILENO&lt;/code&gt; and &lt;code&gt;STDERR_FILENO&lt;/code&gt;)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The file descriptor returned by open should be the smallest fd available.
+(Not compulsory though)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;fd space is process specific&lt;/strong&gt;, i.e. different process may get the same
+file descriptor that represent different files&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;So, to maintain each process's opened file information, we add a new field to
+&lt;code&gt;struct thread&lt;/code&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cm"&gt;/* OPEN_MAX is defined in $OS161_SRC/kern/include/limits.h */&lt;/span&gt;
+&lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="n"&gt;fdesc&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;t_fdtable&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;OPEN_MAX&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Now you may figure out why there isn't a fd filed in &lt;code&gt;struct fdesc&lt;/code&gt;, since its
+index is the fd! So when we need to allocate a file descriptor, we just need
+to scan the &lt;code&gt;t_fdtable&lt;/code&gt; (from &lt;code&gt;STDERR_FILENO+1&lt;/code&gt;, of course), find an available 
+slot (&lt;code&gt;NULL&lt;/code&gt;) and use it. Also, since it's a &lt;code&gt;struct thread&lt;/code&gt; field, it's process 
+specific.&lt;/p&gt;
+&lt;p&gt;Does the &lt;code&gt;t_fdtable&lt;/code&gt; look familiar to you? Yes, it's very similar to our
+process array, only that the later is system-wise. (Confused? See 
+&lt;a href="/2012/03/11/os161-fork-system-call"&gt;my previous post on fork&lt;/a&gt;)&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;t_fdtable&lt;/code&gt; Management and Special Files&lt;/h3&gt;
+&lt;p&gt;Whenever you add a new field to &lt;code&gt;struct thread&lt;/code&gt;, don't forget to initialize
+them in &lt;code&gt;thread_create&lt;/code&gt; and do clean up in &lt;code&gt;thread_exit&lt;/code&gt; and/or &lt;code&gt;thread_destroy&lt;/code&gt;.
+Since &lt;code&gt;t_fdtable&lt;/code&gt; is an fixed size array, work a lot much easier: just zero
+the array when create, and no clean up is needed. Also, &lt;strong&gt;&lt;code&gt;t_fdtable&lt;/code&gt; are
+supposed to be inheritable: so copy a parent's &lt;code&gt;t_fdtable&lt;/code&gt; to child when do
+&lt;code&gt;sys_fork&lt;/code&gt;.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Since parent and child thread are supposed to share the same file table, so
+when copy file tables, remember to increase each file's reference counter.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Console files (std in/out/err) are supposed to be opened "automatically" when 
+a thread is created&lt;/strong&gt;, i.e. user themselves don't need to open them.&lt;/p&gt;
+&lt;p&gt;At first glance, &lt;code&gt;thread_create&lt;/code&gt; would be a intuitive place to  initialize them.
+Yes, we can do that. But be noted that &lt;em&gt;when the first thread is created, the console 
+is even not bootstrapped yet&lt;/em&gt;, so if you open console files in &lt;code&gt;thread_create&lt;/code&gt;, it'll
+fail (silently blocking...) at that time.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Update&lt;/strong&gt;: The &lt;em&gt;right&lt;/em&gt; way to do this is to initialize console in &lt;code&gt;runprogram&lt;/code&gt;,
+because that's where the first user thread is born. And later user threads will
+just inherits the three file handles of console from then on.&lt;/p&gt;
+&lt;p&gt;BTW, &lt;strong&gt;how to open console&lt;/strong&gt;? The path name should be "con:", flags should
+be: &lt;code&gt;O_RDONLY&lt;/code&gt; for stdin, &lt;code&gt;O_WRONLY&lt;/code&gt; for stdout and stderr; options should be &lt;code&gt;0664&lt;/code&gt;
+(Note the zero prefix, it's a octal number).&lt;/p&gt;</summary><category term="file"></category><category term="syscall"></category><category term="fdtable"></category></entry><entry><title>OS161 exit and waitpid System Call</title><link href="http://jhshi.me/2012/03/12/os161-exit-and-waitpid-system-call/index.html" rel="alternate"></link><updated>2012-03-12T15:51:46-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-12:2012/03/12/os161-exit-and-waitpid-system-call/index.html</id><summary type="html">&lt;p&gt;Before going on, assume you've read my previous post on &lt;a href="/2012/03/12/os161-pid-management"&gt;pid management&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Thanks to the &lt;code&gt;struct process&lt;/code&gt;, our work is much simplified. Quoting &lt;a href="http://en.wikipedia.org/wiki/Eric_S._Raymond"&gt;Eric S.Raymond &lt;/a&gt; 
+here.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Smart data structures and dumb code works a lot better than the other way
+around.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+
+&lt;h3&gt;&lt;code&gt;sys_waitpid&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;At first glance, the logic of &lt;code&gt;waitpid&lt;/code&gt; is trivial. Yes, it's indeed in
+terms of the "core code": Just acquire the exitlock and then see if the
+process has exited, then wait it exit using &lt;code&gt;cv_wait&lt;/code&gt; on exitcv and get
+it's exitcode. Here I use &lt;code&gt;cv&lt;/code&gt; to coordinate child and parent process. Or you can
+use semaphore with initial count 0: child will &lt;code&gt;V&lt;/code&gt; the semaphore when it exits,
+and parent will &lt;code&gt;P&lt;/code&gt; the semaphore on &lt;code&gt;waitpid&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;But it turns out that most the code of &lt;code&gt;waitpid&lt;/code&gt; is argument
+checking! More arguments means more potential risks from user space.
+Sigh~ Anyway, we are doing kernel programming. And just take a look at
+&lt;code&gt;$OS161_SRC/user/testbin/badcall/bad_waitpid.c&lt;/code&gt; and you'll know what I mean.&lt;/p&gt;
+&lt;p&gt;So basically, we need to check:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Is the status pointer properly aligned (by 4) ?&lt;/li&gt;
+&lt;li&gt;Is the status pointer a valid pointer anyway (NULL, point to kernel, ...)?&lt;/li&gt;
+&lt;li&gt;Is options valid? (More flags than &lt;code&gt;WNOHANG | WUNTRACED&lt;/code&gt; )&lt;/li&gt;
+&lt;li&gt;Does the waited pid exist/valid?&lt;/li&gt;
+&lt;li&gt;If exist, are we allowed to wait it ? (Is it our child?)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;And also, after successfully get the exitcode, don't forget to destroy the
+child's process structure and free its slot in the procs array. Since one child
+has only one parent, and after we wait for it, no one will care for it any
+more!&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;sys_exit&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;This part is easy. (Mostly because exit only take on integer argument!) All
+we need to do is find our &lt;code&gt;struct process&lt;/code&gt; entry using &lt;code&gt;curthread-&amp;gt;t_pid&lt;/code&gt;.
+And then indicate that "I've exited" and fill the exitcode. The only
+thing to note that the exitcode must be maked using the MACROs in
+&lt;code&gt;$OS161_SRC/kern/include/kern/wait.h&lt;/code&gt;. Suppose user passing in &lt;code&gt;_exitcode&lt;/code&gt;, then we need
+to set the real &lt;code&gt;exitcode&lt;/code&gt; as &lt;code&gt;_MKWAIT_EXIT(_exitcode)&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;And if we are smarter, we can first check if parent exist or if parent has
+exited, then we even don't bother fill the exitcode since no one cares! Anyway,
+it's just a tiny shortcut, and totally optional.&lt;/p&gt;</summary><category term="exit"></category><category term="waitpid"></category><category term="syscall"></category></entry><entry><title>OS161 pid Management</title><link href="http://jhshi.me/2012/03/12/os161-pid-management/index.html" rel="alternate"></link><updated>2012-03-12T15:13:54-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-12:2012/03/12/os161-pid-management/index.html</id><summary type="html">&lt;p&gt;There are many way to manage each process's pid. Here is the way I do it.&lt;/p&gt;
+&lt;p&gt;I decided to make minimal modification to &lt;code&gt;$OS161_SRC/kern/thread/thread.c&lt;/code&gt;,
+in case anything is ruined. So I only add two things to the thread module. One
+is I add a &lt;code&gt;t_pid&lt;/code&gt; field to &lt;code&gt;struct thread&lt;/code&gt; so that &lt;code&gt;getpid&lt;/code&gt; system call is
+trivial. Another is I add a call of &lt;code&gt;pid_alloc&lt;/code&gt; in &lt;code&gt;thread_alloc&lt;/code&gt; to initialize
+new thread's &lt;code&gt;t_pid&lt;/code&gt;. That's it. No more touch on the thread module.&lt;/p&gt;
+
+
+&lt;h3&gt;The process Structure&lt;/h3&gt;
+&lt;p&gt;In os161, we stick to the 1:1 process:thread model. That is, a process has and
+only has one thread. Thus process and thread are basically the same thing in
+this scenario. However, I still decided to use a &lt;code&gt;struct process&lt;/code&gt; to do process
+bookkeeping stuff. It's independent to &lt;code&gt;struct thread&lt;/code&gt; and outside the thread
+module. Thus when a thread exits and its &lt;code&gt;thread&lt;/code&gt; structure is destroyed. I
+still have its meta-data (e.g. exitcode) stored in the &lt;code&gt;process&lt;/code&gt; structure.&lt;/p&gt;
+&lt;p&gt;So, what should we record about a process? As we already have the &lt;code&gt;struct
+thread&lt;/code&gt; to record most of the information about a thread, we just use a pointer
+to &lt;code&gt;struct thread&lt;/code&gt; to get all these information. What we do in &lt;code&gt;struct process&lt;/code&gt;
+is mainly for our &lt;code&gt;waitpid&lt;/code&gt; and &lt;code&gt;exit&lt;/code&gt; system call. So we should keep the
+information of:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Its parent's (if any) pid&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Whether a process has exited&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;If this process has exited, then the exitcode&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Synchronous facilities to protect the exit status (lock, cv, samophore, etc)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Of course a pointer to &lt;code&gt;struct thread&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;So the structure looks like:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="n"&gt;process&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt; 
+    &lt;span class="kt"&gt;pid_t&lt;/span&gt; &lt;span class="n"&gt;ppid&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; 
+    &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="n"&gt;semphore&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;exitsem&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; 
+    &lt;span class="kt"&gt;bool&lt;/span&gt; &lt;span class="n"&gt;exited&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; 
+    &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;exitcode&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; 
+    &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="kr"&gt;thread&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;self&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; 
+&lt;span class="p"&gt;};&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;Pid allocation&lt;/h3&gt;
+&lt;p&gt;For convenience and simplicity, I decided to support a maximum number of
+&lt;code&gt;MAX_RUNNING_PROCS (256)&lt;/code&gt; processes in the OS, regardless the &lt;code&gt;__PID_MAX (32767)&lt;/code&gt; 
+macro in &lt;code&gt;$OS161_SRC/kern/inlude/kern/limits.h&lt;/code&gt;. So I just use a global static
+array of &lt;code&gt;struct process*&lt;/code&gt; to maintain all the processes in system. Of course
+it's very dumb but hope it's sufficient for a toy OS like 161.&lt;/p&gt;
+&lt;p&gt;Then allocate a pid is very easy, just scan the process array and find a
+available slot (&lt;code&gt;NULL&lt;/code&gt;). One important thing to note is that leave &lt;code&gt;pid=0&lt;/code&gt;
+alone and do not use it. Since in &lt;code&gt;/kern/include/kern/wait.h&lt;/code&gt;, there are two
+special MACROs:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;#define WAIT_ANY (-1) 
+#define WAIT_MYPGRP (0)
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;That is, pid = 0 has a special meaning. So we'd better not use it, staring
+allocate pid from 1. We can also see this from the &lt;code&gt;__PID_MIN (2)&lt;/code&gt; macro in
+&lt;code&gt;$OS161_SRC/kern/inlude/kern/limits.h&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Once a available slot is found, we need to create a &lt;code&gt;struct process&lt;/code&gt; and
+initialize it appropriately, especially it's ppid (-1 or other invalid value).&lt;/p&gt;</summary><category term="pid"></category><category term="syscall"></category></entry><entry><title>OS161 execv System Call</title><link href="http://jhshi.me/2012/03/11/os161-execv-system-call/index.html" rel="alternate"></link><updated>2012-03-11T22:27:47-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-11:2012/03/11/os161-execv-system-call/index.html</id><summary type="html">&lt;p&gt;Basically, &lt;code&gt;execv&lt;/code&gt; do more or less the same thing with &lt;code&gt;runprogram&lt;/code&gt; in
+&lt;code&gt;$OS161_SRC/kern/syscall/runprogram.c&lt;/code&gt;. The overall flow of &lt;code&gt;sys_execv&lt;/code&gt; are:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;em&gt;Copy arguments from user space into kernel buffer&lt;/em&gt;&lt;/li&gt;
+&lt;li&gt;Open the executable, create a new address space and load the elf into it&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;Copy the arguments from kernel buffer into user stack&lt;/em&gt;&lt;/li&gt;
+&lt;li&gt;Return user mode using &lt;code&gt;enter_new_process&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+
+&lt;p&gt;Note that I highlighted step 1 and 3 since they are the trickiest part of
+&lt;code&gt;execv&lt;/code&gt;, step 2 and 4 are just the same with &lt;code&gt;runprogram&lt;/code&gt;.&lt;/p&gt;
+&lt;h3&gt;Format of &lt;code&gt;uargs&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;The first argument is &lt;code&gt;progname&lt;/code&gt; (e.g., &lt;code&gt;/testbin/argtest&lt;/code&gt;), and the second
+argument is &lt;code&gt;uargs&lt;/code&gt;, it's an array of pointers, each pointer points to a user
+space string. The last pointer of &lt;code&gt;uargs&lt;/code&gt; is &lt;code&gt;NULL&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Since we don't know how many arguments are there in &lt;code&gt;uargs&lt;/code&gt;, we need &lt;em&gt;to copy
+the pointers one by one using &lt;code&gt;copyin&lt;/code&gt;&lt;/em&gt; until we encounter a &lt;code&gt;NULL&lt;/code&gt;.&lt;/p&gt;
+&lt;h3&gt;Copy arguments into kernel buffer&lt;/h3&gt;
+&lt;p&gt;In whichever way to do this, one of step 1 and 3 must be complicated. I choose
+to carefully pack the arguments into a kernel buffer and then just directly
+copy this buffer into user stack in bulk. Note that in MIPS, &lt;em&gt;pointers must be 
+aligned by 4&lt;/em&gt;. So don't forget to padding when necessary&lt;/p&gt;
+&lt;p&gt;For convenience, assume that arguments are {&lt;code&gt;foo&lt;/code&gt;, &lt;code&gt;os161&lt;/code&gt;, &lt;code&gt;execv&lt;/code&gt;, &lt;code&gt;NULL&lt;/code&gt;}.
+Then after packing, my kernel buffer looks like this:&lt;/p&gt;
+&lt;p&gt;&lt;img src="/images/2012-03-11-kargv.png" class="center"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Typo&lt;/strong&gt;: &lt;code&gt;kargv[2]&lt;/code&gt; should be 28, instead of 26.&lt;/p&gt;
+&lt;p&gt;Note that &lt;code&gt;kargv[i]&lt;/code&gt; stores the &lt;em&gt;offset&lt;/em&gt; of the i'th arguments within the
+&lt;code&gt;kargv&lt;/code&gt; array, since up to now we don't know their real user address yet.&lt;/p&gt;
+&lt;h3&gt;Copy the arguments into user stack&lt;/h3&gt;
+&lt;p&gt;Why user stack, not anywhere else? Because it's the only space we know for
+sure. We can use &lt;code&gt;as_define_stack&lt;/code&gt; to get the value of initial stack pointer
+(normally &lt;code&gt;0x80000000&lt;/code&gt;, aka &lt;code&gt;USER_SPACE_TOP&lt;/code&gt;). So what we do is &lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Fill &lt;code&gt;kargv[i]&lt;/code&gt; with actual user space pointer, and &lt;/li&gt;
+&lt;li&gt;Copy &lt;code&gt;kargv&lt;/code&gt; array into the stack &lt;/li&gt;
+&lt;li&gt;Minus &lt;code&gt;stackptr&lt;/code&gt; by the length of &lt;code&gt;kargv&lt;/code&gt; array. &lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Note that &lt;em&gt;we must modify &lt;code&gt;kargs[i]&lt;/code&gt; before we do the actual copy&lt;/em&gt;, 
+otherwise some weird bus error or TLB miss will occur.&lt;/p&gt;
+&lt;p&gt;The steps are shown as follows (here we assume &lt;code&gt;stackptr&lt;/code&gt; initial value is
+&lt;code&gt;0x80000000&lt;/code&gt;):&lt;/p&gt;
+&lt;p&gt;&lt;img src="/images/2012-03-11-stackptr.png" alt="Change of &lt;code&gt;stackptr&lt;/code&gt;" class="center" title="Change of &lt;code&gt;stackptr&lt;/code&gt;"&gt;&lt;/p&gt;</summary><category term="execv"></category><category term="syscall"></category></entry><entry><title>OS161 fork System Call</title><link href="http://jhshi.me/2012/03/11/os161-fork-system-call/index.html" rel="alternate"></link><updated>2012-03-11T20:42:34-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-11:2012/03/11/os161-fork-system-call/index.html</id><summary type="html">&lt;p&gt;If you're not already familiar with UNIX fork system call, here is it's
+&lt;a href="http://linux.die.net/man/2/fork"&gt;function description&lt;/a&gt; and its &lt;a href="http://en.wikipedia.org/wiki/Fork_(operating_system)"&gt;entry on Wikipedia&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Basically, in &lt;code&gt;sys_fork&lt;/code&gt;, we need to do the follow things:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Copy parent's trap frame, and pass it to child thread&lt;/li&gt;
+&lt;li&gt;Copy parent's address space&lt;/li&gt;
+&lt;li&gt;Create child thread (using &lt;code&gt;thread_fork&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;Copy parent's file table into child&lt;/li&gt;
+&lt;li&gt;Parent returns with child's pid immediately&lt;/li&gt;
+&lt;li&gt;Child returns with 0&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;So, let's get started.&lt;/p&gt;
+
+
+&lt;h3&gt;Pass parent's trap frame to child thread&lt;/h3&gt;
+&lt;p&gt;Trap frame (&lt;code&gt;struct trapframe&lt;/code&gt;) records the exact state (e.g. registers, stack, 
+etc.) of parent when
+it call fork. Since we need the child exactly the same with parent (except for
+return value of fork), we need child thread to start run with parent's trap
+frame.&lt;/p&gt;
+&lt;p&gt;So we need to pass parent's &lt;code&gt;trapframe&lt;/code&gt; pointer to &lt;code&gt;sys_fork&lt;/code&gt;, and store a full
+copy of it &lt;em&gt;in kernel heap&lt;/em&gt; (i.e., allocated by &lt;code&gt;kmalloc&lt;/code&gt;). Then pass the
+pointer to child's fork entry function (I called it &lt;code&gt;child_forkentry&lt;/code&gt;).&lt;/p&gt;
+&lt;h3&gt;Copy parent's address space&lt;/h3&gt;
+&lt;p&gt;We can use the &lt;code&gt;as_copy&lt;/code&gt; facility to do this. Note that &lt;code&gt;as_copy&lt;/code&gt; will allocate
+a &lt;code&gt;struct addrspace&lt;/code&gt; for you and also copy the address space contents, so you
+don't need to call &lt;code&gt;as_create&lt;/code&gt; by yourself. &lt;/p&gt;
+&lt;h3&gt;Create Child Thread&lt;/h3&gt;
+&lt;p&gt;&lt;code&gt;thread_fork&lt;/code&gt; will create a new child thread structure and copy various fields
+of current thread to it. Again, you don't need to call &lt;code&gt;thread_create&lt;/code&gt; by
+yourself, &lt;code&gt;thread_fork&lt;/code&gt; will call it for you. You can get the pointer of child's
+thread structure by the last argument of &lt;code&gt;thread_fork&lt;/code&gt;.&lt;/p&gt;
+&lt;h3&gt;Parent's and Child's &lt;code&gt;fork&lt;/code&gt; return different values&lt;/h3&gt;
+&lt;p&gt;This is the trickiest part. You may want to take a look at the end of &lt;code&gt;syscall&lt;/code&gt;
+to find out the convention of return values. That is: &lt;em&gt;on success, &lt;code&gt;$a3&lt;/code&gt; stores
+0, and &lt;code&gt;$v0&lt;/code&gt; stores return value (or &lt;code&gt;$v0:$v1&lt;/code&gt; if retval is 64-bit); on failure, &lt;code&gt;$a3&lt;/code&gt;
+stores 1, and &lt;code&gt;$v0&lt;/code&gt; store error code&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;Parent part is quite easy, after call &lt;code&gt;thread_fork&lt;/code&gt;, just copy current thread's
+file table to child, and other book-keeping stuff you need to do, and finally,
+return with child's pid, and let &lt;code&gt;syscall&lt;/code&gt; deal with the rest.&lt;/p&gt;
+&lt;p&gt;Child part is not that trivial. In order to let child feel that &lt;code&gt;fork&lt;/code&gt; returns
+0, we need to play with the trapframe a little bit. Remember that when we call
+&lt;code&gt;thread_fork&lt;/code&gt; in parent's &lt;code&gt;sys_fork&lt;/code&gt;, we need to pass it with an entry point
+together with two arguments (&lt;code&gt;void* data1, unsigned long data2&lt;/code&gt;). As said before,
+I name the entry point as &lt;code&gt;child_forkentry&lt;/code&gt;, then what should we pass to it?
+Obviously, one is parent's trapframe copy (lies in kernel heap buffer) and
+another is parent's address space!&lt;/p&gt;
+&lt;p&gt;Once we've decided what to pass, how to pass is depend on your preference. One
+way is to pass trapframe pointer as the &lt;code&gt;data1&lt;/code&gt;, and address space pointer as
+&lt;code&gt;data2&lt;/code&gt; (with explicit type-case, of course). Another way may be we pass trapframe pointer
+as &lt;code&gt;data1&lt;/code&gt;, and assign the address space pointer to &lt;code&gt;$a0&lt;/code&gt; since we know &lt;code&gt;fork&lt;/code&gt; takes
+no arguments.&lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;child_forkentry&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;Ok, now &lt;code&gt;child_forkentry&lt;/code&gt; becomes the first function executed when child
+thread got run. First, we need to modify parent's trapframe's &lt;code&gt;$v0&lt;/code&gt; and &lt;code&gt;$a3&lt;/code&gt;
+to make child's fork looks success and return 0. Also, &lt;em&gt;don't forget to
+forward $epc by 4&lt;/em&gt; to avoid child keep calling fork. (BTW, we don't need
+to do this in parent since &lt;code&gt;syscall&lt;/code&gt; will take care of this.). &lt;/p&gt;
+&lt;p&gt;Then we
+need to load the address space into child's &lt;code&gt;curthread-&amp;gt;t_addrspace&lt;/code&gt; and
+activate it using &lt;code&gt;as_activate&lt;/code&gt;. Finally, we need to call &lt;code&gt;mips_usermode&lt;/code&gt;
+to return to user mode. But before that, we need to_ copy the modified
+trapframe from kernel heap to stack_ since &lt;code&gt;mips_usermode&lt;/code&gt; check this
+(&lt;code&gt;KASSERT(SAME_STACK(cpustacks[curcpu-&amp;gt;c_number]-1, (vaddr_t)tf))&lt;/code&gt;. How? Before
+call &lt;code&gt;mips_usermode&lt;/code&gt;, just declare a &lt;code&gt;struct trapframe&lt;/code&gt; (note: not pointer) and copy the content
+into it, then use its address as parameter to call &lt;code&gt;mips_usermode&lt;/code&gt;.&lt;/p&gt;
+&lt;h3&gt;Synchronization&lt;/h3&gt;
+&lt;p&gt;Note that &lt;code&gt;thread_fork&lt;/code&gt; will set newly created child thread runnable and try to
+switch to it immediately. So it's highly possible that before &lt;code&gt;thread_fork&lt;/code&gt;
+returns, the child thread is already running. This is not desired since we
+need to copy other stuff, like file table, to child thread after
+&lt;code&gt;thread_fork&lt;/code&gt;. We definitely don't want the child thread running without a
+file table. So &lt;em&gt;we need to prevent child thread from running until parent
+thread set everything up.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;So we need to disable interrupts before &lt;code&gt;thread_fork&lt;/code&gt; using &lt;code&gt;splhigh&lt;/code&gt;, and
+restore the old interrupt level using &lt;code&gt;splx&lt;/code&gt; after parent thread is done.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Update&lt;/strong&gt;: Disable interrupt does not necessarily stop child from running. If
+you adopt this approach, you need to use some synchronization primitives to
+coordinate between parent and child.&lt;/p&gt;
+&lt;p&gt;Or better, you can modify &lt;code&gt;thread_fork&lt;/code&gt;, copy whatever you need to copy (e.g.,
+file table) before &lt;code&gt;thread_make_runnable&lt;/code&gt;. Thus you won't have synchronization
+issue.&lt;/p&gt;</summary><category term="fork"></category><category term="syscall"></category></entry></feed>

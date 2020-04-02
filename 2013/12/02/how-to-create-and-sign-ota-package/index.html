@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns# fb: https://www.facebook.com/2008/fbml">
+<head>
+    <title>How to Create and Sign OTA Package - Pearls in Life</title>
+    <!-- Using the latest rendering mode for IE -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <link href="http://jhshi.me/images/favicon.ico" rel="icon">
+
+<link rel="canonical" href="http://jhshi.me/2013/12/02/how-to-create-and-sign-ota-package/index.html">
+
+        <meta name="author" content="Jinghao Shi" />
+        <meta name="keywords" content="ota,signapk,zip" />
+        <meta name="description" content="I&#39;m currently maintaining the Conductor App for PhoneLab testbed. One of the core tasks performed by conductor is to perform system OTA update, so that we can push platform changes to our participants, either to fix bugs, or to do system level experiments (libc, Dalvik VM, etc.). So the first step is, how to create an OTA package?" />
+
+            <meta property="fb:app_id" content="156751911645324"/>
+        <meta property="og:site_name" content="Pearls in Life" />
+        <meta property="og:type" content="article"/>
+        <meta property="og:title" content="How to Create and Sign OTA Package"/>
+        <meta property="og:url" content="http://jhshi.me/2013/12/02/how-to-create-and-sign-ota-package/index.html"/>
+        <meta property="og:description" content="I&#39;m currently maintaining the Conductor App for PhoneLab testbed. One of the core tasks performed by conductor is to perform system OTA update, so that we can push platform changes to our participants, either to fix bugs, or to do system level experiments (libc, Dalvik VM, etc.). So the first step is, how to create an OTA package?"/>
+        <meta property="article:published_time" content="2013-12-02" />
+            <meta property="article:section" content="Android" />
+            <meta property="article:tag" content="ota" />
+            <meta property="article:tag" content="signapk" />
+            <meta property="article:tag" content="zip" />
+            <meta property="article:author" content="Jinghao Shi" />
+
+
+    <!-- Bootstrap -->
+        <link rel="stylesheet" href="http://jhshi.me/theme/css/bootstrap.readable.min.css" type="text/css"/>
+    <link href="http://jhshi.me/theme/css/font-awesome.min.css" rel="stylesheet">
+
+    <link href="http://jhshi.me/theme/css/pygments/friendly.css" rel="stylesheet">
+    <link href="http://jhshi.me/theme/tipuesearch/tipuesearch.css" rel="stylesheet">
+    <link rel="stylesheet" href="http://jhshi.me/theme/css/style.css" type="text/css"/>
+
+        <link href="http://jhshi.me/feeds/all.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life ATOM Feed"/>
+
+
+
+        <link href="http://jhshi.me/feeds/android.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life Android ATOM Feed"/>
+
+</head>
+<body>
+
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({
+            appId      : "156751911645324",
+          xfbml      : true,
+          version    : 'v2.11'
+        });
+        FB.AppEvents.logPageView();
+      };
+
+      (function(d, s, id){
+         var js, fjs = d.getElementsByTagName(s)[0];
+         if (d.getElementById(id)) {return;}
+         js = d.createElement(s); js.id = id;
+         js.src = "https://connect.facebook.net/en_US/sdk.js";
+         fjs.parentNode.insertBefore(js, fjs);
+       }(document, 'script', 'facebook-jssdk'));
+    </script>
+
+<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+	<div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a href="http://jhshi.me/" class="navbar-brand">
+Pearls in Life            </a>
+        </div>
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav">
+                    <li><a href="/home">Home</a></li>
+                    <li><a href="/">Blog</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+              <li><span>
+                <form class="navbar-search" action="/search.html">
+                  <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input" required>
+                </form></span>
+              </li>
+              <li><a href="http://jhshi.me/blog/archives/index.html"><i class="fa fa-th-list"></i><span class="icon-label">Archives</span></a></li>
+            </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+</div> <!-- /.navbar -->
+<!-- Banner -->
+<!-- End Banner -->
+<div class="container">
+    <div class="row">
+        <div class="col-sm-9">
+    <section id="content">
+        <article>
+            <header class="page-header">
+                <h1>
+                    <a href="http://jhshi.me/2013/12/02/how-to-create-and-sign-ota-package/index.html"
+                       rel="bookmark"
+                       title="Permalink to How to Create and Sign OTA Package">
+                        How to Create and Sign OTA Package
+                    </a>
+                </h1>
+            </header>
+            <div class="entry-content">
+                <div class="panel">
+                    <div class="panel-body">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2013-12-02T15:07:00-05:00"> Mon 02 December 2013</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/android/index.html">Android</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/ota/index.html">ota</a>
+        /
+	<a href="http://jhshi.me/blog/tag/signapk/index.html">signapk</a>
+        /
+	<a href="http://jhshi.me/blog/tag/zip/index.html">zip</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                </div>
+                <p>I'm currently maintaining the <a href="https://play.google.com/store/apps/details?id=edu.buffalo.cse.phonelab.conductor">Conductor App</a> for 
+<a href="http://www.phone-lab.org">PhoneLab testbed</a>. One of the core tasks performed by conductor is to perform
+system OTA update, so that we can push platform changes to our participants,
+either to fix bugs, or to do system level experiments (libc, Dalvik VM, etc.).</p>
+<p>So the first step is, how to create an OTA package?</p>
+
+
+<h3>Directory Structure</h3>
+<p>Suppose we have a patched version of <code>libc</code> and we want to overwrite the
+previous one already in participants' phone, we need first to figure out where
+that file is in the file system. In this case, it's <code>/system/lib/libc.so</code>. Then
+our OTA package's directory structure must looks like this:</p>
+<div class="highlight"><pre>myupdate
+<span class="p">|</span>-- META-INF
+<span class="p">|</span>   <span class="sb">`</span>-- com
+<span class="p">|</span>       <span class="sb">`</span>-- google
+<span class="p">|</span>           <span class="sb">`</span>-- android
+<span class="p">|</span>               <span class="p">|</span>-- update-binary
+<span class="p">|</span>               <span class="sb">`</span>-- updater-script
+<span class="sb">`</span>-- system
+    <span class="sb">`</span>-- lib
+        <span class="sb">`</span>-- libc.so
+</pre></div>
+
+
+<p>The <code>update-binary</code> and <code>updater-script</code> are used to actually perform the 
+update, I'll explain them later.</p>
+<p>Note that the structure of the <code>system</code> needs to be exactly the same with what's
+in Android's setup, so that we can copy that directory directly to target
+system, and overwrite the files with the updated version.</p>
+<h3>The updater-script</h3>
+<p>The <code>update-binary</code>, as its name indicates, is a binary file that will parse the
+<code>updater-script</code> we write. It's quite standard and nothing special. You can obtain 
+a copy of this file <a href="https://github.com/koush/AnyKernel/tree/master/META-INF/com/google/android">here</a>.</p>
+<p>The <code>updater-scipts</code> contains the operations we want to perform. Its written
+using <a href="http://wiki.cyanogenmod.org/w/Doc:_About_Edify">Edify</a> scripting language, which has quite simple and intuitive
+syntax. You can find more details in this <a href="http://forum.xda-developers.com/showthread.php?t=1187313">xda thread</a>.</p>
+<p>In this case, what we need to do is quite simple: mount the <code>/system</code> partition
+and copy the files in the OTA package to target file system. So the
+<code>updater-script</code> may looks like this:</p>
+<div class="highlight"><pre>mount(&quot;ext4&quot;, &quot;EMMC&quot;, &quot;/dev/block/platform/omap/omap_hsmmc.0/by-name/system&quot;, &quot;/system&quot;);
+package_extract_dir(&quot;system&quot;, &quot;/system&quot;);                                        
+unmount(&quot;/system&quot;);       
+</pre></div>
+
+
+<p>First, we mount the target file system's <code>system</code> partition using the <code>mount</code>
+command, the arguments are:</p>
+<ul>
+<li><code>FSTYPE</code>: File system type. In this case, it's "ext4"</li>
+<li><code>TYPE</code>: Storage type. <a href="http://www.datalight.com/solutions/technologies/emmc/what-is-emmc">"EMMC"</a> means internal solid state storage device on MMC
+   bus, which is actually NAND flash.</li>
+<li><code>DEV</code>: The device to mount. </li>
+<li><code>PATH</code>: Mount point.</li>
+</ul>
+<p>You can find all the mounted devices in Android by <code>adb shell</code> then <code>mount</code>.
+Here is one sample output:</p>
+<div class="highlight"><pre>shell@android:/ $ mount
+rootfs / rootfs ro,relatime 0 0
+tmpfs /dev tmpfs rw,nosuid,relatime,mode=755 0 0
+devpts /dev/pts devpts rw,relatime,mode=600 0 0
+proc /proc proc rw,relatime 0 0
+sysfs /sys sysfs rw,relatime 0 0
+none /acct cgroup rw,relatime,cpuacct 0 0
+tmpfs /mnt/secure tmpfs rw,relatime,mode=700 0 0
+tmpfs /mnt/asec tmpfs rw,relatime,mode=755,gid=1000 0 0
+tmpfs /mnt/obb tmpfs rw,relatime,mode=755,gid=1000 0 0
+none /dev/cpuctl cgroup rw,relatime,cpu 0 0
+/dev/block/platform/omap/omap_hsmmc.0/by-name/system /system ext4 ro,relatime,barrier=1,data=ordered 0 0
+/dev/block/platform/omap/omap_hsmmc.0/by-name/efs /factory ext4 ro,relatime,barrier=1,data=ordered 0 0
+/dev/block/platform/omap/omap_hsmmc.0/by-name/cache /cache ext4 rw,nosuid,nodev,noatime,errors=panic,barrier=1,nomblk_io_submit,data=ordered 0 0
+/dev/block/platform/omap/omap_hsmmc.0/by-name/userdata /data ext4 rw,nosuid,nodev,noatime,errors=panic,barrier=1,nomblk_io_submit,data=ordered 0 0
+/sys/kernel/debug /sys/kernel/debug debugfs rw,relatime 0 0
+/dev/fuse /mnt/shell/emulated fuse rw,nosuid,nodev,relatime,user_id=1023,group_id=1023,default_permissions,allow_other 0 0
+</pre></div>
+
+
+<p>Then we do the actual copy using <code>package_extract_dir</code> command. This will copy 
+the updated <code>libc.so</code> file.</p>
+<p>And finally we unmount the <code>/system</code> partition.</p>
+<h3>Pack It Up</h3>
+<p><em>Inside <code>myupdate</code> directory</em>, use this command to create the zip file.</p>
+<div class="highlight"><pre>zip -r9 ../myupdate.zip *
+</pre></div>
+
+
+<p>Note that the command is executed <em>inside</em> the <code>myupdate</code> directory, and the
+zip file is created in parent directory. This is because the <code>META-INF</code> and
+<code>system</code> directory must be in the root directory of the final zip file.</p>
+<h3>Sign the OTA Package</h3>
+<p>Up to this point, the OTA package we just created should be able to applied
+successfully on custom recoveries like CWM, in which the signature
+verification is turned off by default.</p>
+<p>However, to automate the OTA process, we're using the 
+<a href="http://developer.android.com/reference/android/os/RecoverySystem.html">Android RecoverySystem</a> to reboot the phone and apply the update, in that
+case, the signature verification is turned on. So we need to sign the package
+with proper keys, which are <em>platform</em> keys.</p>
+<p>Suppose you've get the platform keys named <code>platform.x509.pem</code> and
+<code>platform.pk8</code>, we can use the <a href="http://www.adbtoolkit.com/kitchen/tools/linux/signapk.jar">signapk.jar</a> tool.</p>
+<div class="highlight"><pre>java -jar signapk.jar -w platform.x509.pem platform.pk8 myupdate.zip myupdate-signed.zip
+</pre></div>
+
+
+<p>Note that:</p>
+<ul>
+<li>We need the <code>-w</code> flag to sign the whole zip file.</li>
+<li>The sequence of the two key files: pem file goes first, then the pk8 file.</li>
+</ul>
+<p>This will generate the final OTA package, <code>myupdate-signed.zip</code>, which WILL pass
+the signature verification of the recovery system.</p>
+            </div>
+            <!-- /.entry-content -->
+<section class="well" id="related-posts">
+    <h4>Related Posts:</h4>
+    <ul>
+        <li><a href="http://jhshi.me/2016/08/06/filenotfound-exception-in-recoverysysteminstallpackage/index.html">FileNotFound Exception in RecoverySystem.installPackage</a></li>
+        <li><a href="http://jhshi.me/2014/08/28/sign-issues-related-to-ota-update/index.html">Signing Issues related to OTA Update</a></li>
+        <li><a href="http://jhshi.me/2014/11/09/aosp-release-tools/index.html">AOSP Release Tools</a></li>
+    </ul>
+</section>
+<section class="well" id="related-posts">
+      <h4><a href=https://github.com/jhshi/blog_source/commits/master/content/2013-12-02-how-to-create-and-sign-ota-package.markdown>Post History:</a></h4>
+
+      <b>Sunday 06:23 PM, August 14 2016</b><br/><p>fix broken url</p>
+      <b>Sunday 11:42 PM, October 11 2015</b><br/><p>fix summary end</p>
+      <b>Saturday 07:19 PM, October 10 2015</b><br/><p>fix category</p>
+      <b>Saturday 06:06 PM, October 10 2015</b><br/><p>working</p>
+</section>
+<div class="fb-like" 
+     data-href="http://jhshi.me/2013/12/02/how-to-create-and-sign-ota-package/index.html"
+     data-layout="standard" 
+     data-action="like" 
+     data-show-faces="true">
+</div>
+
+
+<div class="fb-comments"
+     data-href="http://jhshi.me/2013/12/02/how-to-create-and-sign-ota-package/index.html"
+     data-numposts="5"
+     data-order-by="reverse_time"
+     data-width="100%"
+    ></div>
+        </article>
+    </section>
+
+        </div>
+        <div class="col-sm-3" id="sidebar">
+            <aside>
+
+<section class="well well-sm">
+    <ul class="list-group list-group-flush">
+        <li class="list-group-item"><h4><i class="fa fa-eye"></i><span class="icon-label">0 Hits</span></h4>
+    <li class="list-group-item"><h4><i class="fa fa-fire fa-lg"></i><span class="icon-label">Popular Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Recent Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/categories/index.html"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Categories</span></h4></a>
+        <ul class="list-group" id="categories">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/os161/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> os161 [27]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/linux/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> linux [24]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/android/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> android [20]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/errors/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> errors [14]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/network/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> network [11]
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/tags/index.html"><h4><i class="fa fa-tags fa-lg"></i><span class="icon-label">Tags</span></h4></a>
+        <ul class="list-group list-inline tagcloud" id="tags">
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/aosp/index.html">
+                    AOSP
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/backup/index.html">
+                    backup
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/beamer/index.html">
+                    beamer
+                </a>
+            </li>
+            <li class="list-group-item tag-7">
+                <a href="http://jhshi.me/blog/tag/blog/index.html">
+                    blog
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/c/index.html">
+                    c
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/gdb/index.html">
+                    gdb
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/hammerhead/index.html">
+                    hammerhead
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/jekyll/index.html">
+                    jekyll
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/mac/index.html">
+                    mac
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ns2/index.html">
+                    ns2
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ota/index.html">
+                    OTA
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/plugin/index.html">
+                    plugin
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/python/index.html">
+                    python
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ruby/index.html">
+                    ruby
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ssh/index.html">
+                    ssh
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/synchronization/index.html">
+                    synchronization
+                </a>
+            </li>
+            <li class="list-group-item tag-1">
+                <a href="http://jhshi.me/blog/tag/syscall/index.html">
+                    syscall
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/travis/index.html">
+                    travis
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ubuntu/index.html">
+                    ubuntu
+                </a>
+            </li>
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/vm/index.html">
+                    vm
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Social</span></h4>
+      <ul class="list-group" id="social">
+        <li class="list-group-item"><a href="https://github.com/jhshi"><i class="fa fa-github-square fa-lg"></i> github</a></li>
+        <li class="list-group-item"><a href="http://stackoverflow.com/users/963538/jinghao-shi"><i class="fa fa-stack-overflow fa-lg"></i> stack-overflow</a></li>
+      </ul>
+    </li>
+
+    <li class="list-group-item"><h4><i class="fa fa-github fa-lg"></i><span class="icon-label">GitHub Repos</span></h4>
+        <div id="gh_repos">
+            <p class="list-group-item">Status updating...</p>
+        </div>
+            <a href="https://github.com/jhshi">@jhshi</a> on GitHub
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-external-link-square fa-lg"></i><span class="icon-label">Links</span></h4>
+      <ul class="list-group" id="links">
+        <li class="list-group-item">
+            <a href="http://blue.cse.buffalo.edu" target="_blank">
+                blue Systems Group
+            </a>
+        </li>
+        <li class="list-group-item">
+            <a href="http://www.buffalo.edu" target="_blank">
+                University at Buffalo
+            </a>
+        </li>
+      </ul>
+    </li>
+    </ul>
+</section>            </aside>
+        </div>
+    </div>
+</div>
+<footer>
+   <div class="container">
+      <hr>
+      <div class="row">
+         <div class="col-xs-10">&copy; 2018 Jinghao Shi
+            &middot;
+            Updated on 2020-04-02
+            &middot; Powered by <a href="https://github.com/jhshi/pelican-bootstrap3" target="_blank">pelican-bootstrap3</a>,
+            <a href="http://docs.getpelican.com/" target="_blank">Pelican</a>,
+            <a href="http://getbootstrap.com" target="_blank">Bootstrap</a>         </div>
+         <div class="col-xs-2"><p class="pull-right"><i class="fa fa-arrow-up"></i> <a href="#">Back to top</a></p></div>
+      </div>
+   </div>
+</footer>
+<script src="http://jhshi.me/theme/js/jquery.min.js"></script>
+
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="http://jhshi.me/theme/js/bootstrap.min.js"></script>
+
+<!-- Enable responsive features in IE8 with Respond.js (https://github.com/scottjehl/Respond) -->
+<script src="http://jhshi.me/theme/js/respond.min.js"></script>
+
+    <!-- GitHub JS -->
+    <script type="text/javascript">
+        $(document).ready(function () {
+            if (!window.jXHR) {
+                var jxhr = document.createElement('script');
+                jxhr.type = 'text/javascript';
+                jxhr.src = 'http://jhshi.me/theme/js/jXHR.js';
+                var s = document.getElementsByTagName('script')[0];
+                s.parentNode.insertBefore(jxhr, s);
+            }
+
+            github.showRepos({
+                user: 'jhshi',
+                count: 5,
+                skip_forks: true,
+                target: '#gh_repos'
+            });
+        });
+    </script>
+    <script src="http://jhshi.me/theme/js/github.js" type="text/javascript"></script>
+    <!-- End GitHub JS Code -->
+    <!-- Google Analytics -->
+    <script type="text/javascript">
+
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-39842003-1']);
+        _gaq.push(['_trackPageview']);
+
+        (function () {
+            var ga = document.createElement('script');
+            ga.type = 'text/javascript';
+            ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+    <!-- End Google Analytics Code -->
+
+        <script type="text/javascript">var addthis_config = {"data_track_addressbar": true};</script>
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5a6b8e0310bbbd35"></script>
+</body>
+</html>

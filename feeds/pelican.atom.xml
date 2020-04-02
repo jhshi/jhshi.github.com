@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Pearls in Life</title><link href="http://jhshi.me/" rel="alternate"></link><link href="http://jhshi.me/feeds/pelican.atom.xml" rel="self"></link><id>http://jhshi.me/</id><updated>2016-09-28T18:44:07-04:00</updated><entry><title>Automated Testing of Pelican Blog Using Travis-CI</title><link href="http://jhshi.me/2016/09/28/automated-testing-of-pelican-blog-using-travis-ci/index.html" rel="alternate"></link><updated>2016-09-28T18:44:07-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-09-28:2016/09/28/automated-testing-of-pelican-blog-using-travis-ci/index.html</id><summary type="html">&lt;p&gt;Recently I adjusted my blog work flow a bit to utilize &lt;a class="reference external" href="https://travis-ci.org/"&gt;Travis CI&lt;/a&gt; to automatically test and publish the site. Here is
+my setup process.&lt;/p&gt;
+
+&lt;div class="section" id="background"&gt;
+&lt;h2&gt;Background&lt;/h2&gt;
+&lt;p&gt;I use &lt;a class="reference external" href="http://blog.getpelican.com/"&gt;Pelican&lt;/a&gt; to maintain this blog website.
+The source of the site content (ReStructured text, not html) is hosted at this
+GitHub repository: &lt;a class="reference external" href="https://github.com/jhshi/blog_source"&gt;https://github.com/jhshi/blog_source&lt;/a&gt;. The generated site is
+hosted at here: &lt;a class="reference external" href="https://github.com/jhshi/jhshi.github.com"&gt;https://github.com/jhshi/jhshi.github.com&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;My previous work flow was:&lt;/p&gt;
+&lt;ol class="arabic simple"&gt;
+&lt;li&gt;Write content locally&lt;/li&gt;
+&lt;li&gt;Do a bit testing using local HTTP server (mostly looking for format
+glitches)&lt;/li&gt;
+&lt;li&gt;Commit and push to the &lt;tt class="docutils literal"&gt;jhshi/blog_source&lt;/tt&gt; repo.&lt;/li&gt;
+&lt;li&gt;Do a &lt;tt class="docutils literal"&gt;fab github&lt;/tt&gt; to generate the site and push to the
+&lt;tt class="docutils literal"&gt;jhshi/jhshi.github.com&lt;/tt&gt; repo.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;As you can see, the process (especially step 2 - 4) is a bit tedious, and the
+site is not throughly tested. In particular, I do not always run &lt;tt class="docutils literal"&gt;linkchecker&lt;/tt&gt;
+before I push. And finally, I need to manually &lt;em&gt;publish&lt;/em&gt; the site every time.&lt;/p&gt;
+&lt;p&gt;So the goal is to shift some of the heavy-lifting, especially testing and
+publishing, to a continuous integration tool. Travis seems the natural choice
+given its excellent integration with Github.&lt;/p&gt;
+&lt;p&gt;Before you get started, I suppose you have already connected Travis with your
+Github account. Refer to the documentation from Travis for more details:
+&lt;a class="reference external" href="https://docs.travis-ci.com/user/getting-started/"&gt;https://docs.travis-ci.com/user/getting-started/&lt;/a&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="build-environment"&gt;
+&lt;h2&gt;Build Environment&lt;/h2&gt;
+&lt;p&gt;As a first step, we first tell Travis how to build our project. Put these
+content in a file named &amp;quot;.travis.yml&amp;quot; in your projects root directory.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3
+4
+5&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="l-Scalar-Plain"&gt;language&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt; &lt;span class="l-Scalar-Plain"&gt;python&lt;/span&gt;
+&lt;span class="l-Scalar-Plain"&gt;install&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt;
+    &lt;span class="l-Scalar-Plain"&gt;NO_SUDO=1 source setup.sh&lt;/span&gt;
+&lt;span class="l-Scalar-Plain"&gt;script&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt;
+    &lt;span class="l-Scalar-Plain"&gt;make html&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;There are two things worth noticing:&lt;/p&gt;
+&lt;ol class="arabic simple"&gt;
+&lt;li&gt;The &lt;tt class="docutils literal"&gt;setup.sh&lt;/tt&gt; script, which can be found
+here: &lt;a class="reference external" href="https://github.com/jhshi/blog_source/blob/master/setup.sh"&gt;https://github.com/jhshi/blog_source/blob/master/setup.sh&lt;/a&gt;, is
+responsible to set the pelican environment, including cloning proper plugins
+and themes repository. The &lt;tt class="docutils literal"&gt;NO_SUDO&lt;/tt&gt; flag tells the script to not use
+&lt;tt class="docutils literal"&gt;sudo&lt;/tt&gt; and also use &lt;tt class="docutils literal"&gt;https&lt;/tt&gt; URLs for repository instead of &lt;tt class="docutils literal"&gt;ssh&lt;/tt&gt;.&lt;/li&gt;
+&lt;li&gt;If you use &lt;tt class="docutils literal"&gt;ga_page_view&lt;/tt&gt; plugin, the build will fail since the private key
+file &lt;tt class="docutils literal"&gt;ga.pem&lt;/tt&gt; will not exist in the freshly cloned repository: it
+shouldn't. I'll talk about how to deal with this later. But for now, we can
+tell &lt;tt class="docutils literal"&gt;pelican&lt;/tt&gt; to silently ignore this error. Change the &lt;tt class="docutils literal"&gt;ga_page_view&lt;/tt&gt;
+configuration in &lt;tt class="docutils literal"&gt;pelicanconf.py&lt;/tt&gt; slightly like this:&lt;/li&gt;
+&lt;/ol&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3
+4
+5
+6
+7
+8&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;isfile&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;ga.pem&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;GOOGLE_SERVICE_ACCOUNT&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;xxx&amp;#39;&lt;/span&gt;
+    &lt;span class="n"&gt;GOOGLE_KEY_FILE&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;PROJECT_ROOT&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;ga.pem&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;GA_START_DATE&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;2005-01-01&amp;#39;&lt;/span&gt;
+    &lt;span class="n"&gt;GA_END_DATE&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;today&amp;#39;&lt;/span&gt;
+    &lt;span class="n"&gt;GA_METRIC&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;ga:pageviews&amp;#39;&lt;/span&gt;
+&lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;[WARN] No key found for Google Analytics&amp;quot;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Commit and push to the master branch of your source repository, and check
+&lt;tt class="docutils literal"&gt;travis&lt;/tt&gt; logs to make sure it can successfully build the site.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="private-files"&gt;
+&lt;h2&gt;Private Files&lt;/h2&gt;
+&lt;p&gt;There are two private files in my case: the key for Google Analytics API and the
+deploy key for the website repository.&lt;/p&gt;
+&lt;p&gt;Let's first create the deploy key if you don't have it already. Note that this
+must NOT your primary ssh key. So I suggest you create a new pair of SSH keys
+just for the website repo.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;ssh-keygen -f ./deploy_key
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Copy the content of &lt;tt class="docutils literal"&gt;deploy_key.pub&lt;/tt&gt; to your project's deploy keys settings,
+then move it to somewhere else or delete it: we don't really need it anymore.&lt;/p&gt;
+&lt;p&gt;Next, install &lt;tt class="docutils literal"&gt;travis&lt;/tt&gt; CLI tool, which is used to encrypt the private files.
+&lt;tt class="docutils literal"&gt;travis&lt;/tt&gt; depends on ruby greater than 2.0. So I recommend to use the Brightbox
+ppa for ruby.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3
+4
+5
+6
+7
+8&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;sudo add-apt-repository ppa:brightbox/ruby-ng
+&lt;span class="nv"&gt;$ &lt;/span&gt;sudo apt-get update
+&lt;span class="nv"&gt;$ &lt;/span&gt;sudo apt-get install ruby2.2-dev ruby-2.2
+&lt;span class="nv"&gt;$ &lt;/span&gt;sudo gem install travis
+&lt;span class="nv"&gt;$ &lt;/span&gt;travis -v
+1.8.2 &lt;span class="c"&gt;# &amp;lt;--- your mileage may vary&lt;/span&gt;
+&lt;span class="nv"&gt;$ &lt;/span&gt;travis login
+&lt;span class="c"&gt;# &amp;lt;--- enter your GITHUB username and password&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Next, use &lt;tt class="docutils literal"&gt;travis&lt;/tt&gt; to encrypt the file. Note that you can only encrypt one
+file in total. Here we have two files to encrypt: the key for Google API and the
+key for deploy the website. So we need to tar it first:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;tar cvzf secrets.tgz ga.pem deploy_key
+&lt;span class="nv"&gt;$ &lt;/span&gt;travis encrypt-file secrets.tgz
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Finally, unpack those secrets by add these lines to the &lt;tt class="docutils literal"&gt;.travis.yml&lt;/tt&gt;.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="l-Scalar-Plain"&gt;before_install&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt;
+&lt;span class="p-Indicator"&gt;-&lt;/span&gt; &lt;span class="l-Scalar-Plain"&gt;openssl aes-256-cbc -K $encrypted_XXXXXX_key -iv $encrypted_XXXXXX_iv -in secrets.tgz.enc -out secrets.tgz -d&lt;/span&gt;
+&lt;span class="p-Indicator"&gt;-&lt;/span&gt; &lt;span class="l-Scalar-Plain"&gt;tar xvf secrets.tgz&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Replace &lt;tt class="docutils literal"&gt;XXXXXX&lt;/tt&gt; with the magic number you got from &lt;tt class="docutils literal"&gt;travis &lt;span class="pre"&gt;encrypt-file&lt;/span&gt;&lt;/tt&gt;.&lt;/p&gt;
+&lt;p&gt;Now, delete &lt;tt class="docutils literal"&gt;secrets.tgz&lt;/tt&gt;, and add &lt;tt class="docutils literal"&gt;deploy_key&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;ga.pem&lt;/tt&gt; to your
+&lt;tt class="docutils literal"&gt;.gitignore&lt;/tt&gt;, commit all changes, and push to &lt;tt class="docutils literal"&gt;master&lt;/tt&gt; branch. Check travis
+logs to make sure the sites gets built. In particular, you should not see the
+&lt;tt class="docutils literal"&gt;No key&lt;/tt&gt; warning for &lt;tt class="docutils literal"&gt;ga_page_view&lt;/tt&gt; plugin.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="automatic-deployment"&gt;
+&lt;h2&gt;Automatic Deployment&lt;/h2&gt;
+&lt;p&gt;Finally, let's tell travis to deploy the website if the test passes. Add this
+rule to your &lt;tt class="docutils literal"&gt;Makefile&lt;/tt&gt;:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nf"&gt;check&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;clean&lt;/span&gt; &lt;span class="n"&gt;publish&lt;/span&gt;
+    &lt;span class="nb"&gt;cd&lt;/span&gt; &lt;span class="k"&gt;$(&lt;/span&gt;OUTPUTDIR&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class="k"&gt;$(&lt;/span&gt;PY&lt;span class="k"&gt;)&lt;/span&gt; -m pelican.server &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class="nb"&gt;cd&lt;/span&gt; - &lt;span class="p"&gt;&amp;amp;&lt;/span&gt;
+    sleep 3
+    linkchecker http://localhost:8000
+    pgrep -f &lt;span class="s2"&gt;&amp;quot;^python -m pelican.server&amp;quot;&lt;/span&gt; &lt;span class="p"&gt;|&lt;/span&gt; xargs &lt;span class="nb"&gt;kill&lt;/span&gt; -9
+
+
+&lt;span class="nf"&gt;travis&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;clean&lt;/span&gt; &lt;span class="n"&gt;check&lt;/span&gt; &lt;span class="n"&gt;publish&lt;/span&gt;
+    chmod &lt;span class="m"&gt;600&lt;/span&gt; deploy_key &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+        &lt;span class="nb"&gt;eval&lt;/span&gt; &lt;span class="sb"&gt;`&lt;/span&gt;ssh-agent -s&lt;span class="sb"&gt;`&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+        ssh-add deploy_key &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+        &lt;span class="nb"&gt;cd&lt;/span&gt; &lt;span class="k"&gt;$(&lt;/span&gt;OUTPUTDIR&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+        git init . &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+        git config user.email &lt;span class="s2"&gt;&amp;quot;robot@travis-ci.org&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class="se"&gt;\&lt;/span&gt;
+        git config user.name &lt;span class="s2"&gt;&amp;quot;Travis&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class="se"&gt;\&lt;/span&gt;
+        git remote add origin &lt;span class="k"&gt;$(&lt;/span&gt;GITHUB_PAGES_REPO&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+        git add --all --force . &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+        git commit -am &lt;span class="s2"&gt;&amp;quot;Site updated on `date -R`&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+        git push origin master --force &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+        &lt;span class="nb"&gt;cd&lt;/span&gt; -
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Note that we also check URL links using &lt;tt class="docutils literal"&gt;linkchecker&lt;/tt&gt; before deploying. Change
+the make target in &lt;tt class="docutils literal"&gt;.travis.yml&lt;/tt&gt; to &lt;tt class="docutils literal"&gt;make travis&lt;/tt&gt;, commit and push.  And now
+if the site is good, it should be automatically deployed.&lt;/p&gt;
+&lt;/div&gt;
+</summary><category term="travis"></category><category term="github"></category><category term="blog"></category><category term="testing"></category></entry><entry><title>Post Revision Plugin for Pelican</title><link href="http://jhshi.me/2015/10/13/post-revision-plugin-for-pelican/index.html" rel="alternate"></link><updated>2015-10-13T00:59:06-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2015-10-13:2015/10/13/post-revision-plugin-for-pelican/index.html</id><summary type="html">&lt;p&gt;I used to have a &lt;a class="reference external" href="/2013/11/17/post-revision-plugin-for-octopress/index.html"&gt;post revision plugin for Octopress&lt;/a&gt;
+and I love it. Here is my effort to achieve the same effect in Pelican.&lt;/p&gt;
+
+&lt;p&gt;For this purpose, I came up with this &lt;a class="reference external" href="https://github.com/jhshi/pelican.plugins.post_revision"&gt;post-revision&lt;/a&gt; plugin and also a
+template in the &lt;a class="reference external" href="https://github.com/jhshi/pelican-bootstrap3"&gt;pelican-bootstrap3&lt;/a&gt; theme. The plugin generates some meta data
+for each article that contains the history information. And the templates
+consumes that meta data and present them in the HTML files.&lt;/p&gt;
+&lt;div class="section" id="post-revision-plugin"&gt;
+&lt;h2&gt;Post Revision Plugin&lt;/h2&gt;
+&lt;p&gt;The plugin itself is quite straightforward. The article or page's file path on
+the local file system can be accessed through the &lt;tt class="docutils literal"&gt;source_path&lt;/tt&gt; attribute.
+After the site is generated (&lt;tt class="docutils literal"&gt;page_generator_finalized&lt;/tt&gt; and
+&lt;tt class="docutils literal"&gt;article_generator_finalized&lt;/tt&gt; signal), we iterate through the articles and
+pages, and do a &lt;tt class="docutils literal"&gt;git log&lt;/tt&gt; on them.&lt;/p&gt;
+&lt;p&gt;For simplicity, right now we only store two piece of information for each Git
+commit: date and commit message title (the first line). The commits are stored
+as a list of &lt;tt class="docutils literal"&gt;(date, msg)&lt;/tt&gt; tuple in reverse order as the &lt;tt class="docutils literal"&gt;history&lt;/tt&gt;
+attribute.&lt;/p&gt;
+&lt;p&gt;Optionally, if you specified &lt;tt class="docutils literal"&gt;GITHUB_URL&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;PROJECT_ROOT&lt;/tt&gt; variables in
+the configuration file, this plugin also generates a link to the Github commit
+history page for the post, stored as &lt;tt class="docutils literal"&gt;github_history_url&lt;/tt&gt; attribute.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="templates"&gt;
+&lt;h2&gt;Templates&lt;/h2&gt;
+&lt;p&gt;Now we have the history meta data for the article, we can put it some where in
+the article template. I used the &lt;a class="reference external" href="https://github.com/jhshi/pelican-bootstrap3"&gt;pelican-bootstrap3&lt;/a&gt; theme. And the history
+information is in the &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;post-revision.html&lt;/span&gt;&lt;/tt&gt; template:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;{% if article.history %}
+&lt;span class="nt"&gt;&amp;lt;section&lt;/span&gt; &lt;span class="na"&gt;class=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;well&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;id=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;related-posts&amp;quot;&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt;
+    {% if article.github_history_url %}
+      &lt;span class="nt"&gt;&amp;lt;h4&amp;gt;&amp;lt;a&lt;/span&gt; &lt;span class="na"&gt;href=&lt;/span&gt;&lt;span class="s"&gt;{{&lt;/span&gt; &lt;span class="na"&gt;article&lt;/span&gt;&lt;span class="err"&gt;.&lt;/span&gt;&lt;span class="na"&gt;github_history_url&lt;/span&gt; &lt;span class="err"&gt;}}&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt;{{ POST_REVISION_TEXT|default(&amp;#39;Post History&amp;#39;) }}&lt;span class="nt"&gt;&amp;lt;/a&amp;gt;&amp;lt;/h4&amp;gt;&lt;/span&gt;
+    {% else %}
+      &lt;span class="nt"&gt;&amp;lt;h4&amp;gt;&lt;/span&gt;{{ POST_REVISION_TEXT|default(&amp;#39;Post History:&amp;#39;) }}&lt;span class="nt"&gt;&amp;lt;/h4&amp;gt;&lt;/span&gt;
+    {% endif %}
+
+    {% for date, msg in article.history[:POST_HISTORY_MAX_COUNT|default(5)] %}
+      &lt;span class="nt"&gt;&amp;lt;b&amp;gt;&lt;/span&gt;{{ date|strftime(&amp;quot;%A %I:%M %p, %B %d %Y&amp;quot;) }}&lt;span class="nt"&gt;&amp;lt;/b&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;p&amp;gt;&lt;/span&gt;{{ msg }}&lt;span class="nt"&gt;&amp;lt;/p&amp;gt;&lt;/span&gt;
+    {% endfor %}
+&lt;span class="nt"&gt;&amp;lt;/section&amp;gt;&lt;/span&gt;
+{% endif %}
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Here we have some more settings:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;tt class="docutils literal"&gt;POST_REVISION_TEXT&lt;/tt&gt; is the title of the post revision section.&lt;/li&gt;
+&lt;li&gt;&lt;tt class="docutils literal"&gt;POST_HISTORY_MAX_COUNT&lt;/tt&gt; controls how many history items to show.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;You can see a working example down below.&lt;/p&gt;
+&lt;/div&gt;
+</summary><category term="post revision"></category><category term="git"></category><category term="history"></category><category term="plugin"></category></entry></feed>

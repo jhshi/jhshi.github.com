@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns# fb: https://www.facebook.com/2008/fbml">
+<head>
+    <title>OS161 File System Calls - Pearls in Life</title>
+    <!-- Using the latest rendering mode for IE -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <link href="http://jhshi.me/images/favicon.ico" rel="icon">
+
+<link rel="canonical" href="http://jhshi.me/2012/03/14/os161-file-system-calls/index.html">
+
+        <meta name="author" content="Jinghao Shi" />
+        <meta name="keywords" content="open,read,write,close,dup2,lseek,syscall" />
+        <meta name="description" content="Assume you&#39;ve read my previous post on file operations in OS161, then everything is quite straightforward. One more thing, remember to protect every access to the file descriptor data structure using lock! Let&#39;s get started." />
+
+            <meta property="fb:app_id" content="156751911645324"/>
+        <meta property="og:site_name" content="Pearls in Life" />
+        <meta property="og:type" content="article"/>
+        <meta property="og:title" content="OS161 File System Calls"/>
+        <meta property="og:url" content="http://jhshi.me/2012/03/14/os161-file-system-calls/index.html"/>
+        <meta property="og:description" content="Assume you&#39;ve read my previous post on file operations in OS161, then everything is quite straightforward. One more thing, remember to protect every access to the file descriptor data structure using lock! Let&#39;s get started."/>
+        <meta property="article:published_time" content="2012-03-14" />
+            <meta property="article:section" content="os161" />
+            <meta property="article:tag" content="open" />
+            <meta property="article:tag" content="read" />
+            <meta property="article:tag" content="write" />
+            <meta property="article:tag" content="close" />
+            <meta property="article:tag" content="dup2" />
+            <meta property="article:tag" content="lseek" />
+            <meta property="article:tag" content="syscall" />
+            <meta property="article:author" content="Jinghao Shi" />
+
+
+    <!-- Bootstrap -->
+        <link rel="stylesheet" href="http://jhshi.me/theme/css/bootstrap.readable.min.css" type="text/css"/>
+    <link href="http://jhshi.me/theme/css/font-awesome.min.css" rel="stylesheet">
+
+    <link href="http://jhshi.me/theme/css/pygments/friendly.css" rel="stylesheet">
+    <link href="http://jhshi.me/theme/tipuesearch/tipuesearch.css" rel="stylesheet">
+    <link rel="stylesheet" href="http://jhshi.me/theme/css/style.css" type="text/css"/>
+
+        <link href="http://jhshi.me/feeds/all.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life ATOM Feed"/>
+
+
+
+        <link href="http://jhshi.me/feeds/os161.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life os161 ATOM Feed"/>
+
+</head>
+<body>
+
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({
+            appId      : "156751911645324",
+          xfbml      : true,
+          version    : 'v2.11'
+        });
+        FB.AppEvents.logPageView();
+      };
+
+      (function(d, s, id){
+         var js, fjs = d.getElementsByTagName(s)[0];
+         if (d.getElementById(id)) {return;}
+         js = d.createElement(s); js.id = id;
+         js.src = "https://connect.facebook.net/en_US/sdk.js";
+         fjs.parentNode.insertBefore(js, fjs);
+       }(document, 'script', 'facebook-jssdk'));
+    </script>
+
+<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+	<div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a href="http://jhshi.me/" class="navbar-brand">
+Pearls in Life            </a>
+        </div>
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav">
+                    <li><a href="/home">Home</a></li>
+                    <li><a href="/">Blog</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+              <li><span>
+                <form class="navbar-search" action="/search.html">
+                  <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input" required>
+                </form></span>
+              </li>
+              <li><a href="http://jhshi.me/blog/archives/index.html"><i class="fa fa-th-list"></i><span class="icon-label">Archives</span></a></li>
+            </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+</div> <!-- /.navbar -->
+<!-- Banner -->
+<!-- End Banner -->
+<div class="container">
+    <div class="row">
+        <div class="col-sm-9">
+    <section id="content">
+        <article>
+            <header class="page-header">
+                <h1>
+                    <a href="http://jhshi.me/2012/03/14/os161-file-system-calls/index.html"
+                       rel="bookmark"
+                       title="Permalink to OS161 File System Calls">
+                        OS161 File System Calls
+                    </a>
+                </h1>
+            </header>
+            <div class="entry-content">
+                <div class="panel">
+                    <div class="panel-body">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2012-03-14T21:19:17-04:00"> Wed 14 March 2012</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/os161/index.html">os161</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/open/index.html">open</a>
+        /
+	<a href="http://jhshi.me/blog/tag/read/index.html">read</a>
+        /
+	<a href="http://jhshi.me/blog/tag/write/index.html">write</a>
+        /
+	<a href="http://jhshi.me/blog/tag/close/index.html">close</a>
+        /
+	<a href="http://jhshi.me/blog/tag/dup2/index.html">dup2</a>
+        /
+	<a href="http://jhshi.me/blog/tag/lseek/index.html">lseek</a>
+        /
+	<a href="http://jhshi.me/blog/tag/syscall/index.html">syscall</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                </div>
+                <p>Assume you've read my previous post on <a href="/2012/03/14/os161-file-operation-overview/">file operations in OS161</a>,
+then everything is quite straightforward. One more thing, remember to protect
+every access to the file descriptor data structure using lock!</p>
+<p>Let's get started.</p>
+
+
+<h3><code>sys_open</code> and <code>sys_close</code></h3>
+<p>We'll rely on <code>vfs_open</code> to do most of the work. But before that, we need to
+check:</p>
+<ul>
+<li>
+<p>Is <code>filename</code> a valid pointer? (alignment, NULL, kernel pointer, etc.)</p>
+</li>
+<li>
+<p>Is flags valid? flags can only contain exactly one of <code>O_RDONLY</code>, <code>O_WRONLY</code>
+  and <code>O_RDWR</code></p>
+</li>
+</ul>
+<p>After these, we need to allocate a fd to the opened file: just scan the
+<code>curthread-&gt;t_fdtable</code> and find a available slot (<code>NULL</code>). Then we need to
+actually open the file using <code>vfs_open</code>. Note that we need to copy <code>filename</code>
+into kernel buffer using <code>copyinstr</code>, for both security reasons, and that
+<code>vfs_open</code> may destroy the pathname passed in.</p>
+<p>Once <code>vfs_open</code> successfully returns, we can initialize a <code>struct fdesc</code>. Pay
+special attention to <code>fdesc-&gt;offset</code>. Without <code>O_APPEND</code>, it should be zero.
+But with <code>O_APPEND</code>, it should be file size. So we need to check it and use
+<code>VOP_STAT</code> to get file size if necessary.</p>
+<p><code>sys_close</code> is quite easy. We first decrease the file reference counter. And
+close the file using <code>vfs_close</code> and free the <code>struct fdesc</code> if the counter
+reaches 0.</p>
+<h3><code>sys_read</code> and <code>sys_write</code></h3>
+<p>As usual, before do anything, first check the parameters.</p>
+<p>The main work here is using <code>VOP_READ</code> or <code>VOP_WRITE</code> together with <code>struct
+iovec</code> and <code>struct uio</code>. <code>kern/syscall/loadelf.c</code> is a good start point.
+<strong>However, we need to initialize the <code>uio</code> for read/write for user space
+buffers</strong>. That means the <code>uio-&gt;uio_segflg</code> should be <code>UIO_USERSPACE</code>.</p>
+<p>Note that <code>uio-&gt;uio_resid</code> is how many bytes left after the IO operation. So you
+can calculate how many bytes are actually read/written by <code>len - uio-&gt;uio_resid</code>.</p>
+<p>Since we've carefully handled std files when initialization. Here we just treat
+them as normal files and pay no special attention to them.</p>
+<h3><code>sys_dup2</code></h3>
+<p>The hardest thing here is not how to write <code>sys_dup2</code>, but instead how <code>dup2</code>
+is supposed to be used. Here is a typical code snippet of how to use <code>dup2</code></p>
+<div class="highlight"><pre><span class="kt">int</span> <span class="n">logfd</span> <span class="o">=</span> <span class="n">open</span><span class="p">(</span><span class="s">&quot;logfile&quot;</span><span class="p">,</span> <span class="n">O_WRONLY</span><span class="p">);</span>
+
+<span class="cm">/* note the sequence of parameter */</span> 
+<span class="n">dup2</span><span class="p">(</span><span class="n">logfd</span><span class="p">,</span> <span class="n">STDOUT_FILENO</span><span class="p">);</span> 
+<span class="n">close</span><span class="p">(</span><span class="n">logfd</span><span class="p">);</span>
+
+<span class="cm">/* now all print content will go to log file */</span> 
+<span class="n">printf</span><span class="p">(</span><span class="s">&quot;Hello, OS161.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</pre></div>
+
+
+<p>We can see that in <code>dup2(oldfd, newfd)</code>:</p>
+<ul>
+<li>
+<p>After <code>dup2</code>, <code>oldfd</code> and <code>newfd</code> points to the same file. But we can call 
+<code>close</code> on any of them and do not influence the other.</p>
+</li>
+<li>
+<p>After <code>dup2</code>, all read/write to <code>newfd</code> will be actually performed on
+<code>oldfd</code>. (Of course, they points to the same file!!)</p>
+</li>
+<li>
+<p>If <code>newfd</code> is previous opened, it should be closed in <code>dup2</code> ( according
+to <a href="http://linux.die.net/man/2/dup2"><code>dup2</code> man page</a>).</p>
+</li>
+</ul>
+<p>Once we're clear about these. Coding <code>sys_dup2</code> is a piece of cake. Just don't
+forget to maintain the <code>fdesc-&gt;ref_count</code> accordingly.</p>
+<h3><code>sys_lseek</code>, <code>sys_chdir</code> and <code>sys__getcwd</code></h3>
+<p>Nothing to say. Use <code>VOP_TRYSEEK</code>, <code>vfs_chidr</code> and <code>vfs_getcwd</code> respectively.
+Only one thing, if <code>SEEK_END</code> is used. use <code>VOP_STAT</code> to get the file size, as
+we did in <code>sys_open</code></p>
+<h3>64-bit parameter and return value in lseek</h3>
+<p>This is just a minor trick. Let's first see the definition of <code>lseek</code></p>
+<div class="highlight"><pre><span class="kt">off_t</span> <span class="n">lseek</span> <span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">off_t</span> <span class="n">pos</span><span class="p">,</span> <span class="kt">int</span> <span class="n">whence</span><span class="p">)</span>
+</pre></div>
+
+
+<p>And from <code>$OS161_SRC/kern/include/types.h</code>, we can see that <code>off_t</code> is type-defined as
+64-bit integer (<code>i64</code>). So the question here is: how to pass 64-bit parameter
+to <code>sys_lseek</code> and how get the 64-bit return value of it.</p>
+<h4>Pass 64-bit argument to sys_lseek</h4>
+<p>From the comment in <code>$OS161_SRC/kern/arch/mips/syscall/syscall.c</code>, we can see that, <code>fd</code>
+should be in <code>$a0</code>, <code>pos</code> should be in (<code>$a2:$a3</code>) (<strong><code>$a2</code> stores high 32-bit and
+<code>$a3</code> stores low 32-bit)</strong>, and <code>whence</code> should be in <code>sp+16</code>. Here, <code>$a1</code> is not
+used due to alignment.</p>
+<p>So in the switch branch of <code>sys_lseek</code>, we should first pack (<code>$a2:$a3</code>) into a 64-bit
+variable, say <code>sys_pos</code>. Then we use <code>copyin</code> to copy <code>whence</code> from user stack (<code>tf-&gt;tf_sp+16</code>).</p>
+<h3>Get 64-bit return value of <code>sys_lseek</code></h3>
+<p>Also from the comment, we know that a 64-bit return value is stored in
+(<code>$v0:$v1</code>) (<code>$v0</code> stores high 32-bit and <code>$v1</code> stores low 32-bit). And note that
+after the <code>switch</code> statement, <code>retval</code> will be assigned to $v0, so here we just
+need to copy the low 32-bit of <code>sys_lseek</code>'s return value to $v1, and high
+32-bit to <code>retval</code>.</p>
+            </div>
+            <!-- /.entry-content -->
+<section class="well" id="related-posts">
+    <h4>Related Posts:</h4>
+    <ul>
+        <li><a href="http://jhshi.me/2012/03/21/os161-general-tips-for-system-call/index.html">OS161: General Tips for System Call</a></li>
+        <li><a href="http://jhshi.me/2012/03/28/os161-arguments-passing-in-system-call/index.html">OS161: Arguments Passing in System Call</a></li>
+        <li><a href="http://jhshi.me/2013/03/15/console-input-messed-up-in-os161/index.html">Console Input Messed up in OS161</a></li>
+        <li><a href="http://jhshi.me/2012/03/21/os161-how-to-add-a-system-call/index.html">OS161: How to Add a System Call</a></li>
+        <li><a href="http://jhshi.me/2012/03/14/os161-file-operation-overview/index.html">OS161 File Operation Overview</a></li>
+    </ul>
+</section>
+<section class="well" id="related-posts">
+      <h4><a href=https://github.com/jhshi/blog_source/commits/master/content/2012-03-14-os161-file-system-calls.markdown>Post History:</a></h4>
+
+      <b>Tuesday 11:09 PM, January 23 2018</b><br/><p>resume os161</p>
+      <b>Monday 11:20 AM, October 31 2016</b><br/><p>remove os161 related posts</p>
+      <b>Saturday 07:19 PM, October 10 2015</b><br/><p>fix category</p>
+      <b>Saturday 07:05 PM, October 10 2015</b><br/><p>Revert "os161 category"</p>
+      <b>Saturday 06:46 PM, October 10 2015</b><br/><p>os161 category</p>
+</section>
+<div class="fb-like" 
+     data-href="http://jhshi.me/2012/03/14/os161-file-system-calls/index.html"
+     data-layout="standard" 
+     data-action="like" 
+     data-show-faces="true">
+</div>
+
+
+<div class="fb-comments"
+     data-href="http://jhshi.me/2012/03/14/os161-file-system-calls/index.html"
+     data-numposts="5"
+     data-order-by="reverse_time"
+     data-width="100%"
+    ></div>
+        </article>
+    </section>
+
+        </div>
+        <div class="col-sm-3" id="sidebar">
+            <aside>
+
+<section class="well well-sm">
+    <ul class="list-group list-group-flush">
+        <li class="list-group-item"><h4><i class="fa fa-eye"></i><span class="icon-label">0 Hits</span></h4>
+    <li class="list-group-item"><h4><i class="fa fa-fire fa-lg"></i><span class="icon-label">Popular Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Recent Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/categories/index.html"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Categories</span></h4></a>
+        <ul class="list-group" id="categories">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/os161/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> os161 [27]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/linux/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> linux [24]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/android/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> android [20]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/errors/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> errors [14]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/network/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> network [11]
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/tags/index.html"><h4><i class="fa fa-tags fa-lg"></i><span class="icon-label">Tags</span></h4></a>
+        <ul class="list-group list-inline tagcloud" id="tags">
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/aosp/index.html">
+                    AOSP
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/backup/index.html">
+                    backup
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/beamer/index.html">
+                    beamer
+                </a>
+            </li>
+            <li class="list-group-item tag-7">
+                <a href="http://jhshi.me/blog/tag/blog/index.html">
+                    blog
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/c/index.html">
+                    c
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/gdb/index.html">
+                    gdb
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/hammerhead/index.html">
+                    hammerhead
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/jekyll/index.html">
+                    jekyll
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/mac/index.html">
+                    mac
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ns2/index.html">
+                    ns2
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ota/index.html">
+                    OTA
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/plugin/index.html">
+                    plugin
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/python/index.html">
+                    python
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ruby/index.html">
+                    ruby
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ssh/index.html">
+                    ssh
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/synchronization/index.html">
+                    synchronization
+                </a>
+            </li>
+            <li class="list-group-item tag-1">
+                <a href="http://jhshi.me/blog/tag/syscall/index.html">
+                    syscall
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/travis/index.html">
+                    travis
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ubuntu/index.html">
+                    ubuntu
+                </a>
+            </li>
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/vm/index.html">
+                    vm
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Social</span></h4>
+      <ul class="list-group" id="social">
+        <li class="list-group-item"><a href="https://github.com/jhshi"><i class="fa fa-github-square fa-lg"></i> github</a></li>
+        <li class="list-group-item"><a href="http://stackoverflow.com/users/963538/jinghao-shi"><i class="fa fa-stack-overflow fa-lg"></i> stack-overflow</a></li>
+      </ul>
+    </li>
+
+    <li class="list-group-item"><h4><i class="fa fa-github fa-lg"></i><span class="icon-label">GitHub Repos</span></h4>
+        <div id="gh_repos">
+            <p class="list-group-item">Status updating...</p>
+        </div>
+            <a href="https://github.com/jhshi">@jhshi</a> on GitHub
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-external-link-square fa-lg"></i><span class="icon-label">Links</span></h4>
+      <ul class="list-group" id="links">
+        <li class="list-group-item">
+            <a href="http://blue.cse.buffalo.edu" target="_blank">
+                blue Systems Group
+            </a>
+        </li>
+        <li class="list-group-item">
+            <a href="http://www.buffalo.edu" target="_blank">
+                University at Buffalo
+            </a>
+        </li>
+      </ul>
+    </li>
+    </ul>
+</section>            </aside>
+        </div>
+    </div>
+</div>
+<footer>
+   <div class="container">
+      <hr>
+      <div class="row">
+         <div class="col-xs-10">&copy; 2018 Jinghao Shi
+            &middot;
+            Updated on 2020-04-02
+            &middot; Powered by <a href="https://github.com/jhshi/pelican-bootstrap3" target="_blank">pelican-bootstrap3</a>,
+            <a href="http://docs.getpelican.com/" target="_blank">Pelican</a>,
+            <a href="http://getbootstrap.com" target="_blank">Bootstrap</a>         </div>
+         <div class="col-xs-2"><p class="pull-right"><i class="fa fa-arrow-up"></i> <a href="#">Back to top</a></p></div>
+      </div>
+   </div>
+</footer>
+<script src="http://jhshi.me/theme/js/jquery.min.js"></script>
+
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="http://jhshi.me/theme/js/bootstrap.min.js"></script>
+
+<!-- Enable responsive features in IE8 with Respond.js (https://github.com/scottjehl/Respond) -->
+<script src="http://jhshi.me/theme/js/respond.min.js"></script>
+
+    <!-- GitHub JS -->
+    <script type="text/javascript">
+        $(document).ready(function () {
+            if (!window.jXHR) {
+                var jxhr = document.createElement('script');
+                jxhr.type = 'text/javascript';
+                jxhr.src = 'http://jhshi.me/theme/js/jXHR.js';
+                var s = document.getElementsByTagName('script')[0];
+                s.parentNode.insertBefore(jxhr, s);
+            }
+
+            github.showRepos({
+                user: 'jhshi',
+                count: 5,
+                skip_forks: true,
+                target: '#gh_repos'
+            });
+        });
+    </script>
+    <script src="http://jhshi.me/theme/js/github.js" type="text/javascript"></script>
+    <!-- End GitHub JS Code -->
+    <!-- Google Analytics -->
+    <script type="text/javascript">
+
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-39842003-1']);
+        _gaq.push(['_trackPageview']);
+
+        (function () {
+            var ga = document.createElement('script');
+            ga.type = 'text/javascript';
+            ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+    <!-- End Google Analytics Code -->
+
+        <script type="text/javascript">var addthis_config = {"data_track_addressbar": true};</script>
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5a6b8e0310bbbd35"></script>
+</body>
+</html>

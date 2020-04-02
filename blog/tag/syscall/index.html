@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns# fb: https://www.facebook.com/2008/fbml">
+<head>
+    <title>syscall - Pearls in Life</title>
+    <!-- Using the latest rendering mode for IE -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <link href="http://jhshi.me/images/favicon.ico" rel="icon">
+
+
+    <meta name="author" content="Jinghao Shi" />
+    <meta name="keywords" content="syscall" />
+
+    <!-- Open Graph tags -->
+            <meta property="fb:app_id" content="156751911645324"/>
+        <meta property="og:site_name" content="Pearls in Life" />
+        <meta property="og:type" content="website"/>
+        <meta property="og:title" content="Pearls in Life"/>
+        <meta property="og:url" content="http://jhshi.me"/>
+        <meta property="og:description" content="Pearls in Life"/>
+
+
+    <!-- Bootstrap -->
+        <link rel="stylesheet" href="http://jhshi.me/theme/css/bootstrap.readable.min.css" type="text/css"/>
+    <link href="http://jhshi.me/theme/css/font-awesome.min.css" rel="stylesheet">
+
+    <link href="http://jhshi.me/theme/css/pygments/friendly.css" rel="stylesheet">
+    <link href="http://jhshi.me/theme/tipuesearch/tipuesearch.css" rel="stylesheet">
+    <link rel="stylesheet" href="http://jhshi.me/theme/css/style.css" type="text/css"/>
+
+        <link href="http://jhshi.me/feeds/all.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life ATOM Feed"/>
+
+
+
+
+</head>
+<body>
+
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({
+            appId      : "156751911645324",
+          xfbml      : true,
+          version    : 'v2.11'
+        });
+        FB.AppEvents.logPageView();
+      };
+
+      (function(d, s, id){
+         var js, fjs = d.getElementsByTagName(s)[0];
+         if (d.getElementById(id)) {return;}
+         js = d.createElement(s); js.id = id;
+         js.src = "https://connect.facebook.net/en_US/sdk.js";
+         fjs.parentNode.insertBefore(js, fjs);
+       }(document, 'script', 'facebook-jssdk'));
+    </script>
+
+<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+	<div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a href="http://jhshi.me/" class="navbar-brand">
+Pearls in Life            </a>
+        </div>
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav">
+                    <li><a href="/home">Home</a></li>
+                    <li><a href="/">Blog</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+              <li><span>
+                <form class="navbar-search" action="/search.html">
+                  <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input" required>
+                </form></span>
+              </li>
+              <li><a href="http://jhshi.me/blog/archives/index.html"><i class="fa fa-th-list"></i><span class="icon-label">Archives</span></a></li>
+            </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+</div> <!-- /.navbar -->
+<!-- Banner -->
+<!-- End Banner -->
+<div class="container">
+    <div class="row">
+        <div class="col-sm-9">
+            <article>
+                <h2><a href="http://jhshi.me/2014/03/06/os161-unknown-syscall-1/index.html">OS161: Unknown syscall -1</a></h2>
+                    <div class="well well-sm">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2014-03-06T16:50:00-05:00"> Thu 06 March 2014</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/os161/index.html">os161</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/syscall/index.html">syscall</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                <div class="summary"><p>When working on OS161 system calls, you'll probably see a bunch of this error,
+especially you haven't implemented <code>_exit</code> syscall and try to do some basic user
+programs, e.g., <code>p /bin/true</code>.</p>
+<p>Note, this problem has been fixed in OS/161 version 1.99.07.</p>
+
+                    <a class="btn btn-default btn-xs" href="http://jhshi.me/2014/03/06/os161-unknown-syscall-1/index.html">more ...</a>
+                </div>
+            </article>
+            <hr/>
+            <article>
+                <h2><a href="http://jhshi.me/2013/03/15/console-input-messed-up-in-os161/index.html">Console Input Messed up in OS161</a></h2>
+                    <div class="well well-sm">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2013-03-15T04:26:57-04:00"> Fri 15 March 2013</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/os161/index.html">os161</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/console/index.html">console</a>
+        /
+	<a href="http://jhshi.me/blog/tag/exit/index.html">exit</a>
+        /
+	<a href="http://jhshi.me/blog/tag/waitpid/index.html">waitpid</a>
+        /
+	<a href="http://jhshi.me/blog/tag/syscall/index.html">syscall</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                <div class="summary"><p>When you finished the process system call (e.g., <code>fork</code>, <code>execv</code>) and test your
+system call by executing some user program, you'll probably find that the
+console input behavior is messed up. </p>
+
+                    <a class="btn btn-default btn-xs" href="http://jhshi.me/2013/03/15/console-input-messed-up-in-os161/index.html">more ...</a>
+                </div>
+            </article>
+            <hr/>
+            <article>
+                <h2><a href="http://jhshi.me/2012/04/27/os161-sbrk-system-call/index.html">OS161 sbrk System Call</a></h2>
+                    <div class="well well-sm">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2012-04-27T22:17:36-04:00"> Fri 27 April 2012</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/os161/index.html">os161</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/heap/index.html">heap</a>
+        /
+	<a href="http://jhshi.me/blog/tag/sbrk/index.html">sbrk</a>
+        /
+	<a href="http://jhshi.me/blog/tag/syscall/index.html">syscall</a>
+        /
+	<a href="http://jhshi.me/blog/tag/vm/index.html">vm</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                <div class="summary"><p>If you're not familiar with <code>sbrk</code> system call, here is <a href="http://en.wikipedia.org/wiki/Sbrk">it's wiki</a>, 
+and its <a href="http://www.cs.utah.edu/flux/moss/node39.html">interface description</a>. In a nutshell,
+<code>malloc</code> will use <code>sbrk</code> to get heap space.</p>
+
+                    <a class="btn btn-default btn-xs" href="http://jhshi.me/2012/04/27/os161-sbrk-system-call/index.html">more ...</a>
+                </div>
+            </article>
+            <hr/>
+            <article>
+                <h2><a href="http://jhshi.me/2012/03/28/os161-arguments-passing-in-system-call/index.html">OS161: Arguments Passing in System Call</a></h2>
+                    <div class="well well-sm">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2012-03-28T21:59:26-04:00"> Wed 28 March 2012</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/os161/index.html">os161</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/syscall/index.html">syscall</a>
+        /
+	<a href="http://jhshi.me/blog/tag/argument-passing/index.html">argument passing</a>
+        /
+	<a href="http://jhshi.me/blog/tag/copyin/index.html">copyin</a>
+        /
+	<a href="http://jhshi.me/blog/tag/copyout/index.html">copyout</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                <div class="summary"><p>One principle of kernel programming is that: <strong>do not trust anything users
+passed in</strong>. Since we assume that users are bad, they will do anything they can
+to crash the kernel (just as <code>$OS161_SRC/user/testbin/badcall/badcall.c</code> do). So 
+we need pay special attention to the arguments of the system calls, <strong>especially the
+pointers</strong>.</p>
+
+                    <a class="btn btn-default btn-xs" href="http://jhshi.me/2012/03/28/os161-arguments-passing-in-system-call/index.html">more ...</a>
+                </div>
+            </article>
+            <hr/>
+            <article>
+                <h2><a href="http://jhshi.me/2012/03/21/os161-general-tips-for-system-call/index.html">OS161: General Tips for System Call</a></h2>
+                    <div class="well well-sm">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2012-03-21T14:45:32-04:00"> Wed 21 March 2012</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/os161/index.html">os161</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/bmake/index.html">bmake</a>
+        /
+	<a href="http://jhshi.me/blog/tag/ctags/index.html">ctags</a>
+        /
+	<a href="http://jhshi.me/blog/tag/gdb/index.html">gdb</a>
+        /
+	<a href="http://jhshi.me/blog/tag/syscall/index.html">syscall</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                <div class="summary"><p>Here are some practice that will hopefully make you feel more comfortable and
+more productive when you poking around with os161 syscalls.</p>
+
+                    <a class="btn btn-default btn-xs" href="http://jhshi.me/2012/03/21/os161-general-tips-for-system-call/index.html">more ...</a>
+                </div>
+            </article>
+            <hr/>
+            <article>
+                <h2><a href="http://jhshi.me/2012/03/21/os161-how-to-add-a-system-call/index.html">OS161: How to Add a System Call</a></h2>
+                    <div class="well well-sm">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2012-03-21T14:15:41-04:00"> Wed 21 March 2012</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/os161/index.html">os161</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/syscall/index.html">syscall</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                <div class="summary"><p>Let's use the <code>fork</code> system call as an example. For convinience, let's assume
+<code>$OS161_SRC</code> is your os161 source root directory.</p>
+
+                    <a class="btn btn-default btn-xs" href="http://jhshi.me/2012/03/21/os161-how-to-add-a-system-call/index.html">more ...</a>
+                </div>
+            </article>
+            <hr/>
+            <article>
+                <h2><a href="http://jhshi.me/2012/03/14/os161-file-system-calls/index.html">OS161 File System Calls</a></h2>
+                    <div class="well well-sm">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2012-03-14T21:19:17-04:00"> Wed 14 March 2012</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/os161/index.html">os161</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/open/index.html">open</a>
+        /
+	<a href="http://jhshi.me/blog/tag/read/index.html">read</a>
+        /
+	<a href="http://jhshi.me/blog/tag/write/index.html">write</a>
+        /
+	<a href="http://jhshi.me/blog/tag/close/index.html">close</a>
+        /
+	<a href="http://jhshi.me/blog/tag/dup2/index.html">dup2</a>
+        /
+	<a href="http://jhshi.me/blog/tag/lseek/index.html">lseek</a>
+        /
+	<a href="http://jhshi.me/blog/tag/syscall/index.html">syscall</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                <div class="summary"><p>Assume you've read my previous post on <a href="/2012/03/14/os161-file-operation-overview/">file operations in OS161</a>,
+then everything is quite straightforward. One more thing, remember to protect
+every access to the file descriptor data structure using lock!</p>
+<p>Let's get started.</p>
+
+                    <a class="btn btn-default btn-xs" href="http://jhshi.me/2012/03/14/os161-file-system-calls/index.html">more ...</a>
+                </div>
+            </article>
+            <hr/>
+            <article>
+                <h2><a href="http://jhshi.me/2012/03/14/os161-file-operation-overview/index.html">OS161 File Operation Overview</a></h2>
+                    <div class="well well-sm">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2012-03-14T20:33:50-04:00"> Wed 14 March 2012</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/os161/index.html">os161</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/file/index.html">file</a>
+        /
+	<a href="http://jhshi.me/blog/tag/syscall/index.html">syscall</a>
+        /
+	<a href="http://jhshi.me/blog/tag/fdtable/index.html">fdtable</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                <div class="summary"><p>In user space, when open a file, user program will get a file descriptor (a
+integer) that represent that file. User can use this descriptor to perform various
+operations on this file: read, write, seek, etc. As I see it, this design is
+quite clean in that:</p>
+<ul>
+<li>
+<p>Hide most of the details from user, for both safety and simplicity</p>
+</li>
+<li>
+<p>Enable more high level abstraction: everything (socket, pipe..) is a file</p>
+</li>
+</ul>
+<p>The file descriptor is actually an index to kernel space structure that
+contains all the details of opened files. So at kernel side, we need to do a
+lot bookkeeping stuff.</p>
+
+                    <a class="btn btn-default btn-xs" href="http://jhshi.me/2012/03/14/os161-file-operation-overview/index.html">more ...</a>
+                </div>
+            </article>
+            <hr/>
+            <article>
+                <h2><a href="http://jhshi.me/2012/03/12/os161-exit-and-waitpid-system-call/index.html">OS161 exit and waitpid System Call</a></h2>
+                    <div class="well well-sm">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2012-03-12T15:51:46-04:00"> Mon 12 March 2012</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/os161/index.html">os161</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/exit/index.html">exit</a>
+        /
+	<a href="http://jhshi.me/blog/tag/waitpid/index.html">waitpid</a>
+        /
+	<a href="http://jhshi.me/blog/tag/syscall/index.html">syscall</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                <div class="summary"><p>Before going on, assume you've read my previous post on <a href="/2012/03/12/os161-pid-management">pid management</a></p>
+<p>Thanks to the <code>struct process</code>, our work is much simplified. Quoting <a href="http://en.wikipedia.org/wiki/Eric_S._Raymond">Eric S.Raymond </a> 
+here.</p>
+<blockquote>
+<p>Smart data structures and dumb code works a lot better than the other way
+around.</p>
+</blockquote>
+
+                    <a class="btn btn-default btn-xs" href="http://jhshi.me/2012/03/12/os161-exit-and-waitpid-system-call/index.html">more ...</a>
+                </div>
+            </article>
+            <hr/>
+            <article>
+                <h2><a href="http://jhshi.me/2012/03/12/os161-pid-management/index.html">OS161 pid Management</a></h2>
+                    <div class="well well-sm">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2012-03-12T15:13:54-04:00"> Mon 12 March 2012</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/os161/index.html">os161</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/pid/index.html">pid</a>
+        /
+	<a href="http://jhshi.me/blog/tag/syscall/index.html">syscall</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                <div class="summary"><p>There are many way to manage each process's pid. Here is the way I do it.</p>
+<p>I decided to make minimal modification to <code>$OS161_SRC/kern/thread/thread.c</code>,
+in case anything is ruined. So I only add two things to the thread module. One
+is I add a <code>t_pid</code> field to <code>struct thread</code> so that <code>getpid</code> system call is
+trivial. Another is I add a call of <code>pid_alloc</code> in <code>thread_alloc</code> to initialize
+new thread's <code>t_pid</code>. That's it. No more touch on the thread module.</p>
+
+                    <a class="btn btn-default btn-xs" href="http://jhshi.me/2012/03/12/os161-pid-management/index.html">more ...</a>
+                </div>
+            </article>
+            <hr/>
+            <article>
+                <h2><a href="http://jhshi.me/2012/03/11/os161-execv-system-call/index.html">OS161 execv System Call</a></h2>
+                    <div class="well well-sm">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2012-03-11T22:27:47-04:00"> Sun 11 March 2012</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/os161/index.html">os161</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/execv/index.html">execv</a>
+        /
+	<a href="http://jhshi.me/blog/tag/syscall/index.html">syscall</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                <div class="summary"><p>Basically, <code>execv</code> do more or less the same thing with <code>runprogram</code> in
+<code>$OS161_SRC/kern/syscall/runprogram.c</code>. The overall flow of <code>sys_execv</code> are:</p>
+<ol>
+<li><em>Copy arguments from user space into kernel buffer</em></li>
+<li>Open the executable, create a new address space and load the elf into it</li>
+<li><em>Copy the arguments from kernel buffer into user stack</em></li>
+<li>Return user mode using <code>enter_new_process</code></li>
+</ol>
+
+                    <a class="btn btn-default btn-xs" href="http://jhshi.me/2012/03/11/os161-execv-system-call/index.html">more ...</a>
+                </div>
+            </article>
+            <hr/>
+            <article>
+                <h2><a href="http://jhshi.me/2012/03/11/os161-fork-system-call/index.html">OS161 fork System Call</a></h2>
+                    <div class="well well-sm">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2012-03-11T20:42:34-04:00"> Sun 11 March 2012</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/os161/index.html">os161</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/fork/index.html">fork</a>
+        /
+	<a href="http://jhshi.me/blog/tag/syscall/index.html">syscall</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                <div class="summary"><p>If you're not already familiar with UNIX fork system call, here is it's
+<a href="http://linux.die.net/man/2/fork">function description</a> and its <a href="http://en.wikipedia.org/wiki/Fork_(operating_system)">entry on Wikipedia</a>.</p>
+<p>Basically, in <code>sys_fork</code>, we need to do the follow things:</p>
+<ol>
+<li>Copy parent's trap frame, and pass it to child thread</li>
+<li>Copy parent's address space</li>
+<li>Create child thread (using <code>thread_fork</code>)</li>
+<li>Copy parent's file table into child</li>
+<li>Parent returns with child's pid immediately</li>
+<li>Child returns with 0</li>
+</ol>
+<p>So, let's get started.</p>
+
+                    <a class="btn btn-default btn-xs" href="http://jhshi.me/2012/03/11/os161-fork-system-call/index.html">more ...</a>
+                </div>
+            </article>
+            <hr/>
+
+        </div>
+        <div class="col-sm-3" id="sidebar">
+            <aside>
+
+<section class="well well-sm">
+    <ul class="list-group list-group-flush">
+        <li class="list-group-item"><h4><i class="fa fa-eye"></i><span class="icon-label">0 Hits</span></h4>
+    <li class="list-group-item"><h4><i class="fa fa-fire fa-lg"></i><span class="icon-label">Popular Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2014/03/06/os161-unknown-syscall-1/index.html">
+                    OS161: Unknown syscall -1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2013/03/15/console-input-messed-up-in-os161/index.html">
+                    Console Input Messed up in OS161
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2012/04/27/os161-sbrk-system-call/index.html">
+                    OS161 sbrk System Call
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2012/03/28/os161-arguments-passing-in-system-call/index.html">
+                    OS161: Arguments Passing in System Call
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2012/03/21/os161-general-tips-for-system-call/index.html">
+                    OS161: General Tips for System Call
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Recent Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2014/03/06/os161-unknown-syscall-1/index.html">
+                    OS161: Unknown syscall -1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2013/03/15/console-input-messed-up-in-os161/index.html">
+                    Console Input Messed up in OS161
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2012/04/27/os161-sbrk-system-call/index.html">
+                    OS161 sbrk System Call
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2012/03/28/os161-arguments-passing-in-system-call/index.html">
+                    OS161: Arguments Passing in System Call
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2012/03/21/os161-general-tips-for-system-call/index.html">
+                    OS161: General Tips for System Call
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/categories/index.html"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Categories</span></h4></a>
+        <ul class="list-group" id="categories">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/os161/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> os161 [27]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/linux/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> linux [24]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/android/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> android [20]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/errors/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> errors [14]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/network/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> network [11]
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/tags/index.html"><h4><i class="fa fa-tags fa-lg"></i><span class="icon-label">Tags</span></h4></a>
+        <ul class="list-group list-inline tagcloud" id="tags">
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/aosp/index.html">
+                    AOSP
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/backup/index.html">
+                    backup
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/beamer/index.html">
+                    beamer
+                </a>
+            </li>
+            <li class="list-group-item tag-7">
+                <a href="http://jhshi.me/blog/tag/blog/index.html">
+                    blog
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/c/index.html">
+                    c
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/gdb/index.html">
+                    gdb
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/hammerhead/index.html">
+                    hammerhead
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/jekyll/index.html">
+                    jekyll
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/mac/index.html">
+                    mac
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ns2/index.html">
+                    ns2
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ota/index.html">
+                    OTA
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/plugin/index.html">
+                    plugin
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/python/index.html">
+                    python
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ruby/index.html">
+                    ruby
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ssh/index.html">
+                    ssh
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/synchronization/index.html">
+                    synchronization
+                </a>
+            </li>
+            <li class="list-group-item tag-1">
+                <a href="http://jhshi.me/blog/tag/syscall/index.html">
+                    syscall
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/travis/index.html">
+                    travis
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ubuntu/index.html">
+                    ubuntu
+                </a>
+            </li>
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/vm/index.html">
+                    vm
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Social</span></h4>
+      <ul class="list-group" id="social">
+        <li class="list-group-item"><a href="https://github.com/jhshi"><i class="fa fa-github-square fa-lg"></i> github</a></li>
+        <li class="list-group-item"><a href="http://stackoverflow.com/users/963538/jinghao-shi"><i class="fa fa-stack-overflow fa-lg"></i> stack-overflow</a></li>
+      </ul>
+    </li>
+
+    <li class="list-group-item"><h4><i class="fa fa-github fa-lg"></i><span class="icon-label">GitHub Repos</span></h4>
+        <div id="gh_repos">
+            <p class="list-group-item">Status updating...</p>
+        </div>
+            <a href="https://github.com/jhshi">@jhshi</a> on GitHub
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-external-link-square fa-lg"></i><span class="icon-label">Links</span></h4>
+      <ul class="list-group" id="links">
+        <li class="list-group-item">
+            <a href="http://blue.cse.buffalo.edu" target="_blank">
+                blue Systems Group
+            </a>
+        </li>
+        <li class="list-group-item">
+            <a href="http://www.buffalo.edu" target="_blank">
+                University at Buffalo
+            </a>
+        </li>
+      </ul>
+    </li>
+    </ul>
+</section>            </aside>
+        </div>
+    </div>
+</div>
+<footer>
+   <div class="container">
+      <hr>
+      <div class="row">
+         <div class="col-xs-10">&copy; 2014 Jinghao Shi
+            &middot;
+            Updated on 2020-04-02
+            &middot; Powered by <a href="https://github.com/jhshi/pelican-bootstrap3" target="_blank">pelican-bootstrap3</a>,
+            <a href="http://docs.getpelican.com/" target="_blank">Pelican</a>,
+            <a href="http://getbootstrap.com" target="_blank">Bootstrap</a>         </div>
+         <div class="col-xs-2"><p class="pull-right"><i class="fa fa-arrow-up"></i> <a href="#">Back to top</a></p></div>
+      </div>
+   </div>
+</footer>
+<script src="http://jhshi.me/theme/js/jquery.min.js"></script>
+
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="http://jhshi.me/theme/js/bootstrap.min.js"></script>
+
+<!-- Enable responsive features in IE8 with Respond.js (https://github.com/scottjehl/Respond) -->
+<script src="http://jhshi.me/theme/js/respond.min.js"></script>
+
+    <!-- GitHub JS -->
+    <script type="text/javascript">
+        $(document).ready(function () {
+            if (!window.jXHR) {
+                var jxhr = document.createElement('script');
+                jxhr.type = 'text/javascript';
+                jxhr.src = 'http://jhshi.me/theme/js/jXHR.js';
+                var s = document.getElementsByTagName('script')[0];
+                s.parentNode.insertBefore(jxhr, s);
+            }
+
+            github.showRepos({
+                user: 'jhshi',
+                count: 5,
+                skip_forks: true,
+                target: '#gh_repos'
+            });
+        });
+    </script>
+    <script src="http://jhshi.me/theme/js/github.js" type="text/javascript"></script>
+    <!-- End GitHub JS Code -->
+    <!-- Google Analytics -->
+    <script type="text/javascript">
+
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-39842003-1']);
+        _gaq.push(['_trackPageview']);
+
+        (function () {
+            var ga = document.createElement('script');
+            ga.type = 'text/javascript';
+            ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+    <!-- End Google Analytics Code -->
+
+</body>
+</html>

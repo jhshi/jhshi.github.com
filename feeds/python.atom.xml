@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Pearls in Life</title><link href="http://jhshi.me/" rel="alternate"></link><link href="http://jhshi.me/feeds/python.atom.xml" rel="self"></link><id>http://jhshi.me/</id><updated>2016-10-04T19:26:57-04:00</updated><entry><title>Python Testing Using pytest, Tox, Travis-CI and Coveralls</title><link href="http://jhshi.me/2016/10/04/python-testing-using-pytest-tox-travis-ci-and-coverall/index.html" rel="alternate"></link><updated>2016-10-04T19:26:57-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-10-04:2016/10/04/python-testing-using-pytest-tox-travis-ci-and-coverall/index.html</id><summary type="html">&lt;p&gt;This post explains the automatic testing setup for the &lt;a class="reference external" href="http://wltrace.readthedocs.io"&gt;WlTrace&lt;/a&gt; project. You can see a live demo for all tools
+described in this post at the &lt;a class="reference external" href="https://github.com/jhshi/wltrace"&gt;WlTrace Github repo&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;It maybe a bit confusing at first with all those tools which serve subtly
+different purposes. Next, I'll first explain the purpose of the tool, and then
+show the particular setup in the WlTrace project.&lt;/p&gt;
+&lt;div class="section" id="pytest-micro-testing-the-code"&gt;
+&lt;h2&gt;pytest: Micro Testing The Code&lt;/h2&gt;
+&lt;p&gt;&lt;a class="reference external" href="http://doc.pytest.org"&gt;pytest&lt;/a&gt; is a unit test framework that actually
+tests the nuts and bolts of each piece of your code. You'll need to actually
+write test cases and pytest will collect and run those tests for you.&lt;/p&gt;
+&lt;p&gt;I favor pytest over Python's default &lt;a class="reference external" href="https://docs.python.org/2/library/unittest.html"&gt;unittest&lt;/a&gt; framework because of it's
+simplicity. Furthermore, there are many plugins exist that check various aspects
+of the project, such as &lt;a class="reference external" href="http://doc.pytest.org/en/latest/doctest.html"&gt;doctest integration&lt;/a&gt;, &lt;a class="reference external" href="https://pypi.python.org/pypi/pytest-pep8"&gt;pep8 format checking&lt;/a&gt;, etc.&lt;/p&gt;
+&lt;p&gt;pytest has excellent &lt;a class="reference external" href="http://doc.pytest.org/"&gt;documentation&lt;/a&gt;. Here is the
+particular configuration for the WlTrace project.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c1"&gt;# setup.cfg&lt;/span&gt;
+
+&lt;span class="k"&gt;[tool:pytest]&lt;/span&gt;
+&lt;span class="na"&gt;addopts&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;-v -x --doctest-modules --ignore=setup.py --cov=wltrace --pep8&lt;/span&gt;
+&lt;span class="na"&gt;pep8maxlinelength&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;80&lt;/span&gt;
+&lt;span class="na"&gt;pep8ignore&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&lt;/span&gt;
+&lt;span class="s"&gt;    E402    # module level import not at top of file&lt;/span&gt;
+&lt;span class="s"&gt;    E241    # multiple spaces after &amp;#39;,&amp;#39;&lt;/span&gt;
+&lt;span class="s"&gt;    E226    # missing white space around arithmetic operator&lt;/span&gt;
+&lt;span class="s"&gt;    E222    # multiple spaces after operator&lt;/span&gt;
+&lt;span class="s"&gt;    docs/source/conf.py ALL&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;The &lt;tt class="docutils literal"&gt;addopts&lt;/tt&gt; option specific the arguments to call &lt;tt class="docutils literal"&gt;pytest&lt;/tt&gt;:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;-v&lt;/span&gt;&lt;/tt&gt;: verbose output. This shows what is being tested, instead of just
+a dot.&lt;/li&gt;
+&lt;li&gt;&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;-x&lt;/span&gt;&lt;/tt&gt;: stop on first failed test&lt;/li&gt;
+&lt;li&gt;&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--doctest-modules&lt;/span&gt;&lt;/tt&gt;: &lt;a class="reference external" href="http://doc.pytest.org/en/latest/doctest.html"&gt;integrate doctest&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--ignore=setup.py&lt;/span&gt;&lt;/tt&gt;: do not do doctest on the top level &lt;tt class="docutils literal"&gt;setup.py&lt;/tt&gt;&lt;/li&gt;
+&lt;li&gt;&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--cov=wltrace&lt;/span&gt;&lt;/tt&gt;: Test the coverage of the &lt;tt class="docutils literal"&gt;wltrace&lt;/tt&gt; module, which is the
+top module of the WlTrace package. Requires &lt;a class="reference external" href="https://pypi.python.org/pypi/pytest-cov"&gt;pytest-cov&lt;/a&gt; plugin and the Coverage.py
+package.&lt;/li&gt;
+&lt;li&gt;&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--pep8&lt;/span&gt;&lt;/tt&gt;: check &lt;a class="reference external" href="http://legacy.python.org/dev/peps/pep-0008/"&gt;pep8&lt;/a&gt; format
+compliance. Requires &lt;a class="reference external" href="https://pypi.python.org/pypi/pytest-pep8"&gt;pytest-pep8&lt;/a&gt;
+plugin.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Now we can use a single &lt;tt class="docutils literal"&gt;pytest&lt;/tt&gt; command to fire up the tests and also get
+code coverage information during the test stored at &lt;tt class="docutils literal"&gt;.coverage&lt;/tt&gt; file, which
+will be used later for Coveralls. This file should be ignored by your VCS.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="tox-macro-testing-the-environment"&gt;
+&lt;h2&gt;Tox: Macro Testing The Environment&lt;/h2&gt;
+&lt;p&gt;&lt;a class="reference external" href="https://tox.readthedocs.io"&gt;Tox&lt;/a&gt; is a tool to test your final package in
+various Python environments, such as Python 2, Python 3, PyPy, Jython, etc. It
+is mainly used to make sure the &lt;tt class="docutils literal"&gt;setup.py&lt;/tt&gt; is configured properly and your
+final distribution package can be successfully installed under those Python
+environments. Furthermore, it issues the test command after installation to test
+if the project also run properly in those environments.&lt;/p&gt;
+&lt;p&gt;Here's the project's &lt;tt class="docutils literal"&gt;tox.ini&lt;/tt&gt;:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;[tox]&lt;/span&gt;
+&lt;span class="na"&gt;envlist&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;py27,pypy&lt;/span&gt;
+
+&lt;span class="k"&gt;[testenv]&lt;/span&gt;
+&lt;span class="na"&gt;commands&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;pytest&lt;/span&gt;
+&lt;span class="na"&gt;deps&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&lt;/span&gt;
+&lt;span class="s"&gt;    pytest-pep8&lt;/span&gt;
+&lt;span class="s"&gt;    pytest-cov&lt;/span&gt;
+&lt;span class="s"&gt;    pytest&lt;/span&gt;
+&lt;span class="s"&gt;    coverage&lt;/span&gt;
+
+&lt;span class="k"&gt;[testenv:pypy]&lt;/span&gt;
+&lt;span class="na"&gt;install_command&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;pip install git+https://bitbucket.org/pypy/numpy.git {packages}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Here we specified two Python environments: Python 2.7 and PyPy. Note the special
+&lt;tt class="docutils literal"&gt;install_command&lt;/tt&gt; configuration for PyPy to deal with the &lt;tt class="docutils literal"&gt;Numpy&lt;/tt&gt; package.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="travis-ci-continuous-integration"&gt;
+&lt;h2&gt;Travis CI: Continuous Integration&lt;/h2&gt;
+&lt;p&gt;&lt;a class="reference external" href="https://travis-ci.org/"&gt;Travis CI&lt;/a&gt; is a online service to automatically build
+and test your project for continuous Integration, so it is easy to pinpoint to
+the single commit that breaks the build.&lt;/p&gt;
+&lt;p&gt;Here is the &lt;tt class="docutils literal"&gt;.travis.yml&lt;/tt&gt; configuration.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="l-Scalar-Plain"&gt;language&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt; &lt;span class="l-Scalar-Plain"&gt;python&lt;/span&gt;
+&lt;span class="l-Scalar-Plain"&gt;python&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt;
+    &lt;span class="p-Indicator"&gt;-&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;2.7&amp;quot;&lt;/span&gt;
+    &lt;span class="p-Indicator"&gt;-&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;pypy&amp;quot;&lt;/span&gt;
+&lt;span class="l-Scalar-Plain"&gt;install&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt;
+    &lt;span class="p-Indicator"&gt;-&lt;/span&gt; &lt;span class="p-Indicator"&gt;|&lt;/span&gt;
+        &lt;span class="no"&gt;if [[ &amp;quot;${TRAVIS_PYTHON_VERSION}&amp;quot; = pypy ]]; then&lt;/span&gt;
+            &lt;span class="no"&gt;git clone https://github.com/yyuu/pyenv.git ~/.pyenv&lt;/span&gt;
+            &lt;span class="no"&gt;PYENV_ROOT=&amp;quot;$HOME/.pyenv&amp;quot;&lt;/span&gt;
+            &lt;span class="no"&gt;PATH=&amp;quot;$PYENV_ROOT/bin:$PATH&amp;quot;&lt;/span&gt;
+            &lt;span class="no"&gt;eval &amp;quot;$(pyenv init -)&amp;quot;&lt;/span&gt;
+            &lt;span class="no"&gt;pyenv install pypy-5.4.1&lt;/span&gt;
+            &lt;span class="no"&gt;pyenv global pypy-5.4.1&lt;/span&gt;
+            &lt;span class="no"&gt;pip install git+https://bitbucket.org/pypy/numpy.git&lt;/span&gt;
+        &lt;span class="no"&gt;fi&lt;/span&gt;
+    &lt;span class="p-Indicator"&gt;-&lt;/span&gt; &lt;span class="l-Scalar-Plain"&gt;pip install tox-travis coveralls&lt;/span&gt;
+&lt;span class="l-Scalar-Plain"&gt;script&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt;
+    &lt;span class="p-Indicator"&gt;-&lt;/span&gt; &lt;span class="l-Scalar-Plain"&gt;tox&lt;/span&gt;
+
+&lt;span class="l-Scalar-Plain"&gt;after_success&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt;
+    &lt;span class="p-Indicator"&gt;-&lt;/span&gt; &lt;span class="l-Scalar-Plain"&gt;coveralls&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Here we first install a recent version PyPy and also &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;tox-travis&lt;/span&gt;&lt;/tt&gt; to make tox
+play nice with Travis CI. We also install the &lt;tt class="docutils literal"&gt;coveralls&lt;/tt&gt; tool to be used
+later to publish the coverage information to &lt;a class="reference external" href="http://coveralls.io"&gt;http://coveralls.io&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Note that we install &lt;tt class="docutils literal"&gt;numpy&lt;/tt&gt; in pypy environment explicitly. This is because
+the &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;tox-travis&lt;/span&gt;&lt;/tt&gt; plugin has some difficulty utilizing the &lt;tt class="docutils literal"&gt;install_command&lt;/tt&gt;
+configuration.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="coverage-py-code-coverage"&gt;
+&lt;h2&gt;Coverage.py: Code Coverage&lt;/h2&gt;
+&lt;p&gt;&lt;a class="reference external" href="http://coverage.readthedocs.io"&gt;Coverage.py&lt;/a&gt; is a tool to measure the code
+coverage of Python programs. In the context of testing, it can be used to
+measure the code coverage when running pytest, which effectively translate code
+coverage to test coverage.&lt;/p&gt;
+&lt;p&gt;Previously we use the &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;pytest-cov&lt;/span&gt;&lt;/tt&gt; plugin to call this tool during test so
+that we translate the code coverage to test coverage. The coverage information
+is stored in the &lt;tt class="docutils literal"&gt;.coverage&lt;/tt&gt; file.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="coveralls-showcase-coverage"&gt;
+&lt;h2&gt;Coveralls: Showcase Coverage&lt;/h2&gt;
+&lt;p&gt;&lt;a class="reference external" href="https://coveralls.io/"&gt;Coveralls&lt;/a&gt; is a web service that displays the code
+coverage information generated by the Coverage.py tool.&lt;/p&gt;
+&lt;p&gt;We installed &lt;tt class="docutils literal"&gt;coveralls&lt;/tt&gt; package in Travis. The &lt;tt class="docutils literal"&gt;coveralls&lt;/tt&gt; command will
+publish the coverage information to &lt;a class="reference external" href="http://coveralls.io"&gt;http://coveralls.io&lt;/a&gt;.&lt;/p&gt;
+&lt;/div&gt;
+</summary><category term="pytest"></category><category term="tox"></category><category term="travis"></category><category term="coverage"></category><category term="coverall"></category><category term="testing"></category></entry><entry><title>Tox and Travis Setup for Python Project Using PyPy</title><link href="http://jhshi.me/2016/10/03/tox-and-travis-setup-for-pypy-project/index.html" rel="alternate"></link><updated>2016-10-03T13:12:34-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-10-03:2016/10/03/tox-and-travis-setup-for-pypy-project/index.html</id><summary type="html">&lt;p&gt;Recently I was in development of a &lt;a class="reference external" href="https://github.com/jhshi/wltrace"&gt;Python project&lt;/a&gt; that supports both the regular Python 2.7
+and also the PyPy environment. Here is how to setup the automatic testing
+environment using Tox and Travis-CI.&lt;/p&gt;
+
+&lt;div class="section" id="tox-setup-and-handling-numpy"&gt;
+&lt;h2&gt;Tox Setup and Handling Numpy&lt;/h2&gt;
+&lt;p&gt;&lt;a class="reference external" href="https://tox.readthedocs.io/en/latest/"&gt;Tox&lt;/a&gt; is a tool to test if your
+package can be installed in various Python environment properly. Tox setup is
+relatively easy: just follow the basic setup document of Tox.&lt;/p&gt;
+&lt;p&gt;The tricky part of supporting regular Python and PyPy simultaneously is to
+handle the &lt;tt class="docutils literal"&gt;numpy&lt;/tt&gt; packet properly. since you can not simply do a &lt;tt class="docutils literal"&gt;pip
+install numpy&lt;/tt&gt; in PyPy, but have to use the BitBucket repo URL instead.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;[UPDATE 2016-10-05]&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;I found there is this PyPy port of numpy called &lt;a class="reference external" href="https://pypi.python.org/pypi/numpy-pypy/1.9.0"&gt;numpy-pypy&lt;/a&gt;. We can also use this package.&lt;/p&gt;
+&lt;p&gt;To install &lt;tt class="docutils literal"&gt;numpy&lt;/tt&gt; properly, I did three things.&lt;/p&gt;
+&lt;p&gt;First, have one &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;common-requirements.txt&lt;/span&gt;&lt;/tt&gt; that specific all requirements
+except for the &lt;tt class="docutils literal"&gt;numpy&lt;/tt&gt;, and then have two separated &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;py27-requirements.txt&lt;/span&gt;&lt;/tt&gt;
+and &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;pypy-requirements.txt&lt;/span&gt;&lt;/tt&gt;. In &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;py27-requirements.txt&lt;/span&gt;&lt;/tt&gt;, specify the
+&lt;tt class="docutils literal"&gt;numpy&lt;/tt&gt; version needed.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c"&gt;# requirements for py27&lt;/span&gt;
+-r common-requirements.txt
+&lt;span class="nv"&gt;numpy&lt;/span&gt;&lt;span class="o"&gt;==&lt;/span&gt;1.11.1
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;While in &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;pypy-requirements.txt&lt;/span&gt;&lt;/tt&gt;, use the BitBucket link instead.
+.. code-block:: text&lt;/p&gt;
+&lt;blockquote&gt;
+# requirements for pypy
+git+https://bitbucket.org/pypy/numpy.git
+-r common-requirements.txt&lt;/blockquote&gt;
+&lt;p&gt;Second, detect Python environment at runtime and set up &lt;tt class="docutils literal"&gt;install_requires&lt;/tt&gt;
+properly.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;install_requires&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
+    &lt;span class="c"&gt;# requirements&lt;/span&gt;
+&lt;span class="p"&gt;]&lt;/span&gt;
+
+&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;platform&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;python_implementation&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;PyPy&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;install_requires&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;numpy-pypy&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;install_requires&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;numpy&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="n"&gt;setup&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+    &lt;span class="c"&gt;# ...&lt;/span&gt;
+    &lt;span class="n"&gt;install_requires&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;install_requires&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="c"&gt;# ...&lt;/span&gt;
+&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;At this point, you should be able to use the &lt;tt class="docutils literal"&gt;tox&lt;/tt&gt; command to test both the
+&lt;tt class="docutils literal"&gt;py27&lt;/tt&gt; and the &lt;tt class="docutils literal"&gt;pypy&lt;/tt&gt; environment.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="travis-setup"&gt;
+&lt;h2&gt;Travis Setup&lt;/h2&gt;
+&lt;p&gt;We need to first install the recent version of PyPy as Travis is known to
+behind on PyPy versions. Here is the &lt;tt class="docutils literal"&gt;.travis.yml&lt;/tt&gt; that installs the PyPy
+v5.4.1 using &lt;tt class="docutils literal"&gt;pyenv&lt;/tt&gt;.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="l-Scalar-Plain"&gt;language&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt; &lt;span class="l-Scalar-Plain"&gt;python&lt;/span&gt;
+&lt;span class="l-Scalar-Plain"&gt;python&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt;
+    &lt;span class="p-Indicator"&gt;-&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;2.7&amp;quot;&lt;/span&gt;
+    &lt;span class="p-Indicator"&gt;-&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;pypy&amp;quot;&lt;/span&gt;
+&lt;span class="l-Scalar-Plain"&gt;addons&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt;
+    &lt;span class="l-Scalar-Plain"&gt;apt&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt;
+        &lt;span class="l-Scalar-Plain"&gt;packages&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt;
+            &lt;span class="p-Indicator"&gt;-&lt;/span&gt; &lt;span class="l-Scalar-Plain"&gt;pypy-dev&lt;/span&gt;
+            &lt;span class="p-Indicator"&gt;-&lt;/span&gt; &lt;span class="l-Scalar-Plain"&gt;liblapack-dev&lt;/span&gt;
+&lt;span class="l-Scalar-Plain"&gt;install&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt;
+    &lt;span class="p-Indicator"&gt;-&lt;/span&gt; &lt;span class="p-Indicator"&gt;|&lt;/span&gt;
+        &lt;span class="no"&gt;if [[ &amp;quot;${TRAVIS_PYTHON_VERSION}&amp;quot; = pypy ]]; then&lt;/span&gt;
+            &lt;span class="no"&gt;git clone https://github.com/yyuu/pyenv.git ~/.pyenv&lt;/span&gt;
+            &lt;span class="no"&gt;PYENV_ROOT=&amp;quot;$HOME/.pyenv&amp;quot;&lt;/span&gt;
+            &lt;span class="no"&gt;PATH=&amp;quot;$PYENV_ROOT/bin:$PATH&amp;quot;&lt;/span&gt;
+            &lt;span class="no"&gt;eval &amp;quot;$(pyenv init -)&amp;quot;&lt;/span&gt;
+            &lt;span class="no"&gt;pyenv install pypy-5.4.1&lt;/span&gt;
+            &lt;span class="no"&gt;pyenv global pypy-5.4.1&lt;/span&gt;
+        &lt;span class="no"&gt;fi&lt;/span&gt;
+    &lt;span class="p-Indicator"&gt;-&lt;/span&gt; &lt;span class="l-Scalar-Plain"&gt;pip install tox-travis&lt;/span&gt;
+&lt;span class="l-Scalar-Plain"&gt;script&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt;
+    &lt;span class="p-Indicator"&gt;-&lt;/span&gt; &lt;span class="l-Scalar-Plain"&gt;tox&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;The &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;numpy-pypy&lt;/span&gt;&lt;/tt&gt; package depends on &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;pypy-dev&lt;/span&gt;&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;liblapack-dev&lt;/span&gt;&lt;/tt&gt;, so we
+install them through the &lt;tt class="docutils literal"&gt;addons&lt;/tt&gt; configuration of Travis.&lt;/p&gt;
+&lt;p&gt;Note that we also used the &lt;a class="reference external" href="https://pypi.python.org/pypi/tox-travis"&gt;tox-travis&lt;/a&gt; plugin to easy the integration of
+tox and Travis.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="resources"&gt;
+&lt;h2&gt;Resources&lt;/h2&gt;
+&lt;p&gt;&lt;a class="reference external" href="https://github.com/pyca/pyopenssl/blob/master/.travis.yml"&gt;https://github.com/pyca/pyopenssl/blob/master/.travis.yml&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a class="reference external" href="http://stackoverflow.com/questions/20617600/travis-special-requirements-for-each-python-version"&gt;http://stackoverflow.com/questions/20617600/travis-special-requirements-for-each-python-version&lt;/a&gt;&lt;/p&gt;
+&lt;/div&gt;
+</summary><category term='"tox"'></category><category term='"travis"'></category><category term='"pypy"'></category></entry><entry><title>Handle KeyboardInterrupt in Python MultiProcessing</title><link href="http://jhshi.me/2015/12/27/handle-keyboardinterrupt-in-python-multiprocessing/index.html" rel="alternate"></link><updated>2015-12-27T00:01:16-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2015-12-27:2015/12/27/handle-keyboardinterrupt-in-python-multiprocessing/index.html</id><summary type="html">&lt;p&gt;&lt;tt class="docutils literal"&gt;multiprocessing&lt;/tt&gt; is a convenient library to take the advantage of multiple
+cores easily found in modern processes. The typical pattern is to spawn a bunch
+of worker processes, and let them consume the data from a &lt;tt class="docutils literal"&gt;queue&lt;/tt&gt;. However,
+when debugging, I usually found myself attempting to terminate the script using
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;Ctrl-C&lt;/span&gt;&lt;/tt&gt; yet to find it has no effect.&lt;/p&gt;
+
+&lt;div class="section" id="working-example"&gt;
+&lt;h2&gt;Working Example&lt;/h2&gt;
+&lt;p&gt;Here is a typical pattern to use &lt;tt class="docutils literal"&gt;multiprocssing.Process&lt;/tt&gt; and
+&lt;tt class="docutils literal"&gt;multiprocess.Queue&lt;/tt&gt;.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;multiprocessing&lt;/span&gt;
+
+
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;Worker&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;multiprocssing&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Process&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;queue&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;**&lt;/span&gt;&lt;span class="n"&gt;kwargs&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;queue&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;queue&lt;/span&gt;
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;run&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;item&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;queue&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;item&lt;/span&gt; &lt;span class="ow"&gt;is&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="k"&gt;break&lt;/span&gt;
+
+            &lt;span class="c"&gt;# process item here&lt;/span&gt;
+
+&lt;span class="n"&gt;queue&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;multiprocess&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Queue&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="n"&gt;workers&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;Worker&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;queue&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;_&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="nb"&gt;range&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;multiprocssing&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;cpu_count&lt;/span&gt;&lt;span class="p"&gt;())]&lt;/span&gt;
+&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;w&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;workers&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;w&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;start&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+&lt;span class="n"&gt;queue&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;put&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;items&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;w&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;workers&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;queue&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;put&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="n"&gt;queue&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;close&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="n"&gt;queue&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join_thread&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Here we spawn a number of workers, and let each of them consume input from the
+queue. Normally the main process gets stuck at the &lt;tt class="docutils literal"&gt;queue.join_thread()&lt;/tt&gt; function.
+When you press &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;Ctrl-C&lt;/span&gt;&lt;/tt&gt; while the script is running, the subprocesses will not
+be terminated properly.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="first-attempt"&gt;
+&lt;h2&gt;First Attempt&lt;/h2&gt;
+&lt;p&gt;My first try is to catch the &lt;tt class="docutils literal"&gt;KeyboardInterrupt&lt;/tt&gt; and the manually terminate the processes.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3
+4
+5&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;queue&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join_thread&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="ne"&gt;KeyboardInterrupt&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;w&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;workers&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;w&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;terminate&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;However, this won't work most of the time, especially when you have some serious
+computing going on in each process.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="solution"&gt;
+&lt;h2&gt;Solution&lt;/h2&gt;
+&lt;p&gt;Then I noticed the &lt;tt class="docutils literal"&gt;daemon&lt;/tt&gt; flag in the &lt;tt class="docutils literal"&gt;Process&lt;/tt&gt; document.&lt;/p&gt;
+&lt;blockquote&gt;
+When a process exits, it attempts to terminate all of its daemonic child
+processes.&lt;/blockquote&gt;
+&lt;p&gt;So I set each child process's &lt;tt class="docutils literal"&gt;daemon&lt;/tt&gt; attribute to be &lt;tt class="docutils literal"&gt;True&lt;/tt&gt;: they are not
+creating sub-subprocesses anyway.&lt;/p&gt;
+&lt;p&gt;Note that &lt;tt class="docutils literal"&gt;daemon&lt;/tt&gt; flag must be set BEFORE
+calling the processes' &lt;tt class="docutils literal"&gt;start&lt;/tt&gt; function. Also, once the &lt;tt class="docutils literal"&gt;daemon&lt;/tt&gt; flag is
+set, &lt;tt class="docutils literal"&gt;queue.join_thread()&lt;/tt&gt; does not work anymore: you'll have to call &lt;tt class="docutils literal"&gt;join&lt;/tt&gt;
+for each worker.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;w&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;workers&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;w&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;daemon&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+    &lt;span class="n"&gt;w&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;start&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+&lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;w&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;workers&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;w&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="ne"&gt;KeyboardInterrupt&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;w&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;workers&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;w&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;terminate&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+</summary><category term="multiprocessing"></category><category term="keyboardinterrupt"></category><category term="process"></category></entry></feed>

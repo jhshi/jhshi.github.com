@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Pearls in Life</title><link href="http://jhshi.me/" rel="alternate"></link><link href="http://jhshi.me/feeds/research.atom.xml" rel="self"></link><id>http://jhshi.me/</id><updated>2016-07-12T13:58:33-04:00</updated><entry><title>Setting Up USRPN2x0 in VirtualBox</title><link href="http://jhshi.me/2016/07/12/setting-up-usrpn2x0-in-virtualbox/index.html" rel="alternate"></link><updated>2016-07-12T13:58:33-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-07-12:2016/07/12/setting-up-usrpn2x0-in-virtualbox/index.html</id><summary type="html">&lt;p&gt;This post shows how to connect to USRP N2x0 from a Ubuntu guest OS inside
+Virtualbox running on a Windows host.&lt;/p&gt;
+
+&lt;div class="section" id="host-os"&gt;
+&lt;h2&gt;Host OS&lt;/h2&gt;
+&lt;p&gt;Here we assume you have a secondary Ethernet card that is physically connected
+to the USRP N2x0.&lt;/p&gt;
+&lt;p&gt;First, in VirtualBox's configuration window, click the &lt;tt class="docutils literal"&gt;Network&lt;/tt&gt; tab, and then
+&lt;tt class="docutils literal"&gt;Adpater 2&lt;/tt&gt;. Leave &lt;tt class="docutils literal"&gt;Adapter 1&lt;/tt&gt; alone so that you still have Internet access
+inside the VM.&lt;/p&gt;
+&lt;img alt="VirtualBox Network Configuration" src="/images/vbox_network.png" /&gt;
+&lt;p&gt;In &lt;tt class="docutils literal"&gt;Attached to&lt;/tt&gt;, choose &lt;tt class="docutils literal"&gt;Bridged Adapter&lt;/tt&gt; so that the VM has direct access
+to the physical network adapter. Then in &lt;tt class="docutils literal"&gt;Name&lt;/tt&gt;, choose the secondary NIC that
+is physically connected to the USRP.&lt;/p&gt;
+&lt;p&gt;Save the configuration and boot into the guest OS.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="guest-os"&gt;
+&lt;h2&gt;Guest OS&lt;/h2&gt;
+&lt;p&gt;Inside the guest Ubuntu OS, make sure the network adaptor is visible.&lt;/p&gt;
+&lt;pre class="code bash literal-block"&gt;
+&lt;span class="nv"&gt;$ &lt;/span&gt;ifconfig -a
+&lt;/pre&gt;
+&lt;p&gt;You should see two Ethernet interfaces: one for the &lt;tt class="docutils literal"&gt;Adapter 1&lt;/tt&gt; which provides
+Internet access through NAT, and another for the &lt;tt class="docutils literal"&gt;Adapter 2&lt;/tt&gt; we just added. At
+this point, there should be no IP address assigned to the second interface. In
+my case, the two interfaces are &lt;tt class="docutils literal"&gt;enp0s3&lt;/tt&gt; (NAT) and &lt;tt class="docutils literal"&gt;enp0s8&lt;/tt&gt; (Bridged).
+Adapt the names accordingly for your setup in following instructions.&lt;/p&gt;
+&lt;p&gt;Next, assign an static IP address to &lt;tt class="docutils literal"&gt;enp0s8&lt;/tt&gt;. The default IP address for
+USRPs are usually 192.168.10.2, so we set the IP address for &lt;tt class="docutils literal"&gt;enp0s8&lt;/tt&gt; to be in
+the same subnet.&lt;/p&gt;
+&lt;pre class="code bash literal-block"&gt;
+&lt;span class="nv"&gt;$ &lt;/span&gt;sudo ifconfig enp0s8 192.168.10.1
+&lt;/pre&gt;
+&lt;p&gt;Then, add a static route so that all packets in 192.168.10.0/24 subnet is routed
+via the &lt;tt class="docutils literal"&gt;enp0s8&lt;/tt&gt; interface.&lt;/p&gt;
+&lt;pre class="code bash literal-block"&gt;
+&lt;span class="nv"&gt;$ &lt;/span&gt;sudo ip route add 192.168.10.0/24 dev enp0s8
+&lt;/pre&gt;
+&lt;p&gt;Make sure that the newly added route is recognized by the kernel (the last line
+of the following output).&lt;/p&gt;
+&lt;pre class="code bash literal-block"&gt;
+&lt;span class="nv"&gt;$ &lt;/span&gt;ip route
+default via 10.0.2.2 dev enp0s3  proto static  metric 100
+10.0.2.0/24 dev enp0s3  proto kernel  scope link  src 10.0.2.15  metric 100
+192.168.10.0/24 dev enp0s8  proto kernel  scope link  src 192.168.10.1
+&lt;/pre&gt;
+&lt;p&gt;Finally, bring up the interface and ping the USRP!&lt;/p&gt;
+&lt;pre class="code bash literal-block"&gt;
+&lt;span class="nv"&gt;$ &lt;/span&gt;sudo ifconfig enp0s8 up
+&lt;span class="nv"&gt;$ &lt;/span&gt;ping 192.168.10.2
+&lt;span class="nv"&gt;$ &lt;/span&gt;uhd_find_devices
+&lt;/pre&gt;
+&lt;p&gt;You should receive ping responses and &lt;tt class="docutils literal"&gt;uhd_find_devices&lt;/tt&gt; should be able to
+find the USRP devices.&lt;/p&gt;
+&lt;/div&gt;
+</summary><category term="USRP"></category><category term="N210"></category><category term="N200"></category><category term="VirtualBox"></category><category term="route"></category></entry><entry><title>Customize USRP N2x0 DSP RX Chain</title><link href="http://jhshi.me/2016/07/08/customize-usrp-n2x0-dsp-rx-chain/index.html" rel="alternate"></link><updated>2016-07-08T15:19:08-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-07-08:2016/07/08/customize-usrp-n2x0-dsp-rx-chain/index.html</id><summary type="html">&lt;p&gt;In one of my research projects, I need to develop some signal processing logic
+that runs on the FPGA of the USRP, to meeting some delay and timing
+requirements. Here is a general overview of the steps to customize the DSP Rx
+chain of USRP N2x0 devices. Details of my particular customization will be
+probably discussed in separate posts.&lt;/p&gt;
+
+&lt;div class="section" id="dsp-rx-chain-overview"&gt;
+&lt;h2&gt;DSP Rx Chain Overview&lt;/h2&gt;
+&lt;p&gt;The spirit of Software Defined Radios is to push as much as of the signal
+processing to the host PC, enabling easy development and fast prototyping and
+easy. However, there are certain tasks that are just too timing/performance
+sensitive to be put on the host PC. Therefore, USRPs has a FPGA on board to
+perform several pre-processing of the signal samples before they are sent to the
+host PC.&lt;/p&gt;
+&lt;img alt="Pipeline of DSP Rx Chain" src="/images/dsp_rx_chain.png" /&gt;
+&lt;p&gt;The above diagram shows the pipeline of the DSP receive chain on the FPGA. The
+RF signal are sampled and converted by the ADC module, and the raw samples are
+processed by the Rx Frontend module for scaling and converting the samples to
+the familiar I/Q values.&lt;/p&gt;
+&lt;p&gt;Next, the I/Q values (&lt;tt class="docutils literal"&gt;frontend_i, frontend_q&lt;/tt&gt;) are sent to a dummpy custom
+module. By default, this Custom module just pipe the I/Q samples directly to
+the Digital Down Converter (DDC) module to extract the baseband signal.&lt;/p&gt;
+&lt;p&gt;Then the baseband signals (&lt;tt class="docutils literal"&gt;ddc_out_sample&lt;/tt&gt;) are passed into the Custom module
+again, which in turn pass them directly to the VITA49 core, which will frame
+these samples and send them to host PC.&lt;/p&gt;
+&lt;p&gt;As we can clear see, the USRP FPGA framework already provides us a nice custom
+valve where we can perform custom processing either before or after the DDC
+stage.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="enable-custom-build"&gt;
+&lt;h2&gt;Enable Custom Build&lt;/h2&gt;
+&lt;p&gt;By default, the Custom module is disabled. To enable it, we need to make the
+following changes. Here we use the N200R4 as an example. The steps are the same
+for other N2x0 devices.&lt;/p&gt;
+&lt;p&gt;First, clone the USRP FPGA source (if you haven't done so).&lt;/p&gt;
+&lt;pre class="code bash literal-block"&gt;
+&lt;span class="nv"&gt;$ &lt;/span&gt;git clone git&amp;#64;github.com:EttusResearch/fpga.git
+&lt;span class="nv"&gt;$ &lt;/span&gt;&lt;span class="nb"&gt;cd &lt;/span&gt;fpga/usrp2/top/N2x0/
+&lt;/pre&gt;
+&lt;p&gt;Next, make a copy the original Makefile.&lt;/p&gt;
+&lt;pre class="code bash literal-block"&gt;
+&lt;span class="nv"&gt;$ &lt;/span&gt;cp Makefile.N200R4 Makefile.N200R4.custom
+&lt;/pre&gt;
+&lt;p&gt;Then make these changes to &lt;tt class="docutils literal"&gt;Makefile.N200R4.custom&lt;/tt&gt;.&lt;/p&gt;
+&lt;pre class="code diff literal-block"&gt;
+# use a differnet build directory
+&lt;span class="gd"&gt;- BUILD_DIR = $(abspath build$(ISE)-N200R4)
+&lt;/span&gt;&lt;span class="gi"&gt;+ BUILD_DIR = $(abspath build$(ISE)-N200R4-custom)
+&lt;/span&gt;
+# remove these two lines, as we will set them later
+&lt;span class="gd"&gt;- CUSTOM_SRCS =
+- CUSTOM_DEFS =
+&lt;/span&gt;
+
+# include a custom src list file that we will create later, this file sets
+# the CUSTOM_SRCS variable
+&lt;span class="gi"&gt;+ include ../../custom/Makefile.srcs
+&lt;/span&gt;
+
+# Enable the custom module using verilog macro
+&lt;span class="gd"&gt;-&amp;quot;Verilog Macros&amp;quot; &amp;quot;LVDS=1|RX_DSP0_MODULE=custom_dsp_rx&amp;quot;
+&lt;/span&gt;&lt;span class="gi"&gt;+&amp;quot;Verilog Macros&amp;quot; &amp;quot;LVDS=1|RX_DSP0_MODULE=custom_dsp_rx|RX_DSP1_MODULE=custom_dsp_rx&amp;quot;&lt;/span&gt;
+&lt;/pre&gt;
+&lt;p&gt;Then in &lt;tt class="docutils literal"&gt;fpga/custom/&lt;/tt&gt; directory, create a file named &lt;tt class="docutils literal"&gt;Makefile.srcs&lt;/tt&gt;.&lt;/p&gt;
+&lt;pre class="code Makefile literal-block"&gt;
+&lt;span class="nv"&gt;CUSTOM_SRCS&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;$(&lt;/span&gt;abspath &lt;span class="k"&gt;$(&lt;/span&gt;addprefix &lt;span class="k"&gt;$(&lt;/span&gt;BASE_DIR&lt;span class="k"&gt;)&lt;/span&gt;/../custom/, &lt;span class="se"&gt;\
+&lt;/span&gt;    custom_dsp_rx.v&lt;span class="se"&gt;\
+&lt;/span&gt;    &lt;span class="o"&gt;))&lt;/span&gt;
+&lt;/pre&gt;
+&lt;p&gt;As you continue the development, you'll probably create more Verilog modules.
+Just add their file names here.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="checkpoint"&gt;
+&lt;h2&gt;Checkpoint&lt;/h2&gt;
+&lt;p&gt;Now the build system will include the &lt;tt class="docutils literal"&gt;custom_dsp_rx.v&lt;/tt&gt; file. Before you do
+any changes to that file, I suggest you compile the whole project for sanity
+check.&lt;/p&gt;
+&lt;pre class="code bash literal-block"&gt;
+&lt;span class="nv"&gt;$ &lt;/span&gt;&lt;span class="nb"&gt;cd &lt;/span&gt;fpga/top/N2x0/
+&lt;span class="nv"&gt;$ &lt;/span&gt;make -f Makefile.N200R4.custom clean bin
+&lt;span class="nv"&gt;$ &lt;/span&gt;uhd_image_loader --args&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;type=usrp2&amp;quot;&lt;/span&gt; --fpga-path build-custom/u2plus.bin --fw-path path/to/your/firmware
+&lt;/pre&gt;
+&lt;p&gt;This should succeed and the functionality of the FPAG image should be exactly
+the same as before since the default Custom module only passes through signals.&lt;/p&gt;
+&lt;p&gt;Note: to flash the FPGA image, you'll also need a &lt;em&gt;compatible&lt;/em&gt; firmware image.
+So I recommend you to clone the uhd and fpga repos and build them together.&lt;/p&gt;
+&lt;/div&gt;
+</summary><category term="usrp"></category><category term="sdr"></category><category term="dsp"></category><category term="fpga"></category></entry><entry><title>Google Mobile Faculty Summit</title><link href="http://jhshi.me/2015/10/10/google-mobile-summit/index.html" rel="alternate"></link><updated>2015-10-10T13:38:37-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2015-10-10:2015/10/10/google-mobile-summit/index.html</id><summary type="html">&lt;p&gt;I have been attending the &lt;a href="https://goo.gl/bMCcJI"&gt;Google Mobile Summit&lt;/a&gt; for past two days. I'll
+share some of the exciting projects that Google is doing as well as my personal
+take away from them.&lt;/p&gt;
+
+
+&lt;h2&gt;&lt;a href="https://goo.gl/gYKduQ"&gt;Project Loon&lt;/a&gt;: LTE by ... Baloons!&lt;/h2&gt;
+&lt;p&gt;In a nutshell, this project wants to send a bunch of balloons to the
+stratosphere to act as LTE cellular towers.&lt;/p&gt;
+&lt;p&gt;Personally, I feel like the most exciting and interesting part is to navigate
+the balloons by putting them up and down and leveraging the natural wind in
+stratosphere to move the balloons to designated area. I can imagine a lot of
+interesting research challenges there. In particular, I'm told that right now
+they need to obtain the wind direction data and prediction from third-party
+providers in order to plan the trajectory of the balloon. Instead, one might be
+able to learn the wind direction in an online fashion by dispatching balloons to
+different layers in the stratosphere for a short period of time. This may work
+because the wind directions in the stratosphere only change very slowly (in
+order of several hours), so such wind direction measurements can be usefully
+even performed very infrequently.&lt;/p&gt;
+&lt;h2&gt;&lt;a href="https://goo.gl/YhS1JL"&gt;Physical Web&lt;/a&gt;: Cyberphysical Stuff&lt;/h2&gt;
+&lt;p&gt;The essence of this project is to put a BLE beacon device in every physical
+"things" that we may want to interact with, such as parking meters, movie
+posters, etc. Theses beacons contain a short URL that will direct people various
+web interfaces.&lt;/p&gt;
+&lt;p&gt;At first glance, the idea is very similar to QR codes, or NFC tags. And indeed,
+I think they are quite similar: a way to link physical beings to the cyber
+world. I was not quite convinced why BLE beacons are better than NFC tags in any
+meaningful ways. Maybe BLE is more pervasive? And NFC are usually absent in
+high-end smartphones with metal back lids? I am not quite sure I buy these
+arguments...&lt;/p&gt;
+&lt;h2&gt;&lt;a href="https://fi.google.com"&gt;Project Fi&lt;/a&gt;: AT&amp;amp;T, Verizon, Sprint, or... Google?&lt;/h2&gt;
+&lt;p&gt;This is probably the most interesting project in this summit. Basically Google
+wants to serve as a "virtual cellular provider" that unifies different physical
+providers (such as Sprint, AT&amp;amp;T) and choose whichever is better for you behind
+the scene. Most of all, it's cheap! $20/month base rate and $10/GB data rate, as
+simple as that. And they even refund you for unused data packages! How cool is
+that! Unfortunately, as of now you do need an invitation to join, and a latest
+Nexus phone (Nexus 5X, 6P and 6).&lt;/p&gt;
+&lt;p&gt;From research perspective, this project also touches several know hard problems,
+most notably wireless handover, both between providers, and between Wifi and
+LTE. The later may be simpler of the two, since the device can simultaneously
+connect to Wifi and LTE to assess which one is better. However, since the device
+only have one cellular radio, it can only connect to one LTE provider at a
+time. Crowdsourcing may come in handy to determine the LTE quality based on
+locations, etc.&lt;/p&gt;
+&lt;h2&gt;&lt;a href="https://www.google.com/atap/project-soli/"&gt;Project Soli&lt;/a&gt;: Ant Radar&lt;/h2&gt;
+&lt;p&gt;They use 60GHz technologies to pack a tiny radar into wearable devices to enable
+touch less interaction. The demo is quite cool. I am always skeptical of such RF
+sensing stuff, now is Google is at it, maybe they can make it actually work...&lt;/p&gt;
+&lt;h2&gt;&lt;a href="https://en.wikipedia.org/wiki/Google_Contact_Lens"&gt;Project Iris&lt;/a&gt;: "Smart" Contact Lenses&lt;/h2&gt;
+&lt;p&gt;OK, now Google tries to mess up with your contact lenses :-) Basically, they
+developed this tiny tiny sensing system that can actually be embedded in the
+contact lenses. The lenses now measures the glucose level in the tears for early
+diabetes detection. It is amazing they may managed to pack so many stuff
+(sensors, battery, antenna) in such small form factor. My only concern is
+that...do the lenses heat up?&lt;/p&gt;</summary><category term="google"></category><category term="loon"></category><category term="nearme"></category></entry><entry><title>How Android Wifi State Machine Works</title><link href="http://jhshi.me/2014/04/25/how-android-wifi-state-machine-works/index.html" rel="alternate"></link><updated>2014-04-25T10:39:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-04-25:2014/04/25/how-android-wifi-state-machine-works/index.html</id><summary type="html">&lt;p&gt;Recently, I studied how Android Wi-Fi subsystem works. I was more specifically
+interested to learn the scan behavior. The source code related to this is mainly
+in &lt;code&gt;framework/base/wifi/java/android/net/wifi/&lt;/code&gt; within AOSP source tree.&lt;/p&gt;
+
+
+&lt;h3&gt;The Big Picture&lt;/h3&gt;
+&lt;p&gt;&lt;img src="/images/android_wifi.png" class="center"&gt;&lt;/p&gt;
+&lt;p&gt;Android uses a customized wpa_supplicant to perform AP authentication and
+association, and also communicate with underlying driver. The &lt;code&gt;WifiNative&lt;/code&gt; class
+is used to send various commands to wpa_supplicant ,and the &lt;code&gt;WifiMonitor&lt;/code&gt; class
+is used to monitor wpa_supplicant status change and notify Android framework.&lt;/p&gt;
+&lt;p&gt;wpa_supplicant communicates with underlying driver using new
+&lt;a href="http://wireless.kernel.org/en/developers/Documentation/cfg80211"&gt;CFG80211/NL80211&lt;/a&gt; interface.&lt;/p&gt;
+&lt;h3&gt;Basics of Hierarchical State Machine&lt;/h3&gt;
+&lt;p&gt;Android framework uses a Hierarchical State Machine (HSM) to maintain the
+different states of Wi-Fi connection. As the name indicates, all states are
+organized in a tree, and there is one special initial state. The interface of
+each state is as follows:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;enter()&lt;/code&gt;: called when entering this state.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;exit()&lt;/code&gt;: called when exiting this state.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;processMessage()&lt;/code&gt;: called when message arrives.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The most import property of HSM is that when transitioning between states, we
+first found the common ancestor state that's closest to current state, the we
+exit from current state and all its ancestor state &lt;strong&gt;up to but not include&lt;/strong&gt; the
+closest common ancestor, then enter all of the new states below the closet
+common ancestor down to the new state. &lt;/p&gt;
+&lt;p&gt;Here is a simple example HSM. &lt;/p&gt;
+&lt;p&gt;&lt;img src="/images/hsm_example.png" class="center"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;S4&lt;/code&gt; is the initial state. When we first start the HSM, &lt;code&gt;S0.enter()&lt;/code&gt;,
+&lt;code&gt;S1.enter()&lt;/code&gt; and &lt;code&gt;S4.enter()&lt;/code&gt; will be called in sequence. Suppose we want to
+transit from &lt;code&gt;S0&lt;/code&gt; to &lt;code&gt;S7&lt;/code&gt;, since the closet common ancestor is &lt;code&gt;S0&lt;/code&gt;, &lt;code&gt;S4.exit()&lt;/code&gt;
+&lt;code&gt;S1.exit()&lt;/code&gt;, &lt;code&gt;S2.enter()&lt;/code&gt;, &lt;code&gt;S5.enter()&lt;/code&gt; and &lt;code&gt;S7.enter()&lt;/code&gt; will be called in
+sequence.&lt;/p&gt;
+&lt;p&gt;More details about HSM can be found in the comments of
+&lt;code&gt;frameworks/base/core/java/com/android/internal/util/StateMachin.java&lt;/code&gt;.&lt;/p&gt;
+&lt;h3&gt;Wifi State Machine&lt;/h3&gt;
+&lt;p&gt;Here is a subset of the whole Android Wifi HSM, states about P2P connections are
+omitted.&lt;/p&gt;
+&lt;p&gt;&lt;img src="/images/android_wifi_hsm.png" class="center"&gt;&lt;/p&gt;
+&lt;p&gt;So in Initial state's &lt;code&gt;enter()&lt;/code&gt; function, we check if the driver is loaded, and
+transit to Driver Loaded state if yes. Then we start wpa_supplicant and transit&lt;/p&gt;
+&lt;p&gt;When we receive &lt;code&gt;SUP_CONNECTED_EVENT&lt;/code&gt;, we switch to Driver Started state. &lt;strong&gt;But
+before that, we need to first enter Supplicant Started state first.&lt;/strong&gt; In the
+&lt;code&gt;enter()&lt;/code&gt; function of Supplicant Started state, we set the supplicant scan
+interval, which,  by default, is 15 seconds defined in
+&lt;code&gt;frameworks/base/core/res/res/values/config.xml&lt;/code&gt; as
+&lt;code&gt;config_wifi_supplicant_scan_interval&lt;/code&gt;. So the first fact of Android scan
+behavior is that &lt;strong&gt;it'll do scan every 15 seconds as long as the wpa_supplicant
+is started, no matter what the Wi-Fi condition is.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Then we come to Driver Started State, if we're not in scan mode, then we switch
+to Disconnected Mode state. Scan mode means that Wi-Fi will be kept active, but
+the only operation that will be supported is initiation of scans, and the
+subsequent reporting of scan results. No attempts will be made to automatically
+connect to remembered access points, nor will periodic scans be automatically
+performed looking for remembered access points.&lt;/p&gt;
+&lt;p&gt;In Disconnected Mode state's &lt;code&gt;enter()&lt;/code&gt; function, if the chipset does not support
+background scan, then we enable framework periodic scan. The default interval is
+300 seconds (5 mins), defined in &lt;code&gt;framworks/base/core/res/res/values/config.xml&lt;/code&gt;
+as &lt;code&gt;config_wifi_framework_scan_interval&lt;/code&gt;. So the second behavior of Android scan
+is that, &lt;strong&gt;in disconnected mode, it'll issue scan every 5 mins.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Then if received &lt;code&gt;NETWORK_CONNECTION_EVENT&lt;/code&gt; event from &lt;code&gt;WifiMonitor&lt;/code&gt;, we switch
+to Obtaining IP state, which will initiate the DHCP process if needed. Then we
+go through Veifying Link and Captive Portal Check state, and finally reach
+Connected state.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;WifiWatchdogStateMachine&lt;/code&gt; will continuously monitor the link quality and packet
+loss event, and will send out &lt;code&gt;POOR_LINK_DETECTED&lt;/code&gt; or &lt;code&gt;GOOD_LINK_DETECTED&lt;/code&gt;
+event.&lt;/p&gt;
+&lt;h3&gt;Android Scan Interval&lt;/h3&gt;
+&lt;p&gt;Here is the statistics of scan interval distribution collected on 129 Nexus S
+phones for about 5 months.&lt;/p&gt;
+&lt;p&gt;&lt;img src="/images/scan_interval_stats.png" class="center"&gt;&lt;/p&gt;
+&lt;p&gt;We can see that there are 4 peaks in the distribution. The peak around 15
+seconds is due to wpa_supplicant scan interval, and the peak around 300 is due
+to framework periodic scan. The peak around 60 seconds is not much clear yet,
+probably due to the scan interval when P2P is connected.&lt;/p&gt;
+&lt;p&gt;The interesting fact is actually the peak within 2 seconds. It seems most of the
+scan results are clustered together in a small time windows (1~2 seconds).  This
+is because when the driver is scanning, it'll report every time it detects one
+AP. So in one scan, multiple scan result event will be triggered. And every time
+when there is a low level scan result event, Android will report the complete
+updated scan result list.&lt;/p&gt;</summary><category term="android"></category><category term="wifi"></category><category term="state machine"></category><category term="wpa_supplicant"></category></entry><entry><title>Switch Channel Without Breaking TCP Connection in OpenWrt</title><link href="http://jhshi.me/2014/03/21/switch-channel-without-breaking-tcp-connection-in-openwrt/index.html" rel="alternate"></link><updated>2014-03-21T12:46:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-03-21:2014/03/21/switch-channel-without-breaking-tcp-connection-in-openwrt/index.html</id><summary type="html">&lt;p&gt;Recently, I've been working on dynamic channel selection based on channel
+utilization. One problem I encountered is: how to switch both AP and devices'
+channel without interrupting existing TCP connection.&lt;/p&gt;
+
+
+&lt;h2&gt;First Intuitive Solution&lt;/h2&gt;
+&lt;p&gt;I have a router (&lt;a href="http://wiki.openwrt.org/toh/tp-link/tl-wdr3500"&gt;TP-LINK TL-WDR3500&lt;/a&gt;) running &lt;a href="https://openwrt.org/"&gt;OpenWrt&lt;/a&gt;.
+Wireless configurations, e.g., SSID, channel, tx power, are managed in Openwrt's
+UCI system. More specifically, all Wifi configurations are stored in file
+located in &lt;code&gt;/etc/config/wireless&lt;/code&gt;. In my case, the file looks like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;config wifi-device &amp;#39;radio0&amp;#39;
+    option type &amp;#39;mac80211&amp;#39;
+    option hwmode &amp;#39;11g&amp;#39;
+    option path &amp;#39;platform/ar934x_wmac&amp;#39;
+    option htmode &amp;#39;HT20&amp;#39;
+    list ht_capab &amp;#39;LDPC&amp;#39;
+    list ht_capab &amp;#39;SHORT-GI-20&amp;#39;
+    list ht_capab &amp;#39;SHORT-GI-40&amp;#39;
+    list ht_capab &amp;#39;TX-STBC&amp;#39;
+    list ht_capab &amp;#39;RX-STBC1&amp;#39;
+    list ht_capab &amp;#39;DSSS_CCK-40&amp;#39;
+    option txpower &amp;#39;27&amp;#39;
+    option channel &amp;#39;11&amp;#39;
+
+config wifi-iface
+    option device &amp;#39;radio0&amp;#39;
+    option network &amp;#39;lan&amp;#39;
+    option mode &amp;#39;ap&amp;#39;
+    option ssid &amp;#39;PocketSniffer&amp;#39;
+    option encryption &amp;#39;psk2&amp;#39;
+    option key &amp;#39;XXXX&amp;#39;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;OpenWrt provides a command called &lt;code&gt;wifi&lt;/code&gt;, that can reload these configurations.
+So my first solution is to &lt;code&gt;uci&lt;/code&gt; command to change the configuration and use
+&lt;code&gt;wifi&lt;/code&gt; command to reload them.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;set_channel&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;channel&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt;
+  &lt;span class="n"&gt;args&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;uci&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;set&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+  &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;channel&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;=&lt;/span&gt; &lt;span class="mi"&gt;11&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;wireless.radio0.channel=&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;channel&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+  &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;wireless.radio1.channel=&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;channel&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+
+  &lt;span class="n"&gt;subprocess&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;call&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+  &lt;span class="n"&gt;subprocess&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;call&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;uci&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;commit&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+  &lt;span class="n"&gt;subprocess&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;call&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;wifi&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;This will work in the sense that it can change the AP's channel. But the problem
+is, the &lt;code&gt;wifi&lt;/code&gt; command will actually shut down the interface completely and
+restart it. So any devices that connected to this AP will be de-associated.&lt;/p&gt;
+&lt;h2&gt;What's the Problem?&lt;/h2&gt;
+&lt;p&gt;From client's side of view, when the AP switches to another channel, here is
+what happend:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Receive de-authentication frame from AP (ops, this AP is gone)&lt;/li&gt;
+&lt;li&gt;Do active scan on every channel (probe-wait)&lt;/li&gt;
+&lt;li&gt;Figure out a best AP to associate&lt;/li&gt;
+&lt;li&gt;Send authentication and association request to newly selected AP&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This is much like a typical handover process where a device switches between two
+geographically co-located APs. Just that in this case, the two APs are actually
+the same physical AP with different channel.&lt;/p&gt;
+&lt;p&gt;&lt;a href="http://www.cs.umd.edu/~waa/pubs/handoff-lat-acm.pdf"&gt;A. Mishra et al&lt;/a&gt; provides a thorough study on the handover process. In
+short, the process can take up to a few hundred milliseconds, and any on-going
+TCP connections will lost.&lt;/p&gt;
+&lt;p&gt;This is undesired because the channel switch cost (extra latency and breaking
+TCP connection) may neutralize the benefit of switching channel itself.&lt;/p&gt;
+&lt;p&gt;Ideally, after channel switch, any authentication info at AP side should remain,
+so that clients don't have to re-authenticate, and any established TCP
+connection should also be kept. These requirements make sense because, after
+all, channel is just medium to exchange data. Channel switch should NOT affect
+any up layer state.&lt;/p&gt;
+&lt;h2&gt;The Final Solution&lt;/h2&gt;
+&lt;p&gt;After a bit research, I found that IEEE 802.11 standard (section 10.9.8 in 2012
+standard) actually already defined the
+mechanism to let AP announce the channel switch event and also let clients
+switch channel accordingly - all happened in MAC layer. This feature quite fits
+our needs.&lt;/p&gt;
+&lt;p&gt;And the good new is that this feature has already been implemented in most
+recent driver that adopting CFG80211 interface, and is exposed to user space
+tools, such as hostapd or wpa_supplicant.&lt;/p&gt;
+&lt;p&gt;The OpenWrt running on our router use hostapd as user space authenticator. And
+it provides a command line tool called &lt;code&gt;hostapd_cli&lt;/code&gt; to interact with the
+hostapd daemon. There is a command in &lt;code&gt;hostapd_cli&lt;/code&gt; called &lt;code&gt;chan_swtich&lt;/code&gt; that
+does precisely what we wanted.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;set_channel&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;channel&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt;
+
+  &lt;span class="c"&gt;# do not use the wifi command to switch channel, but still maintain the&lt;/span&gt;
+  &lt;span class="c"&gt;# channel coheraence of the configuration file&lt;/span&gt;
+
+  &lt;span class="n"&gt;args&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;uci&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;set&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+  &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;channel&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;=&lt;/span&gt; &lt;span class="mi"&gt;11&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;wireless.radio0.channel=&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;channel&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+  &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;wireless.radio1.channel=&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;channel&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+
+  &lt;span class="n"&gt;subprocess&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;call&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+  &lt;span class="n"&gt;subprocess&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;call&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;uci&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;commit&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+
+  &lt;span class="c"&gt;# this is the command that actually switches channel&lt;/span&gt;
+
+  &lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="nb"&gt;open&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;devnull&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;wb&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;cmd&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;chan_switch 1 &amp;#39;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;channel2freq&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;channel&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;&lt;/span&gt;
+    &lt;span class="n"&gt;p&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;subprocess&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Popen&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;hostapd_cli&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stdin&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;subprocess&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;PIPE&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stdout&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;f&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stderr&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;f&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;p&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;stdin&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;write&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;cmd&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;time&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sleep&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;p&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;kill&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here we still update the configuration file to maintain consistence between it
+and the hostapd daemon. But instead of using &lt;code&gt;wifi&lt;/code&gt; command to reload the
+configuration, we use the &lt;code&gt;chan_swtich&lt;/code&gt; command to change the channel.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;chan_switch&lt;/code&gt; takes a minimum of two arguments. The first is a &lt;code&gt;cs_count&lt;/code&gt;,
+meaning switch channel after how many beacon frames. The second is frequency.
+More usage info can be obtained by typing &lt;code&gt;chan_switch&lt;/code&gt; without any arguments in
+&lt;code&gt;hostapd_cli&lt;/code&gt;.&lt;/p&gt;</summary><category term="openwrt"></category><category term="channel"></category><category term="wifi"></category><category term="hostapd"></category></entry></feed>

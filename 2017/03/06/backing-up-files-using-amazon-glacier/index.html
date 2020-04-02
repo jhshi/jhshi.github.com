@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns# fb: https://www.facebook.com/2008/fbml">
+<head>
+    <title>Backing Up Files Using Amazon Glacier - Pearls in Life</title>
+    <!-- Using the latest rendering mode for IE -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <link href="http://jhshi.me/images/favicon.ico" rel="icon">
+
+<link rel="canonical" href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+
+        <meta name="author" content="Jinghao Shi" />
+        <meta name="keywords" content="glacier,backup" />
+        <meta name="description" content="Amazon Glacier is a cheap massive cloud storage solution that is mostly suitable for storing cold data - data that are rarely accessed. The price is fair: $4/TB/month. However, it&#39;s not like Dropbox or Googld Drive that has nice client programs that you can simply drag and drop the files to be stored. Instead, you&#39;ll have to work with their APIs to upload you files. In this post, I&#39;ll explain the basics about how to upload the files and also how to query the inventory." />
+
+            <meta property="fb:app_id" content="156751911645324"/>
+        <meta property="og:site_name" content="Pearls in Life" />
+        <meta property="og:type" content="article"/>
+        <meta property="og:title" content="Backing Up Files Using Amazon Glacier"/>
+        <meta property="og:url" content="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html"/>
+        <meta property="og:description" content="Amazon Glacier is a cheap massive cloud storage solution that is mostly suitable for storing cold data - data that are rarely accessed. The price is fair: $4/TB/month. However, it&#39;s not like Dropbox or Googld Drive that has nice client programs that you can simply drag and drop the files to be stored. Instead, you&#39;ll have to work with their APIs to upload you files. In this post, I&#39;ll explain the basics about how to upload the files and also how to query the inventory."/>
+        <meta property="article:published_time" content="2017-03-06" />
+            <meta property="article:section" content="linux" />
+            <meta property="article:tag" content="glacier" />
+            <meta property="article:tag" content="backup" />
+            <meta property="article:author" content="Jinghao Shi" />
+
+
+    <!-- Bootstrap -->
+        <link rel="stylesheet" href="http://jhshi.me/theme/css/bootstrap.readable.min.css" type="text/css"/>
+    <link href="http://jhshi.me/theme/css/font-awesome.min.css" rel="stylesheet">
+
+    <link href="http://jhshi.me/theme/css/pygments/friendly.css" rel="stylesheet">
+    <link href="http://jhshi.me/theme/tipuesearch/tipuesearch.css" rel="stylesheet">
+    <link rel="stylesheet" href="http://jhshi.me/theme/css/style.css" type="text/css"/>
+
+        <link href="http://jhshi.me/feeds/all.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life ATOM Feed"/>
+
+
+
+        <link href="http://jhshi.me/feeds/linux.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life linux ATOM Feed"/>
+
+</head>
+<body>
+
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({
+            appId      : "156751911645324",
+          xfbml      : true,
+          version    : 'v2.11'
+        });
+        FB.AppEvents.logPageView();
+      };
+
+      (function(d, s, id){
+         var js, fjs = d.getElementsByTagName(s)[0];
+         if (d.getElementById(id)) {return;}
+         js = d.createElement(s); js.id = id;
+         js.src = "https://connect.facebook.net/en_US/sdk.js";
+         fjs.parentNode.insertBefore(js, fjs);
+       }(document, 'script', 'facebook-jssdk'));
+    </script>
+
+<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+	<div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a href="http://jhshi.me/" class="navbar-brand">
+Pearls in Life            </a>
+        </div>
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav">
+                    <li><a href="/home">Home</a></li>
+                    <li><a href="/">Blog</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+              <li><span>
+                <form class="navbar-search" action="/search.html">
+                  <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input" required>
+                </form></span>
+              </li>
+              <li><a href="http://jhshi.me/blog/archives/index.html"><i class="fa fa-th-list"></i><span class="icon-label">Archives</span></a></li>
+            </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+</div> <!-- /.navbar -->
+<!-- Banner -->
+<!-- End Banner -->
+<div class="container">
+    <div class="row">
+        <div class="col-sm-9">
+    <section id="content">
+        <article>
+            <header class="page-header">
+                <h1>
+                    <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html"
+                       rel="bookmark"
+                       title="Permalink to Backing Up Files Using Amazon Glacier">
+                        Backing Up Files Using Amazon Glacier
+                    </a>
+                </h1>
+            </header>
+            <div class="entry-content">
+                <div class="panel">
+                    <div class="panel-body">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2017-03-06T16:32:53.048167-05:00"> Mon 06 March 2017</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/linux/index.html">linux</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/glacier/index.html">glacier</a>
+        /
+	<a href="http://jhshi.me/blog/tag/backup/index.html">backup</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                </div>
+                <p>Amazon Glacier is a cheap massive cloud storage solution that is mostly suitable
+for storing cold data - data that are rarely accessed. The price is fair:
+$4/TB/month. However, it's not like Dropbox or Googld Drive that has nice client
+programs that you can simply drag and drop the files to be stored. Instead,
+you'll have to work with their APIs to upload you files. In this post, I'll
+explain the basics about how to upload the files and also how to query the
+inventory.</p>
+
+<div class="section" id="basic-apis">
+<h2>Basic APIs</h2>
+<p>I use the <a class="reference external" href="https://boto3.readthedocs.io/en/latest/index.html">boto3</a> API in
+Python. The documentation for Glacier can be found in <a class="reference external" href="https://boto3.readthedocs.io/en/latest/reference/services/glacier.html">here</a>. I'll
+use the <tt class="docutils literal">Client</tt> APIs, which simply wrap the underlying HTTP requests. In
+particular, these are the APIs we'll be using for basic upload and query.</p>
+<ul class="simple">
+<li><a class="reference external" href="https://boto3.readthedocs.io/en/latest/reference/services/glacier.html#Glacier.Client.upload_archive">upload_archive</a>: upload files.</li>
+<li><a class="reference external" href="https://boto3.readthedocs.io/en/latest/reference/services/glacier.html#Glacier.Client.delete_archive">delete_archive</a>: delete files. Note that files on Glacier is not mutable. To update a file, you'll have to delete the old one and then upload the new one.</li>
+<li><a class="reference external" href="https://boto3.readthedocs.io/en/latest/reference/services/glacier.html#Glacier.Client.initiate_job">initiate_job</a>:
+to download files stored in Glacier or to query inventory.</li>
+<li><a class="reference external" href="https://boto3.readthedocs.io/en/latest/reference/services/glacier.html#Glacier.Client.describe_job">describe_job</a>:
+to query job status. This is asynchronous to <tt class="docutils literal">initiate_job</tt>.</li>
+</ul>
+</div>
+<div class="section" id="upload-files">
+<h2>Upload Files</h2>
+<p>We'll use the <tt class="docutils literal">upload_archive</tt> API to upload a file. Things to note:</p>
+<ul class="simple">
+<li>You need a pair of access ID and key to use the API. Follow <a class="reference external" href="https://boto3.readthedocs.io/en/latest/guide/quickstart.html#configuration">the guide</a>
+to set up <tt class="docutils literal">boto3</tt> correctly.</li>
+<li>You must create a &quot;vault&quot; before you can upload. You can do this in the
+Glacier manage console.</li>
+</ul>
+<p>To upload a file:</p>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4
+5
+6
+7</pre></div></td><td class="code"><div class="highlight"><pre><span class="n">client</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">client</span><span class="p">(</span><span class="s">&#39;glacier&#39;</span><span class="p">)</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">upload_archive</span><span class="p">(</span><span class="n">vaultName</span><span class="o">=</span><span class="s">&#39;myvault&#39;</span><span class="p">,</span>
+                    <span class="n">archiveDescription</span><span class="o">=</span><span class="n">path</span><span class="p">,</span>
+                    <span class="n">body</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+    <span class="c"># persist the map between response[&#39;archiveId&#39;] and path somewhere</span>
+    <span class="c"># locally</span>
+</pre></div>
+</td></tr></table><p>Note that the <tt class="docutils literal">archiveDescription</tt> argument is optional, but we utilize it to
+store the file's local path. This will help us bookkeeping later on. Inside
+Glacier, the file is solely identified by the <tt class="docutils literal">archiveId</tt>.</p>
+<p>It is advised to keep a local database of the files stored in Glacier, since the
+inventory is only updated every 24 hrs.</p>
+</div>
+<div class="section" id="update-inventory">
+<h2>Update Inventory</h2>
+<p>Sometimes the local archive database may be out-of-sync with Glacier, in which
+case a force-sync may be necessary. Basically we'll pull the inventory of
+Glacier and re-build the local archive database from that.</p>
+<p>Warnings:</p>
+<ul class="simple">
+<li>The Glacier inventory is only updated every 24 hrs. So files uploaded within
+last 24 hrs may not be reflected in the inventory.</li>
+<li>The inventory query can take up to several hours to finish.</li>
+</ul>
+<p>The main API we will use is <tt class="docutils literal">initiate_job</tt>, together with <tt class="docutils literal">describe_job</tt> to
+query job status and <tt class="docutils literal">get_job_output</tt> to retrieve the results once the job is
+finished. The same work flow can also be used to download a previously uploaded
+archive using the archive ID. But here we'll only show how to query the
+inventory.</p>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18</pre></div></td><td class="code"><div class="highlight"><pre><span class="n">job</span> <span class="n">req</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">initiate_job</span><span class="p">(</span><span class="n">vaultName</span><span class="o">=</span><span class="s">&#39;myvault&#39;</span><span class="p">,</span>
+            <span class="n">jobParameters</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;Type&#39;</span><span class="p">:</span> <span class="s">&#39;inventory-retrieval&#39;</span><span class="p">})</span>
+
+<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+    <span class="n">status</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">describe_job</span><span class="p">(</span><span class="n">vaultName</span><span class="o">=</span><span class="s">&#39;myvault&#39;</span><span class="p">,</span>
+                    <span class="n">jobId</span><span class="o">=</span><span class="n">job_req</span><span class="p">[</span><span class="s">&#39;jobId&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">status</span><span class="p">[</span><span class="s">&#39;Completed&#39;</span><span class="p">]:</span>
+        <span class="k">break</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">300</span><span class="p">)</span>
+
+<span class="n">job_resp</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_job_output</span><span class="p">(</span><span class="n">vaultName</span><span class="o">=</span><span class="s">&#39;myvault&#39;</span><span class="p">,</span>
+            <span class="n">jobId</span><span class="o">=</span><span class="n">job_req</span><span class="p">[</span><span class="s">&#39;jobId&#39;</span><span class="p">])</span>
+
+<span class="c"># first download the output and then parse the JSON</span>
+<span class="n">output</span> <span class="o">=</span> <span class="n">job_resp</span><span class="p">[</span><span class="s">&#39;body&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+<span class="n">archive_list</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">output</span><span class="p">)[</span><span class="s">&#39;ArchiveList&#39;</span><span class="p">]</span>
+<span class="c"># persist archive_list</span>
+</pre></div>
+</td></tr></table></div>
+
+            </div>
+            <!-- /.entry-content -->
+<section class="well" id="related-posts">
+    <h4>Related Posts:</h4>
+    <ul>
+        <li><a href="http://jhshi.me/2012/07/11/use-rsync-and-cron-to-do-regular-backup-part-ii/index.html">Use rsync and cron to do regular backup (Part II)</a></li>
+        <li><a href="http://jhshi.me/2012/07/11/use-rsync-and-cron-to-do-regular-backup-part-i/index.html">Use rsync and cron to do regular backup (Part I)</a></li>
+    </ul>
+</section>
+<section class="well" id="related-posts">
+      <h4><a href=https://github.com/jhshi/blog_source/commits/master/content/2017-03-06-backing-up-files-using-amazon-glacier.rst>Post History:</a></h4>
+
+      <b>Friday 02:17 PM, March 24 2017</b><br/><p>fix timeout error in code</p>
+      <b>Monday 05:21 PM, March 06 2017</b><br/><p>new post</p>
+</section>
+<div class="fb-like" 
+     data-href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html"
+     data-layout="standard" 
+     data-action="like" 
+     data-show-faces="true">
+</div>
+
+
+<div class="fb-comments"
+     data-href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html"
+     data-numposts="5"
+     data-order-by="reverse_time"
+     data-width="100%"
+    ></div>
+        </article>
+    </section>
+
+        </div>
+        <div class="col-sm-3" id="sidebar">
+            <aside>
+
+<section class="well well-sm">
+    <ul class="list-group list-group-flush">
+        <li class="list-group-item"><h4><i class="fa fa-eye"></i><span class="icon-label">0 Hits</span></h4>
+    <li class="list-group-item"><h4><i class="fa fa-fire fa-lg"></i><span class="icon-label">Popular Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Recent Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/categories/index.html"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Categories</span></h4></a>
+        <ul class="list-group" id="categories">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/os161/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> os161 [27]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/linux/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> linux [24]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/android/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> android [20]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/errors/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> errors [14]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/network/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> network [11]
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/tags/index.html"><h4><i class="fa fa-tags fa-lg"></i><span class="icon-label">Tags</span></h4></a>
+        <ul class="list-group list-inline tagcloud" id="tags">
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/aosp/index.html">
+                    AOSP
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/backup/index.html">
+                    backup
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/beamer/index.html">
+                    beamer
+                </a>
+            </li>
+            <li class="list-group-item tag-7">
+                <a href="http://jhshi.me/blog/tag/blog/index.html">
+                    blog
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/c/index.html">
+                    c
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/gdb/index.html">
+                    gdb
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/hammerhead/index.html">
+                    hammerhead
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/jekyll/index.html">
+                    jekyll
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/mac/index.html">
+                    mac
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ns2/index.html">
+                    ns2
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ota/index.html">
+                    OTA
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/plugin/index.html">
+                    plugin
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/python/index.html">
+                    python
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ruby/index.html">
+                    ruby
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ssh/index.html">
+                    ssh
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/synchronization/index.html">
+                    synchronization
+                </a>
+            </li>
+            <li class="list-group-item tag-1">
+                <a href="http://jhshi.me/blog/tag/syscall/index.html">
+                    syscall
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/travis/index.html">
+                    travis
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ubuntu/index.html">
+                    ubuntu
+                </a>
+            </li>
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/vm/index.html">
+                    vm
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Social</span></h4>
+      <ul class="list-group" id="social">
+        <li class="list-group-item"><a href="https://github.com/jhshi"><i class="fa fa-github-square fa-lg"></i> github</a></li>
+        <li class="list-group-item"><a href="http://stackoverflow.com/users/963538/jinghao-shi"><i class="fa fa-stack-overflow fa-lg"></i> stack-overflow</a></li>
+      </ul>
+    </li>
+
+    <li class="list-group-item"><h4><i class="fa fa-github fa-lg"></i><span class="icon-label">GitHub Repos</span></h4>
+        <div id="gh_repos">
+            <p class="list-group-item">Status updating...</p>
+        </div>
+            <a href="https://github.com/jhshi">@jhshi</a> on GitHub
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-external-link-square fa-lg"></i><span class="icon-label">Links</span></h4>
+      <ul class="list-group" id="links">
+        <li class="list-group-item">
+            <a href="http://blue.cse.buffalo.edu" target="_blank">
+                blue Systems Group
+            </a>
+        </li>
+        <li class="list-group-item">
+            <a href="http://www.buffalo.edu" target="_blank">
+                University at Buffalo
+            </a>
+        </li>
+      </ul>
+    </li>
+    </ul>
+</section>            </aside>
+        </div>
+    </div>
+</div>
+<footer>
+   <div class="container">
+      <hr>
+      <div class="row">
+         <div class="col-xs-10">&copy; 2018 Jinghao Shi
+            &middot;
+            Updated on 2020-04-02
+            &middot; Powered by <a href="https://github.com/jhshi/pelican-bootstrap3" target="_blank">pelican-bootstrap3</a>,
+            <a href="http://docs.getpelican.com/" target="_blank">Pelican</a>,
+            <a href="http://getbootstrap.com" target="_blank">Bootstrap</a>         </div>
+         <div class="col-xs-2"><p class="pull-right"><i class="fa fa-arrow-up"></i> <a href="#">Back to top</a></p></div>
+      </div>
+   </div>
+</footer>
+<script src="http://jhshi.me/theme/js/jquery.min.js"></script>
+
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="http://jhshi.me/theme/js/bootstrap.min.js"></script>
+
+<!-- Enable responsive features in IE8 with Respond.js (https://github.com/scottjehl/Respond) -->
+<script src="http://jhshi.me/theme/js/respond.min.js"></script>
+
+    <!-- GitHub JS -->
+    <script type="text/javascript">
+        $(document).ready(function () {
+            if (!window.jXHR) {
+                var jxhr = document.createElement('script');
+                jxhr.type = 'text/javascript';
+                jxhr.src = 'http://jhshi.me/theme/js/jXHR.js';
+                var s = document.getElementsByTagName('script')[0];
+                s.parentNode.insertBefore(jxhr, s);
+            }
+
+            github.showRepos({
+                user: 'jhshi',
+                count: 5,
+                skip_forks: true,
+                target: '#gh_repos'
+            });
+        });
+    </script>
+    <script src="http://jhshi.me/theme/js/github.js" type="text/javascript"></script>
+    <!-- End GitHub JS Code -->
+    <!-- Google Analytics -->
+    <script type="text/javascript">
+
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-39842003-1']);
+        _gaq.push(['_trackPageview']);
+
+        (function () {
+            var ga = document.createElement('script');
+            ga.type = 'text/javascript';
+            ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+    <!-- End Google Analytics Code -->
+
+        <script type="text/javascript">var addthis_config = {"data_track_addressbar": true};</script>
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5a6b8e0310bbbd35"></script>
+</body>
+</html>

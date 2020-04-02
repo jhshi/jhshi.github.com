@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns# fb: https://www.facebook.com/2008/fbml">
+<head>
+    <title>OS161 fork System Call - Pearls in Life</title>
+    <!-- Using the latest rendering mode for IE -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <link href="http://jhshi.me/images/favicon.ico" rel="icon">
+
+<link rel="canonical" href="http://jhshi.me/2012/03/11/os161-fork-system-call/index.html">
+
+        <meta name="author" content="Jinghao Shi" />
+        <meta name="keywords" content="fork,syscall" />
+        <meta name="description" content="If you&#39;re not already familiar with UNIX fork system call, here is it&#39;s function description and its entry on Wikipedia. Basically, in sys_fork, we need to do the follow things: Copy parent&#39;s trap frame, and pass it to child thread Copy parent&#39;s address space Create child thread (using thread_fork) Copy parent&#39;s file table into child Parent returns with child&#39;s pid immediately Child returns with 0 So, let&#39;s get started." />
+
+            <meta property="fb:app_id" content="156751911645324"/>
+        <meta property="og:site_name" content="Pearls in Life" />
+        <meta property="og:type" content="article"/>
+        <meta property="og:title" content="OS161 fork System Call"/>
+        <meta property="og:url" content="http://jhshi.me/2012/03/11/os161-fork-system-call/index.html"/>
+        <meta property="og:description" content="If you&#39;re not already familiar with UNIX fork system call, here is it&#39;s function description and its entry on Wikipedia. Basically, in sys_fork, we need to do the follow things: Copy parent&#39;s trap frame, and pass it to child thread Copy parent&#39;s address space Create child thread (using thread_fork) Copy parent&#39;s file table into child Parent returns with child&#39;s pid immediately Child returns with 0 So, let&#39;s get started."/>
+        <meta property="article:published_time" content="2012-03-11" />
+            <meta property="article:section" content="os161" />
+            <meta property="article:tag" content="fork" />
+            <meta property="article:tag" content="syscall" />
+            <meta property="article:author" content="Jinghao Shi" />
+
+
+    <!-- Bootstrap -->
+        <link rel="stylesheet" href="http://jhshi.me/theme/css/bootstrap.readable.min.css" type="text/css"/>
+    <link href="http://jhshi.me/theme/css/font-awesome.min.css" rel="stylesheet">
+
+    <link href="http://jhshi.me/theme/css/pygments/friendly.css" rel="stylesheet">
+    <link href="http://jhshi.me/theme/tipuesearch/tipuesearch.css" rel="stylesheet">
+    <link rel="stylesheet" href="http://jhshi.me/theme/css/style.css" type="text/css"/>
+
+        <link href="http://jhshi.me/feeds/all.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life ATOM Feed"/>
+
+
+
+        <link href="http://jhshi.me/feeds/os161.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life os161 ATOM Feed"/>
+
+</head>
+<body>
+
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({
+            appId      : "156751911645324",
+          xfbml      : true,
+          version    : 'v2.11'
+        });
+        FB.AppEvents.logPageView();
+      };
+
+      (function(d, s, id){
+         var js, fjs = d.getElementsByTagName(s)[0];
+         if (d.getElementById(id)) {return;}
+         js = d.createElement(s); js.id = id;
+         js.src = "https://connect.facebook.net/en_US/sdk.js";
+         fjs.parentNode.insertBefore(js, fjs);
+       }(document, 'script', 'facebook-jssdk'));
+    </script>
+
+<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+	<div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a href="http://jhshi.me/" class="navbar-brand">
+Pearls in Life            </a>
+        </div>
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav">
+                    <li><a href="/home">Home</a></li>
+                    <li><a href="/">Blog</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+              <li><span>
+                <form class="navbar-search" action="/search.html">
+                  <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input" required>
+                </form></span>
+              </li>
+              <li><a href="http://jhshi.me/blog/archives/index.html"><i class="fa fa-th-list"></i><span class="icon-label">Archives</span></a></li>
+            </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+</div> <!-- /.navbar -->
+<!-- Banner -->
+<!-- End Banner -->
+<div class="container">
+    <div class="row">
+        <div class="col-sm-9">
+    <section id="content">
+        <article>
+            <header class="page-header">
+                <h1>
+                    <a href="http://jhshi.me/2012/03/11/os161-fork-system-call/index.html"
+                       rel="bookmark"
+                       title="Permalink to OS161 fork System Call">
+                        OS161 fork System Call
+                    </a>
+                </h1>
+            </header>
+            <div class="entry-content">
+                <div class="panel">
+                    <div class="panel-body">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2012-03-11T20:42:34-04:00"> Sun 11 March 2012</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/os161/index.html">os161</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/fork/index.html">fork</a>
+        /
+	<a href="http://jhshi.me/blog/tag/syscall/index.html">syscall</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                </div>
+                <p>If you're not already familiar with UNIX fork system call, here is it's
+<a href="http://linux.die.net/man/2/fork">function description</a> and its <a href="http://en.wikipedia.org/wiki/Fork_(operating_system)">entry on Wikipedia</a>.</p>
+<p>Basically, in <code>sys_fork</code>, we need to do the follow things:</p>
+<ol>
+<li>Copy parent's trap frame, and pass it to child thread</li>
+<li>Copy parent's address space</li>
+<li>Create child thread (using <code>thread_fork</code>)</li>
+<li>Copy parent's file table into child</li>
+<li>Parent returns with child's pid immediately</li>
+<li>Child returns with 0</li>
+</ol>
+<p>So, let's get started.</p>
+
+
+<h3>Pass parent's trap frame to child thread</h3>
+<p>Trap frame (<code>struct trapframe</code>) records the exact state (e.g. registers, stack, 
+etc.) of parent when
+it call fork. Since we need the child exactly the same with parent (except for
+return value of fork), we need child thread to start run with parent's trap
+frame.</p>
+<p>So we need to pass parent's <code>trapframe</code> pointer to <code>sys_fork</code>, and store a full
+copy of it <em>in kernel heap</em> (i.e., allocated by <code>kmalloc</code>). Then pass the
+pointer to child's fork entry function (I called it <code>child_forkentry</code>).</p>
+<h3>Copy parent's address space</h3>
+<p>We can use the <code>as_copy</code> facility to do this. Note that <code>as_copy</code> will allocate
+a <code>struct addrspace</code> for you and also copy the address space contents, so you
+don't need to call <code>as_create</code> by yourself. </p>
+<h3>Create Child Thread</h3>
+<p><code>thread_fork</code> will create a new child thread structure and copy various fields
+of current thread to it. Again, you don't need to call <code>thread_create</code> by
+yourself, <code>thread_fork</code> will call it for you. You can get the pointer of child's
+thread structure by the last argument of <code>thread_fork</code>.</p>
+<h3>Parent's and Child's <code>fork</code> return different values</h3>
+<p>This is the trickiest part. You may want to take a look at the end of <code>syscall</code>
+to find out the convention of return values. That is: <em>on success, <code>$a3</code> stores
+0, and <code>$v0</code> stores return value (or <code>$v0:$v1</code> if retval is 64-bit); on failure, <code>$a3</code>
+stores 1, and <code>$v0</code> store error code</em>.</p>
+<p>Parent part is quite easy, after call <code>thread_fork</code>, just copy current thread's
+file table to child, and other book-keeping stuff you need to do, and finally,
+return with child's pid, and let <code>syscall</code> deal with the rest.</p>
+<p>Child part is not that trivial. In order to let child feel that <code>fork</code> returns
+0, we need to play with the trapframe a little bit. Remember that when we call
+<code>thread_fork</code> in parent's <code>sys_fork</code>, we need to pass it with an entry point
+together with two arguments (<code>void* data1, unsigned long data2</code>). As said before,
+I name the entry point as <code>child_forkentry</code>, then what should we pass to it?
+Obviously, one is parent's trapframe copy (lies in kernel heap buffer) and
+another is parent's address space!</p>
+<p>Once we've decided what to pass, how to pass is depend on your preference. One
+way is to pass trapframe pointer as the <code>data1</code>, and address space pointer as
+<code>data2</code> (with explicit type-case, of course). Another way may be we pass trapframe pointer
+as <code>data1</code>, and assign the address space pointer to <code>$a0</code> since we know <code>fork</code> takes
+no arguments.</p>
+<h3><code>child_forkentry</code></h3>
+<p>Ok, now <code>child_forkentry</code> becomes the first function executed when child
+thread got run. First, we need to modify parent's trapframe's <code>$v0</code> and <code>$a3</code>
+to make child's fork looks success and return 0. Also, <em>don't forget to
+forward $epc by 4</em> to avoid child keep calling fork. (BTW, we don't need
+to do this in parent since <code>syscall</code> will take care of this.). </p>
+<p>Then we
+need to load the address space into child's <code>curthread-&gt;t_addrspace</code> and
+activate it using <code>as_activate</code>. Finally, we need to call <code>mips_usermode</code>
+to return to user mode. But before that, we need to_ copy the modified
+trapframe from kernel heap to stack_ since <code>mips_usermode</code> check this
+(<code>KASSERT(SAME_STACK(cpustacks[curcpu-&gt;c_number]-1, (vaddr_t)tf))</code>. How? Before
+call <code>mips_usermode</code>, just declare a <code>struct trapframe</code> (note: not pointer) and copy the content
+into it, then use its address as parameter to call <code>mips_usermode</code>.</p>
+<h3>Synchronization</h3>
+<p>Note that <code>thread_fork</code> will set newly created child thread runnable and try to
+switch to it immediately. So it's highly possible that before <code>thread_fork</code>
+returns, the child thread is already running. This is not desired since we
+need to copy other stuff, like file table, to child thread after
+<code>thread_fork</code>. We definitely don't want the child thread running without a
+file table. So <em>we need to prevent child thread from running until parent
+thread set everything up.</em></p>
+<p>So we need to disable interrupts before <code>thread_fork</code> using <code>splhigh</code>, and
+restore the old interrupt level using <code>splx</code> after parent thread is done.</p>
+<p><strong>Update</strong>: Disable interrupt does not necessarily stop child from running. If
+you adopt this approach, you need to use some synchronization primitives to
+coordinate between parent and child.</p>
+<p>Or better, you can modify <code>thread_fork</code>, copy whatever you need to copy (e.g.,
+file table) before <code>thread_make_runnable</code>. Thus you won't have synchronization
+issue.</p>
+            </div>
+            <!-- /.entry-content -->
+<section class="well" id="related-posts">
+    <h4>Related Posts:</h4>
+    <ul>
+        <li><a href="http://jhshi.me/2012/03/21/os161-general-tips-for-system-call/index.html">OS161: General Tips for System Call</a></li>
+        <li><a href="http://jhshi.me/2012/03/28/os161-arguments-passing-in-system-call/index.html">OS161: Arguments Passing in System Call</a></li>
+        <li><a href="http://jhshi.me/2013/03/15/console-input-messed-up-in-os161/index.html">Console Input Messed up in OS161</a></li>
+        <li><a href="http://jhshi.me/2012/03/21/os161-how-to-add-a-system-call/index.html">OS161: How to Add a System Call</a></li>
+        <li><a href="http://jhshi.me/2012/03/14/os161-file-operation-overview/index.html">OS161 File Operation Overview</a></li>
+    </ul>
+</section>
+<section class="well" id="related-posts">
+      <h4><a href=https://github.com/jhshi/blog_source/commits/master/content/2012-03-11-os161-fork-system-call.markdown>Post History:</a></h4>
+
+      <b>Tuesday 11:09 PM, January 23 2018</b><br/><p>resume os161</p>
+      <b>Monday 11:20 AM, October 31 2016</b><br/><p>remove os161 related posts</p>
+      <b>Saturday 07:19 PM, October 10 2015</b><br/><p>fix category</p>
+      <b>Saturday 07:05 PM, October 10 2015</b><br/><p>Revert "os161 category"</p>
+      <b>Saturday 06:46 PM, October 10 2015</b><br/><p>os161 category</p>
+</section>
+<div class="fb-like" 
+     data-href="http://jhshi.me/2012/03/11/os161-fork-system-call/index.html"
+     data-layout="standard" 
+     data-action="like" 
+     data-show-faces="true">
+</div>
+
+
+<div class="fb-comments"
+     data-href="http://jhshi.me/2012/03/11/os161-fork-system-call/index.html"
+     data-numposts="5"
+     data-order-by="reverse_time"
+     data-width="100%"
+    ></div>
+        </article>
+    </section>
+
+        </div>
+        <div class="col-sm-3" id="sidebar">
+            <aside>
+
+<section class="well well-sm">
+    <ul class="list-group list-group-flush">
+        <li class="list-group-item"><h4><i class="fa fa-eye"></i><span class="icon-label">0 Hits</span></h4>
+    <li class="list-group-item"><h4><i class="fa fa-fire fa-lg"></i><span class="icon-label">Popular Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Recent Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/categories/index.html"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Categories</span></h4></a>
+        <ul class="list-group" id="categories">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/os161/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> os161 [27]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/linux/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> linux [24]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/android/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> android [20]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/errors/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> errors [14]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/network/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> network [11]
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/tags/index.html"><h4><i class="fa fa-tags fa-lg"></i><span class="icon-label">Tags</span></h4></a>
+        <ul class="list-group list-inline tagcloud" id="tags">
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/aosp/index.html">
+                    AOSP
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/backup/index.html">
+                    backup
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/beamer/index.html">
+                    beamer
+                </a>
+            </li>
+            <li class="list-group-item tag-7">
+                <a href="http://jhshi.me/blog/tag/blog/index.html">
+                    blog
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/c/index.html">
+                    c
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/gdb/index.html">
+                    gdb
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/hammerhead/index.html">
+                    hammerhead
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/jekyll/index.html">
+                    jekyll
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/mac/index.html">
+                    mac
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ns2/index.html">
+                    ns2
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ota/index.html">
+                    OTA
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/plugin/index.html">
+                    plugin
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/python/index.html">
+                    python
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ruby/index.html">
+                    ruby
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ssh/index.html">
+                    ssh
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/synchronization/index.html">
+                    synchronization
+                </a>
+            </li>
+            <li class="list-group-item tag-1">
+                <a href="http://jhshi.me/blog/tag/syscall/index.html">
+                    syscall
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/travis/index.html">
+                    travis
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ubuntu/index.html">
+                    ubuntu
+                </a>
+            </li>
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/vm/index.html">
+                    vm
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Social</span></h4>
+      <ul class="list-group" id="social">
+        <li class="list-group-item"><a href="https://github.com/jhshi"><i class="fa fa-github-square fa-lg"></i> github</a></li>
+        <li class="list-group-item"><a href="http://stackoverflow.com/users/963538/jinghao-shi"><i class="fa fa-stack-overflow fa-lg"></i> stack-overflow</a></li>
+      </ul>
+    </li>
+
+    <li class="list-group-item"><h4><i class="fa fa-github fa-lg"></i><span class="icon-label">GitHub Repos</span></h4>
+        <div id="gh_repos">
+            <p class="list-group-item">Status updating...</p>
+        </div>
+            <a href="https://github.com/jhshi">@jhshi</a> on GitHub
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-external-link-square fa-lg"></i><span class="icon-label">Links</span></h4>
+      <ul class="list-group" id="links">
+        <li class="list-group-item">
+            <a href="http://blue.cse.buffalo.edu" target="_blank">
+                blue Systems Group
+            </a>
+        </li>
+        <li class="list-group-item">
+            <a href="http://www.buffalo.edu" target="_blank">
+                University at Buffalo
+            </a>
+        </li>
+      </ul>
+    </li>
+    </ul>
+</section>            </aside>
+        </div>
+    </div>
+</div>
+<footer>
+   <div class="container">
+      <hr>
+      <div class="row">
+         <div class="col-xs-10">&copy; 2018 Jinghao Shi
+            &middot;
+            Updated on 2020-04-02
+            &middot; Powered by <a href="https://github.com/jhshi/pelican-bootstrap3" target="_blank">pelican-bootstrap3</a>,
+            <a href="http://docs.getpelican.com/" target="_blank">Pelican</a>,
+            <a href="http://getbootstrap.com" target="_blank">Bootstrap</a>         </div>
+         <div class="col-xs-2"><p class="pull-right"><i class="fa fa-arrow-up"></i> <a href="#">Back to top</a></p></div>
+      </div>
+   </div>
+</footer>
+<script src="http://jhshi.me/theme/js/jquery.min.js"></script>
+
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="http://jhshi.me/theme/js/bootstrap.min.js"></script>
+
+<!-- Enable responsive features in IE8 with Respond.js (https://github.com/scottjehl/Respond) -->
+<script src="http://jhshi.me/theme/js/respond.min.js"></script>
+
+    <!-- GitHub JS -->
+    <script type="text/javascript">
+        $(document).ready(function () {
+            if (!window.jXHR) {
+                var jxhr = document.createElement('script');
+                jxhr.type = 'text/javascript';
+                jxhr.src = 'http://jhshi.me/theme/js/jXHR.js';
+                var s = document.getElementsByTagName('script')[0];
+                s.parentNode.insertBefore(jxhr, s);
+            }
+
+            github.showRepos({
+                user: 'jhshi',
+                count: 5,
+                skip_forks: true,
+                target: '#gh_repos'
+            });
+        });
+    </script>
+    <script src="http://jhshi.me/theme/js/github.js" type="text/javascript"></script>
+    <!-- End GitHub JS Code -->
+    <!-- Google Analytics -->
+    <script type="text/javascript">
+
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-39842003-1']);
+        _gaq.push(['_trackPageview']);
+
+        (function () {
+            var ga = document.createElement('script');
+            ga.type = 'text/javascript';
+            ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+    <!-- End Google Analytics Code -->
+
+        <script type="text/javascript">var addthis_config = {"data_track_addressbar": true};</script>
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5a6b8e0310bbbd35"></script>
+</body>
+</html>

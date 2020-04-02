@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns# fb: https://www.facebook.com/2008/fbml">
+<head>
+    <title>Build Kernel In Tree with AOSP for Nexus 5 Hammerhead - Pearls in Life</title>
+    <!-- Using the latest rendering mode for IE -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <link href="http://jhshi.me/images/favicon.ico" rel="icon">
+
+<link rel="canonical" href="http://jhshi.me/2014/06/30/build-kernel-in-tree-with-aosp-for-nexus-5-hammerhead/index.html">
+
+        <meta name="author" content="Jinghao Shi" />
+        <meta name="keywords" content="kernel,hammerhead,aosp" />
+        <meta name="description" content="Google has a fair document for building kernel for Android. Yet it didn&#39;t cover how to integrate the kernel with AOSP source tree so that kernel gets built along with whole platform, which I&#39;ll explain in this post. Here I&#39;ll mainly focus on android-4.4.4_r1 (Kitkat) for Nexus 5 (hammerhead). The instructions should be easy to adapt to other models or AOSP releases." />
+
+            <meta property="fb:app_id" content="156751911645324"/>
+        <meta property="og:site_name" content="Pearls in Life" />
+        <meta property="og:type" content="article"/>
+        <meta property="og:title" content="Build Kernel In Tree with AOSP for Nexus 5 Hammerhead"/>
+        <meta property="og:url" content="http://jhshi.me/2014/06/30/build-kernel-in-tree-with-aosp-for-nexus-5-hammerhead/index.html"/>
+        <meta property="og:description" content="Google has a fair document for building kernel for Android. Yet it didn&#39;t cover how to integrate the kernel with AOSP source tree so that kernel gets built along with whole platform, which I&#39;ll explain in this post. Here I&#39;ll mainly focus on android-4.4.4_r1 (Kitkat) for Nexus 5 (hammerhead). The instructions should be easy to adapt to other models or AOSP releases."/>
+        <meta property="article:published_time" content="2014-06-30" />
+            <meta property="article:section" content="android" />
+            <meta property="article:tag" content="kernel" />
+            <meta property="article:tag" content="hammerhead" />
+            <meta property="article:tag" content="aosp" />
+            <meta property="article:author" content="Jinghao Shi" />
+
+
+    <!-- Bootstrap -->
+        <link rel="stylesheet" href="http://jhshi.me/theme/css/bootstrap.readable.min.css" type="text/css"/>
+    <link href="http://jhshi.me/theme/css/font-awesome.min.css" rel="stylesheet">
+
+    <link href="http://jhshi.me/theme/css/pygments/friendly.css" rel="stylesheet">
+    <link href="http://jhshi.me/theme/tipuesearch/tipuesearch.css" rel="stylesheet">
+    <link rel="stylesheet" href="http://jhshi.me/theme/css/style.css" type="text/css"/>
+
+        <link href="http://jhshi.me/feeds/all.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life ATOM Feed"/>
+
+
+
+        <link href="http://jhshi.me/feeds/android.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life android ATOM Feed"/>
+
+</head>
+<body>
+
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({
+            appId      : "156751911645324",
+          xfbml      : true,
+          version    : 'v2.11'
+        });
+        FB.AppEvents.logPageView();
+      };
+
+      (function(d, s, id){
+         var js, fjs = d.getElementsByTagName(s)[0];
+         if (d.getElementById(id)) {return;}
+         js = d.createElement(s); js.id = id;
+         js.src = "https://connect.facebook.net/en_US/sdk.js";
+         fjs.parentNode.insertBefore(js, fjs);
+       }(document, 'script', 'facebook-jssdk'));
+    </script>
+
+<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+	<div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a href="http://jhshi.me/" class="navbar-brand">
+Pearls in Life            </a>
+        </div>
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav">
+                    <li><a href="/home">Home</a></li>
+                    <li><a href="/">Blog</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+              <li><span>
+                <form class="navbar-search" action="/search.html">
+                  <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input" required>
+                </form></span>
+              </li>
+              <li><a href="http://jhshi.me/blog/archives/index.html"><i class="fa fa-th-list"></i><span class="icon-label">Archives</span></a></li>
+            </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+</div> <!-- /.navbar -->
+<!-- Banner -->
+<!-- End Banner -->
+<div class="container">
+    <div class="row">
+        <div class="col-sm-9">
+    <section id="content">
+        <article>
+            <header class="page-header">
+                <h1>
+                    <a href="http://jhshi.me/2014/06/30/build-kernel-in-tree-with-aosp-for-nexus-5-hammerhead/index.html"
+                       rel="bookmark"
+                       title="Permalink to Build Kernel In Tree with AOSP for Nexus 5 Hammerhead">
+                        Build Kernel In Tree with AOSP for Nexus 5 Hammerhead
+                    </a>
+                </h1>
+            </header>
+            <div class="entry-content">
+                <div class="panel">
+                    <div class="panel-body">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2014-06-30T17:22:29-04:00"> Mon 30 June 2014</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/android/index.html">android</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/kernel/index.html">kernel</a>
+        /
+	<a href="http://jhshi.me/blog/tag/hammerhead/index.html">hammerhead</a>
+        /
+	<a href="http://jhshi.me/blog/tag/aosp/index.html">aosp</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                </div>
+                <p>Google has a fair document for <a href="https://source.android.com/source/building-kernels.html">building kernel for Android</a>. Yet it
+didn't cover how to integrate the kernel with AOSP source tree so that kernel
+gets built along with whole platform, which I'll explain in this post. Here I'll
+mainly focus on <code>android-4.4.4_r1</code> (Kitkat) for Nexus 5 (<code>hammerhead</code>).
+The instructions should be easy to adapt to other models or AOSP releases.</p>
+
+
+<h3>Determine Kernel Version</h3>
+<p>The best and safest way to determine the right kernel version you need is to
+examine the pre-included kernel image. For hammerhead, it's in
+<code>device/lge/hammerhead-kernel/</code>.</p>
+<div class="highlight"><pre><span class="nv">$ </span>bzgrep -a <span class="s1">&#39;Linux version&#39;</span> device/lge/hammerhead-kernel/vmlinux.bz2
+Linux version 3.4.0-gd59db4e <span class="o">(</span>android-build@vpbs1.mtv.corp.google.com<span class="o">)</span> <span class="o">(</span>gcc version 4.7 <span class="o">(</span>GCC<span class="o">)</span> <span class="o">)</span> <span class="c">#1 SMP PREEMPT Mon Mar 17 15:16:36 PDT 2014</span>
+</pre></div>
+
+
+<p>As per <a href="http://stackoverflow.com/questions/21574066/unable-to-checkout-msm-source-code-for-android-hammerhead-kernel">this stackoverflow thread</a>, the commit hash you want is <code>d59db4e</code>
+part from the version name, without leading <code>g</code>.</p>
+<h3>Download the Sources</h3>
+<p>For hammerhead, the kernel sources lie in <code>msm</code> tree. After cloning it into
+<code>kernel</code> directory, checkout the commit hash you found in above step.</p>
+<div class="highlight"><pre><span class="nv">$ </span>git clone https://android.googlesource.com/kernel/msm.git kernel
+<span class="nv">$ </span><span class="nb">cd </span>kernel
+<span class="nv">$ </span>git checkout d59db4e
+</pre></div>
+
+
+<h3>Adapt kernel/AndroidKernel.mk</h3>
+<p>Two changes need to be made for kernel to be successfully built in-tree.</p>
+<ul>
+<li>Use <code>zImage-dtb</code> instead of <code>zImage</code> as target. </li>
+</ul>
+<p>First, change <code>TARGET_PREBUILT_INT_KERNEL</code> (~line 8).</p>
+<div class="highlight"><pre><span class="gd">-TARGET_PREBUILT_INT_KERNEL := $(KERNEL_OUT)/arch/arm/boot/zImage</span>
+<span class="gi">+TARGET_PREBUILT_INT_KERNEL := $(KERNEL_OUT)/arch/arm/boot/zImage-dtb</span>
+</pre></div>
+
+
+<p>Then change corresponding make rule (~line 47).</p>
+<div class="highlight"><pre>$(TARGET_PREBUILT_INT_KERNEL): $(KERNEL_OUT) $(KERNEL_CONFIG) $(KERNEL_HEADERS_INSTALL)
+<span class="gd">-       $(MAKE) -C kernel O=../$(KERNEL_OUT) ARCH=arm CROSS_COMPILE=arm-eabi-</span>
+<span class="gi">+       $(MAKE) -C kernel O=../$(KERNEL_OUT) ARCH=arm CROSS_COMPILE=arm-eabi- zImage-dtb</span>
+</pre></div>
+
+
+<ul>
+<li>Do not build modules (~line 48-51).</li>
+</ul>
+<div class="highlight"><pre><span class="gd">-       $(MAKE) -C kernel O=../$(KERNEL_OUT) ARCH=arm CROSS_COMPILE=arm-eabi- modules</span>
+<span class="gd">-       $(MAKE) -C kernel O=../$(KERNEL_OUT) INSTALL_MOD_PATH=../../$(KERNEL_MODULES_INSTALL) INSTALL_MOD_STRIP=1 ARCH=arm CROSS_COMPILE=arm-eabi- modules_install</span>
+<span class="gd">-       $(mv-modules)</span>
+<span class="gd">-       $(clean-module-folder)</span>
+</pre></div>
+
+
+<h3>Adapt device/lge/hammerhead Project</h3>
+<p>Next we need to tell the device to build kernel, instead of copying the
+pre-built one. <a href="https://github.com/jamesonwilliams/device_lge_hammerhead/commit/fe714801e33b38af4a81ddc3f40c3fdc53583f66">This patch</a> should do the trick. Basically, a new
+<code>AndroidBoard.mk</code> file is added to include the rules to build and copy kernel.
+And some lines in <code>device.mk</code> related to kernel are removed, since it's already
+taken care of in <code>AndroidBoard.mk</code>.</p>
+<h3>Build It!</h3>
+<p>After all above changes, <strong>do a <code>make clobber</code> to make sure we have a clean
+slate</strong>, otherwise, some strange errors may strike you.  Then just build AOSP in
+normal way and kernel should get built on the fly.</p>
+<p>Here is a snapshot of the kernel version I built. The version name is no longer
+<code>d59db4e</code> because I made some changes.</p>
+<p><img src="/images/kernel.png" class="center"></p>
+<h3>Credits</h3>
+<p>Thanks to <a href="http://nosemaj.org/howto-build-android-kitkat-nexus-5">this blog from Jameson</a> for describing most of it.</p>
+<h2>UPDATE</h2>
+<p>The above setup works fine as long as you didn't
+<a href="https://source.android.com/source/initializing.html#using-a-separate-output-directory">specify a separate output directory</a>, since we assume the kernel output
+directory is <code>../$(KERNEL_OUT)</code> in <code>make</code> options. Apparently, it will fail if the
+<code>out</code> directory is not the default one.</p>
+<p>The kernel <a href="https://android.googlesource.com/kernel/msm/+/android-msm-hammerhead-3.4-kitkat-mr1/Makefile">Makefile</a> support two ways of specify output directory
+(see comments starting from line 79). One is to use <code>O=</code> command line option,
+another is to set the <code>KBUILD_OUTPUT</code> environment variable.</p>
+<p>Since we use <code>-C</code> option to first switch working directory, <code>O=</code> options is a
+bit tricky to use, so we leverage the <code>KBUILD_OUT</code> variable.</p>
+<p>We first figure out the absolute path of the <code>KERNEL_OUT</code></p>
+<div class="highlight"><pre><span class="nv">FULL_KERNEL_OUT</span> <span class="o">:=</span> <span class="k">$(</span>shell readlink -e <span class="k">$(</span>KERNEL_OUT<span class="k">))</span>
+</pre></div>
+
+
+<p>Then we set <code>KBUILD_OUT</code> before calling <code>make</code>:</p>
+<div class="highlight"><pre><span class="nf">$(KERNEL_CONFIG)</span><span class="o">:</span> <span class="k">$(</span><span class="nv">KERNEL_OUT</span><span class="k">)</span>
+    env <span class="nv">KBUILD_OUTPUT</span><span class="o">=</span><span class="k">$(</span>FULL_KERNEL_OUT<span class="k">)</span> <span class="se">\</span>
+    <span class="k">$(</span>MAKE<span class="k">)</span> -C kernel <span class="nv">ARCH</span><span class="o">=</span>arm <span class="nv">CROSS_COMPILE</span><span class="o">=</span>arm-eabi- <span class="k">$(</span>KERNEL_DEFCONFIG<span class="k">)</span>
+</pre></div>
+
+
+<p>This way will work no matter where the actual AOSP output directory is.</p>
+<h2>UPDATE (09/03/2015)</h2>
+<p>As <a href="https://github.com/jhshi/blog_source/issues/3">Ryan pointed out</a>, for Mac users, you may need to install GNU
+<code>readlink</code>, instead of the built-in one.</p>
+            </div>
+            <!-- /.entry-content -->
+<section class="well" id="related-posts">
+    <h4>Related Posts:</h4>
+    <ul>
+        <li><a href="http://jhshi.me/2014/06/27/fix-data-connection-for-nexus-5-hammerhead-on-android-4-dot-4-4-kitkat/index.html">Fix Data Connection for Nexus 5 Hammerhead on Android 4.4.4 Kitkat</a></li>
+        <li><a href="http://jhshi.me/2015/09/23/build-aosp-5-dot-1-1-for-nexus-5/index.html">Build AOSP 5.1.1 for Nexus 5</a></li>
+        <li><a href="http://jhshi.me/2014/11/09/aosp-release-tools/index.html">AOSP Release Tools</a></li>
+        <li><a href="http://jhshi.me/2014/08/28/sign-issues-related-to-ota-update/index.html">Signing Issues related to OTA Update</a></li>
+        <li><a href="http://jhshi.me/2016/08/06/how-to-properly-mirror-cyanogenmod/index.html">How to Properly Mirror CyanogenMod</a></li>
+    </ul>
+</section>
+<section class="well" id="related-posts">
+      <h4><a href=https://github.com/jhshi/blog_source/commits/master/content/2014-06-30-build-kernel-in-tree-with-aosp-for-nexus-5-hammerhead.markdown>Post History:</a></h4>
+
+      <b>Tuesday 05:51 PM, November 03 2015</b><br/><p>fix picture size</p>
+      <b>Sunday 11:42 PM, October 11 2015</b><br/><p>fix summary end</p>
+      <b>Saturday 07:19 PM, October 10 2015</b><br/><p>fix category</p>
+      <b>Saturday 06:06 PM, October 10 2015</b><br/><p>working</p>
+</section>
+<div class="fb-like" 
+     data-href="http://jhshi.me/2014/06/30/build-kernel-in-tree-with-aosp-for-nexus-5-hammerhead/index.html"
+     data-layout="standard" 
+     data-action="like" 
+     data-show-faces="true">
+</div>
+
+
+<div class="fb-comments"
+     data-href="http://jhshi.me/2014/06/30/build-kernel-in-tree-with-aosp-for-nexus-5-hammerhead/index.html"
+     data-numposts="5"
+     data-order-by="reverse_time"
+     data-width="100%"
+    ></div>
+        </article>
+    </section>
+
+        </div>
+        <div class="col-sm-3" id="sidebar">
+            <aside>
+
+<section class="well well-sm">
+    <ul class="list-group list-group-flush">
+        <li class="list-group-item"><h4><i class="fa fa-eye"></i><span class="icon-label">0 Hits</span></h4>
+    <li class="list-group-item"><h4><i class="fa fa-fire fa-lg"></i><span class="icon-label">Popular Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Recent Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/categories/index.html"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Categories</span></h4></a>
+        <ul class="list-group" id="categories">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/os161/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> os161 [27]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/linux/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> linux [24]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/android/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> android [20]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/errors/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> errors [14]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/network/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> network [11]
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/tags/index.html"><h4><i class="fa fa-tags fa-lg"></i><span class="icon-label">Tags</span></h4></a>
+        <ul class="list-group list-inline tagcloud" id="tags">
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/aosp/index.html">
+                    AOSP
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/backup/index.html">
+                    backup
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/beamer/index.html">
+                    beamer
+                </a>
+            </li>
+            <li class="list-group-item tag-7">
+                <a href="http://jhshi.me/blog/tag/blog/index.html">
+                    blog
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/c/index.html">
+                    c
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/gdb/index.html">
+                    gdb
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/hammerhead/index.html">
+                    hammerhead
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/jekyll/index.html">
+                    jekyll
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/mac/index.html">
+                    mac
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ns2/index.html">
+                    ns2
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ota/index.html">
+                    OTA
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/plugin/index.html">
+                    plugin
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/python/index.html">
+                    python
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ruby/index.html">
+                    ruby
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ssh/index.html">
+                    ssh
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/synchronization/index.html">
+                    synchronization
+                </a>
+            </li>
+            <li class="list-group-item tag-1">
+                <a href="http://jhshi.me/blog/tag/syscall/index.html">
+                    syscall
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/travis/index.html">
+                    travis
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ubuntu/index.html">
+                    ubuntu
+                </a>
+            </li>
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/vm/index.html">
+                    vm
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Social</span></h4>
+      <ul class="list-group" id="social">
+        <li class="list-group-item"><a href="https://github.com/jhshi"><i class="fa fa-github-square fa-lg"></i> github</a></li>
+        <li class="list-group-item"><a href="http://stackoverflow.com/users/963538/jinghao-shi"><i class="fa fa-stack-overflow fa-lg"></i> stack-overflow</a></li>
+      </ul>
+    </li>
+
+    <li class="list-group-item"><h4><i class="fa fa-github fa-lg"></i><span class="icon-label">GitHub Repos</span></h4>
+        <div id="gh_repos">
+            <p class="list-group-item">Status updating...</p>
+        </div>
+            <a href="https://github.com/jhshi">@jhshi</a> on GitHub
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-external-link-square fa-lg"></i><span class="icon-label">Links</span></h4>
+      <ul class="list-group" id="links">
+        <li class="list-group-item">
+            <a href="http://blue.cse.buffalo.edu" target="_blank">
+                blue Systems Group
+            </a>
+        </li>
+        <li class="list-group-item">
+            <a href="http://www.buffalo.edu" target="_blank">
+                University at Buffalo
+            </a>
+        </li>
+      </ul>
+    </li>
+    </ul>
+</section>            </aside>
+        </div>
+    </div>
+</div>
+<footer>
+   <div class="container">
+      <hr>
+      <div class="row">
+         <div class="col-xs-10">&copy; 2018 Jinghao Shi
+            &middot;
+            Updated on 2020-04-02
+            &middot; Powered by <a href="https://github.com/jhshi/pelican-bootstrap3" target="_blank">pelican-bootstrap3</a>,
+            <a href="http://docs.getpelican.com/" target="_blank">Pelican</a>,
+            <a href="http://getbootstrap.com" target="_blank">Bootstrap</a>         </div>
+         <div class="col-xs-2"><p class="pull-right"><i class="fa fa-arrow-up"></i> <a href="#">Back to top</a></p></div>
+      </div>
+   </div>
+</footer>
+<script src="http://jhshi.me/theme/js/jquery.min.js"></script>
+
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="http://jhshi.me/theme/js/bootstrap.min.js"></script>
+
+<!-- Enable responsive features in IE8 with Respond.js (https://github.com/scottjehl/Respond) -->
+<script src="http://jhshi.me/theme/js/respond.min.js"></script>
+
+    <!-- GitHub JS -->
+    <script type="text/javascript">
+        $(document).ready(function () {
+            if (!window.jXHR) {
+                var jxhr = document.createElement('script');
+                jxhr.type = 'text/javascript';
+                jxhr.src = 'http://jhshi.me/theme/js/jXHR.js';
+                var s = document.getElementsByTagName('script')[0];
+                s.parentNode.insertBefore(jxhr, s);
+            }
+
+            github.showRepos({
+                user: 'jhshi',
+                count: 5,
+                skip_forks: true,
+                target: '#gh_repos'
+            });
+        });
+    </script>
+    <script src="http://jhshi.me/theme/js/github.js" type="text/javascript"></script>
+    <!-- End GitHub JS Code -->
+    <!-- Google Analytics -->
+    <script type="text/javascript">
+
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-39842003-1']);
+        _gaq.push(['_trackPageview']);
+
+        (function () {
+            var ga = document.createElement('script');
+            ga.type = 'text/javascript';
+            ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+    <!-- End Google Analytics Code -->
+
+        <script type="text/javascript">var addthis_config = {"data_track_addressbar": true};</script>
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5a6b8e0310bbbd35"></script>
+</body>
+</html>

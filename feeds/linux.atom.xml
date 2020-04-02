@@ -1,0 +1,1145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Pearls in Life</title><link href="http://jhshi.me/" rel="alternate"></link><link href="http://jhshi.me/feeds/linux.atom.xml" rel="self"></link><id>http://jhshi.me/</id><updated>2018-02-11T17:47:29-05:00</updated><entry><title>OpenGL over VNC</title><link href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html" rel="alternate"></link><updated>2018-02-11T17:47:29-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2018-02-11:2018/02/11/opengl-over-vnc/index.html</id><summary type="html">&lt;p&gt;I've been using SketchUp via VMWare Player for a while and the software just
+hangs now and then even after &lt;a class="reference external" href="/2018/01/23/fix-vmware-player-3d-support-issue/"&gt;fixing the OpenGL support issue&lt;/a&gt;. I happen to have another
+PC running Windows 7. But I ran into the OpenGL problem again while trying to
+use remote desktop.&lt;/p&gt;
+
+&lt;p&gt;The VNC software I use is &lt;a class="reference external" href="https://www.remmina.org/wp/"&gt;Remmina&lt;/a&gt;. After
+&lt;a class="reference external" href="https://support.microsoft.com/en-us/help/17463/windows-7-connect-to-another-computer-remote-desktop-connection"&gt;enabling remote desktop&lt;/a&gt;
+in my Windows 7 box, I tried to login using Remmina and open the SketchUp
+application. It pops up the same &amp;quot;Hardware acceleration is unsupported&amp;quot; error
+message.&lt;/p&gt;
+&lt;p&gt;After Googling around, I found &lt;cite&gt;OpenGL does not play well over VNC
+&amp;lt;https://en.wikipedia.org/wiki/VirtualGL&amp;gt;&lt;/cite&gt;. I first tried &lt;cite&gt;TeamViewer
+&amp;lt;https://www.teamviewer.us/&amp;gt;&lt;/cite&gt;, which almost works but with one showstopper: the
+mouse wheel down does not work. It is used a lot in SketchUp to span or rotate
+viewpoints, and is something I can definitely not live without.&lt;/p&gt;
+&lt;p&gt;Another route will be to add VirtualGL support to Remmina, which sounds a lot
+hassle.&lt;/p&gt;
+&lt;p&gt;Finally, I found that if I first physically login my Windows 7 machine and open
+the SketchUp app, then login using Remmina from my Ubuntu machine, SketchUp
+remains open and will happily run without any problem. For now I can live with
+it: just physically open the SketchUp app once and remember do not close it.&lt;/p&gt;
+&lt;p&gt;If for some reason you do not have physical access to the Windows machine, your
+next best bet would be TeamViewer.&lt;/p&gt;
+</summary><category term="SketchUp"></category><category term="Remmina"></category><category term="OpenGL"></category><category term="VNC"></category></entry><entry><title>Fix VMWare Player 3D Support Issue</title><link href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html" rel="alternate"></link><updated>2018-01-23T20:39:49-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2018-01-23:2018/01/23/fix-vmware-player-3d-support-issue/index.html</id><summary type="html">&lt;p&gt;I recently installed a Windows 10 guest OS on my Ubuntu 16.04 host machine using
+&lt;a class="reference external" href="https://my.vmware.com/web/vmware/free#desktop_end_user_computing/vmware_workstation_player/12_0"&gt;VMWare Workstation 12 Player&lt;/a&gt;,
+mainly to use the &lt;a class="reference external" href="https://www.sketchup.com/download/all"&gt;Sketchup Make 2017&lt;/a&gt;
+software. Skeckup keeps complaining lack of OpenGL support. Here's how to fix
+it.&lt;/p&gt;
+
+&lt;p&gt;Here are the two error messages that VMWare Player shows when starting the guest PC.&lt;/p&gt;
+&lt;blockquote&gt;
+No 3D support is available from the host.&lt;/blockquote&gt;
+&lt;p&gt;and&lt;/p&gt;
+&lt;blockquote&gt;
+Hardware graphics acceleration is not available.&lt;/blockquote&gt;
+&lt;img alt="VMWare Player error message." class="align-center" src="/images/vmware_message.png" /&gt;
+&lt;p&gt;And when I try to open SkechUp inside Windows, it complains about lack of
+hardware acceleration support as well:&lt;/p&gt;
+&lt;img alt="SkechUp error message." class="align-center" src="/images/skechup_message.png" /&gt;
+&lt;p&gt;First, I made sure my host OS (Ubuntu) does have hardware graphics support:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;sudo apt-get install mesa-utils
+&lt;span class="nv"&gt;$ &lt;/span&gt;glxinfo &lt;span class="p"&gt;|&lt;/span&gt; grep &lt;span class="s2"&gt;&amp;quot;direct&amp;quot;&lt;/span&gt;
+direct rendering: Yes
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Make sure you see the &amp;quot;direct rendering: Yes&amp;quot; line.&lt;/p&gt;
+&lt;p&gt;Next, edit &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;$HOME/.vmware/preferences&lt;/span&gt;&lt;/tt&gt; and either add or edit this line:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;mks.gl.allowBlacklistedDrivers &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;TRUE&amp;quot;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;This just tells VmWare Player not to be too picky on the hardware drivers
+(apparently the driver on Ubuntu was blacklisted for some reason).&lt;/p&gt;
+&lt;p&gt;Of course don't forget to enable 3D graphics acceleration in VMWare settings.&lt;/p&gt;
+&lt;img alt="Enable 3D acceleration in VMWare Player settings." class="align-center" src="/images/vmware_settings.png" style="width: 80%;" /&gt;
+&lt;p&gt;Then close the VMWare Player, relaunch it and boot up the guest OS. Now it
+should not complain about hardware acceleration support and SkechUp should just run fine.&lt;/p&gt;
+&lt;p&gt;Thanks to:&lt;/p&gt;
+&lt;p&gt;&lt;a class="reference external" href="https://askubuntu.com/questions/832755/no-3d-support-is-available-from-the-host-on-all-vmware-guests"&gt;https://askubuntu.com/questions/832755/no-3d-support-is-available-from-the-host-on-all-vmware-guests&lt;/a&gt;
+&lt;a class="reference external" href="https://www.dizwell.com/wordpress/technical-articles/linux/enable-3d-graphics-for-vmware-guests/"&gt;https://www.dizwell.com/wordpress/technical-articles/linux/enable-3d-graphics-for-vmware-guests/&lt;/a&gt;&lt;/p&gt;
+</summary><category term="vmware player"></category><category term="3d"></category><category term="opengl"></category></entry><entry><title>Google DNS Configuration on Ubuntu 16.04</title><link href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html" rel="alternate"></link><updated>2017-09-29T21:03:55-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2017-09-29:2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html</id><summary type="html">&lt;p&gt;I recently experienced unstable DNS on my Ubuntu laptop. Here is how to
+configure the DNS settings so it always use the Google DNS servers first.&lt;/p&gt;
+
+&lt;p&gt;The DNS settings was obtained as part of DHCP response. We need to configure the
+DHCP client on the laptop to prepend our custom DNS servers.&lt;/p&gt;
+&lt;p&gt;Edit &lt;tt class="docutils literal"&gt;/etc/dhcp/dhclient.conf&lt;/tt&gt; and find this line:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c"&gt;# prepend domain-name-servers&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Uncomment it and configure Google DNS accordingly.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;prepend domain-name-servers 8.8.8.8, 8.8.4.4&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Note there is a &lt;tt class="docutils literal"&gt;;&lt;/tt&gt; at the end of line.&lt;/p&gt;
+&lt;p&gt;Next, restart network manager.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;sudo service network-manager restart
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;The Google DNS should now be used first.&lt;/p&gt;
+&lt;img alt="DNS settings." class="align-center" src="/images/dns.png" style="width: 80%;" /&gt;
+</summary><category term="dns"></category><category term="dhcp"></category></entry><entry><title>Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1</title><link href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html" rel="alternate"></link><updated>2017-09-21T15:47:09-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2017-09-21:2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html</id><summary type="html">&lt;p&gt;I recently installed Ubuntu 16.04.3 on my Thinkpad X1 Carbon 3rd Gen laptop.
+However, there is no &amp;quot;Natural Scrolling&amp;quot; option for the touch pad. Here is how to
+fix it.&lt;/p&gt;
+
+&lt;p&gt;Use this command to enable Natural Scrolling.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;gsettings &lt;span class="nb"&gt;set &lt;/span&gt;org.gnome.desktop.peripherals.touchpad natural-scroll &lt;span class="nb"&gt;true&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Here is the mouse settings: there's no natural scrolling option!&lt;/p&gt;
+&lt;img alt="Screenshot of mouse settings window." class="align-center" src="/images/ubuntu16.04_mouse_settings.png" style="width: 80%;" /&gt;
+</summary><category term="touchpad"></category><category term="natural scrolling"></category><category term="ubuntu 16.04"></category></entry><entry><title>Backing Up Files Using Amazon Glacier</title><link href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html" rel="alternate"></link><updated>2017-03-06T16:32:53-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2017-03-06:2017/03/06/backing-up-files-using-amazon-glacier/index.html</id><summary type="html">&lt;p&gt;Amazon Glacier is a cheap massive cloud storage solution that is mostly suitable
+for storing cold data - data that are rarely accessed. The price is fair:
+$4/TB/month. However, it's not like Dropbox or Googld Drive that has nice client
+programs that you can simply drag and drop the files to be stored. Instead,
+you'll have to work with their APIs to upload you files. In this post, I'll
+explain the basics about how to upload the files and also how to query the
+inventory.&lt;/p&gt;
+
+&lt;div class="section" id="basic-apis"&gt;
+&lt;h2&gt;Basic APIs&lt;/h2&gt;
+&lt;p&gt;I use the &lt;a class="reference external" href="https://boto3.readthedocs.io/en/latest/index.html"&gt;boto3&lt;/a&gt; API in
+Python. The documentation for Glacier can be found in &lt;a class="reference external" href="https://boto3.readthedocs.io/en/latest/reference/services/glacier.html"&gt;here&lt;/a&gt;. I'll
+use the &lt;tt class="docutils literal"&gt;Client&lt;/tt&gt; APIs, which simply wrap the underlying HTTP requests. In
+particular, these are the APIs we'll be using for basic upload and query.&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;a class="reference external" href="https://boto3.readthedocs.io/en/latest/reference/services/glacier.html#Glacier.Client.upload_archive"&gt;upload_archive&lt;/a&gt;: upload files.&lt;/li&gt;
+&lt;li&gt;&lt;a class="reference external" href="https://boto3.readthedocs.io/en/latest/reference/services/glacier.html#Glacier.Client.delete_archive"&gt;delete_archive&lt;/a&gt;: delete files. Note that files on Glacier is not mutable. To update a file, you'll have to delete the old one and then upload the new one.&lt;/li&gt;
+&lt;li&gt;&lt;a class="reference external" href="https://boto3.readthedocs.io/en/latest/reference/services/glacier.html#Glacier.Client.initiate_job"&gt;initiate_job&lt;/a&gt;:
+to download files stored in Glacier or to query inventory.&lt;/li&gt;
+&lt;li&gt;&lt;a class="reference external" href="https://boto3.readthedocs.io/en/latest/reference/services/glacier.html#Glacier.Client.describe_job"&gt;describe_job&lt;/a&gt;:
+to query job status. This is asynchronous to &lt;tt class="docutils literal"&gt;initiate_job&lt;/tt&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class="section" id="upload-files"&gt;
+&lt;h2&gt;Upload Files&lt;/h2&gt;
+&lt;p&gt;We'll use the &lt;tt class="docutils literal"&gt;upload_archive&lt;/tt&gt; API to upload a file. Things to note:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;You need a pair of access ID and key to use the API. Follow &lt;a class="reference external" href="https://boto3.readthedocs.io/en/latest/guide/quickstart.html#configuration"&gt;the guide&lt;/a&gt;
+to set up &lt;tt class="docutils literal"&gt;boto3&lt;/tt&gt; correctly.&lt;/li&gt;
+&lt;li&gt;You must create a &amp;quot;vault&amp;quot; before you can upload. You can do this in the
+Glacier manage console.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;To upload a file:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3
+4
+5
+6
+7&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;client&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;boto3&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;client&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;glacier&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="nb"&gt;open&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;rb&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;response&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;client&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;upload_archive&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;vaultName&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;myvault&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+                    &lt;span class="n"&gt;archiveDescription&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+                    &lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;f&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="c"&gt;# persist the map between response[&amp;#39;archiveId&amp;#39;] and path somewhere&lt;/span&gt;
+    &lt;span class="c"&gt;# locally&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Note that the &lt;tt class="docutils literal"&gt;archiveDescription&lt;/tt&gt; argument is optional, but we utilize it to
+store the file's local path. This will help us bookkeeping later on. Inside
+Glacier, the file is solely identified by the &lt;tt class="docutils literal"&gt;archiveId&lt;/tt&gt;.&lt;/p&gt;
+&lt;p&gt;It is advised to keep a local database of the files stored in Glacier, since the
+inventory is only updated every 24 hrs.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="update-inventory"&gt;
+&lt;h2&gt;Update Inventory&lt;/h2&gt;
+&lt;p&gt;Sometimes the local archive database may be out-of-sync with Glacier, in which
+case a force-sync may be necessary. Basically we'll pull the inventory of
+Glacier and re-build the local archive database from that.&lt;/p&gt;
+&lt;p&gt;Warnings:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;The Glacier inventory is only updated every 24 hrs. So files uploaded within
+last 24 hrs may not be reflected in the inventory.&lt;/li&gt;
+&lt;li&gt;The inventory query can take up to several hours to finish.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The main API we will use is &lt;tt class="docutils literal"&gt;initiate_job&lt;/tt&gt;, together with &lt;tt class="docutils literal"&gt;describe_job&lt;/tt&gt; to
+query job status and &lt;tt class="docutils literal"&gt;get_job_output&lt;/tt&gt; to retrieve the results once the job is
+finished. The same work flow can also be used to download a previously uploaded
+archive using the archive ID. But here we'll only show how to query the
+inventory.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;job&lt;/span&gt; &lt;span class="n"&gt;req&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;client&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;initiate_job&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;vaultName&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;myvault&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="n"&gt;jobParameters&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;Type&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;inventory-retrieval&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;})&lt;/span&gt;
+
+&lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;status&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;client&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;describe_job&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;vaultName&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;myvault&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+                    &lt;span class="n"&gt;jobId&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;job_req&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;jobId&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;status&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;Completed&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]:&lt;/span&gt;
+        &lt;span class="k"&gt;break&lt;/span&gt;
+    &lt;span class="n"&gt;time&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sleep&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;300&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="n"&gt;job_resp&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;client&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_job_output&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;vaultName&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;myvault&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="n"&gt;jobId&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;job_req&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;jobId&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+
+&lt;span class="c"&gt;# first download the output and then parse the JSON&lt;/span&gt;
+&lt;span class="n"&gt;output&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;job_resp&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;body&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;read&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+&lt;span class="n"&gt;archive_list&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;json&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;loads&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;output&lt;/span&gt;&lt;span class="p"&gt;)[&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;ArchiveList&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="c"&gt;# persist archive_list&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+</summary><category term="glacier"></category><category term="backup"></category></entry><entry><title>Start AutoSSH on Boot</title><link href="http://jhshi.me/2016/08/24/start-autossh-on-boot/index.html" rel="alternate"></link><updated>2016-08-24T11:11:29-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-08-24:2016/08/24/start-autossh-on-boot/index.html</id><summary type="html">&lt;p&gt;&lt;a class="reference external" href="http://www.harding.motd.ca/autossh/"&gt;AutoSSH&lt;/a&gt; is a great tool to maintain a
+persistent SSH tunnel. Here is how to start AutoSSH on boot so that the tunnel
+can survive system reboot of the local machine.&lt;/p&gt;
+
+&lt;p&gt;Here we assume you can already &lt;tt class="docutils literal"&gt;ssh&lt;/tt&gt; into the remote machine without typing
+the password. If not, see my &lt;a class="reference external" href="/2012/04/27/sshscp-without-password/index.html"&gt;previous post&lt;/a&gt; on how to set
+up it.&lt;/p&gt;
+&lt;p&gt;First, on your local machine, switch to &lt;tt class="docutils literal"&gt;root&lt;/tt&gt; user:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;sudo su
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Second, &lt;tt class="docutils literal"&gt;ssh&lt;/tt&gt; into remote machine as &lt;tt class="docutils literal"&gt;root&lt;/tt&gt; so the remote machine is added
+to your &lt;tt class="docutils literal"&gt;root&lt;/tt&gt;'s &lt;tt class="docutils literal"&gt;known_hosts&lt;/tt&gt;.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c"&gt;# ssh &amp;lt;user&amp;gt;@&amp;lt;remote_host&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Third, add this line to your &lt;tt class="docutils literal"&gt;/etc/rc.local&lt;/tt&gt;.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;autossh -N -f -i /home/&amp;lt;user&amp;gt;/.ssh/id_rsa -R 22222:localhost:22 &amp;lt;user&amp;gt;@&amp;lt;remote_host&amp;gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;The command arguments are:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;-N&lt;/span&gt;&lt;/tt&gt;: tell &lt;tt class="docutils literal"&gt;ssh&lt;/tt&gt; to not execute any command, since we only use it for
+tunneling.&lt;/li&gt;
+&lt;li&gt;&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;-f&lt;/span&gt;&lt;/tt&gt;: tell &lt;tt class="docutils literal"&gt;autossh&lt;/tt&gt; to fall into background on start.&lt;/li&gt;
+&lt;li&gt;&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;-i&lt;/span&gt;&lt;/tt&gt;: tell &lt;tt class="docutils literal"&gt;ssh&lt;/tt&gt; to use the proper identity.&lt;/li&gt;
+&lt;li&gt;&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;-R&lt;/span&gt; 22222:localhost:22&lt;/tt&gt;: reverse tunnel remote host's 22222 port to
+localhost's 22 port. So that we can use &lt;tt class="docutils literal"&gt;ssh &lt;span class="pre"&gt;-p&lt;/span&gt; 22222 localhost&lt;/tt&gt; on remote
+host to &lt;tt class="docutils literal"&gt;ssh&lt;/tt&gt; into local machine.&lt;/li&gt;
+&lt;/ul&gt;
+</summary><category term="autossh"></category><category term="ssh"></category><category term="tunnel"></category></entry><entry><title>Start Gerrit Server upon Boot on Ubuntu</title><link href="http://jhshi.me/2016/08/10/start-gerrit-server-upon-boot-on-ubuntu/index.html" rel="alternate"></link><updated>2016-08-10T10:44:55-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-08-10:2016/08/10/start-gerrit-server-upon-boot-on-ubuntu/index.html</id><summary type="html">&lt;p&gt;I couldn't find any solid document online. Here are the steps to configure
+Gerrit server to automatically start upon system boot on Ubuntu.&lt;/p&gt;
+
+&lt;p&gt;Here are the version numbers on my setup, your mileage may vary.&lt;/p&gt;
+&lt;p&gt;Ubuntu&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3
+4
+5
+6
+7
+8&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;lsb_release -a
+No LSB modules are available.
+Distributor ID: Ubuntu
+Description:    Ubuntu 14.04.1 LTS
+Release:    14.04
+Codename:   trusty
+&lt;span class="nv"&gt;$ &lt;/span&gt;uname -a
+Linux platform 3.13.0-39-generic &lt;span class="c"&gt;#66-Ubuntu SMP Tue Oct 28 13:30:27 UTC 2014 x86_64 x86_64 x86_64 GNU/Linux&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Gerrit 2.9.1, site directory is &lt;tt class="docutils literal"&gt;/srv/gerrit2&lt;/tt&gt;.&lt;/p&gt;
+&lt;p&gt;First, modify the &lt;tt class="docutils literal"&gt;gerrit.sh&lt;/tt&gt; script, change:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c"&gt;# Required-Start: $named $remote $syslog&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;To this line:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c"&gt;# Required-Start:    $all&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Note the line is still commented.&lt;/p&gt;
+&lt;p&gt;Second, make the proper symlinks:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;sudo ln -sfv /srv/gerrit2/bin/gerrit.sh /etc/init.d/gerrit
+&lt;span class="nv"&gt;$ &lt;/span&gt;sudo update-rc.d gerrit defaults 92
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Finally, we need to tell Gerrit the site directory.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;&lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;GERRIT_SITE=/srv/gerrti2&amp;quot;&lt;/span&gt; &amp;gt; /etc/default/gerritcodereview
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;You should be good to go. Restart the server and Gerrit should be up and running
+as well.&lt;/p&gt;
+&lt;p&gt;Thanks to this post:&lt;/p&gt;
+&lt;p&gt;&lt;a class="reference external" href="http://askubuntu.com/questions/721478/ubuntu-init-d-configuration-not-starting-gerrit-2-11-4-at-boot"&gt;http://askubuntu.com/questions/721478/ubuntu-init-d-configuration-not-starting-gerrit-2-11-4-at-boot&lt;/a&gt;&lt;/p&gt;
+</summary><category term="gerrit"></category><category term="init.d"></category><category term="startup"></category><category term="boot"></category></entry><entry><title>Mounting Virtualbox Shared Folder on Boot</title><link href="http://jhshi.me/2016/07/12/mounting-virtualbox-shared-folder-on-boot/index.html" rel="alternate"></link><updated>2016-07-12T10:21:56-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-07-12:2016/07/12/mounting-virtualbox-shared-folder-on-boot/index.html</id><summary type="html">&lt;p&gt;Shared folder is a great feature of Virtualbox to share data between the host
+and guest OS. This post shows how to mount the shared folder during boot on a
+Ubuntu 16.04 guest OS running on Windows 10 host OS.&lt;/p&gt;
+
+&lt;div class="section" id="setup-the-shared-folder"&gt;
+&lt;h2&gt;Setup the Shared Folder&lt;/h2&gt;
+&lt;p&gt;Suppose you want to share &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;D:\vbox_share&lt;/span&gt;&lt;/tt&gt; on the host OS to the guest OS.
+First, open up the virtual machine configuration window in Virtualbox, in
+&lt;tt class="docutils literal"&gt;Shared Folders&lt;/tt&gt; tab, click the add button, shown as follows.&lt;/p&gt;
+&lt;img alt="Virtual Shared Folders Configuration" src="/images/vbox_share.png" /&gt;
+&lt;p&gt;In the pop up windows, enter &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;D:\vbox_share&lt;/span&gt;&lt;/tt&gt; in the &lt;tt class="docutils literal"&gt;Folder Path&lt;/tt&gt; box --
+this is the path to the folder on the &lt;strong&gt;host&lt;/strong&gt; OS. In &lt;tt class="docutils literal"&gt;Folder Name&lt;/tt&gt; box, give
+an &lt;strong&gt;alias&lt;/strong&gt; to that folder which we will use later in guest OS. Here I use
+&lt;tt class="docutils literal"&gt;vbox_share&lt;/tt&gt; as an example.&lt;/p&gt;
+&lt;p&gt;Optionally, check the &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;Auto-mount&lt;/span&gt;&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;Make Permarnent&lt;/tt&gt; box as you wish.&lt;/p&gt;
+&lt;p&gt;Then, boot into your Ubuntu virtual machine, open a terminal, and use this
+command to mount the shared folder. Here I assume the mount point is
+&lt;tt class="docutils literal"&gt;/mnt/vbox_share&lt;/tt&gt;.&lt;/p&gt;
+&lt;pre class="code bash literal-block"&gt;
+&lt;span class="nv"&gt;$ &lt;/span&gt;sudo mount -t vboxsf vbox_share /mnt/vboxshare
+&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div class="section" id="mount-on-boot"&gt;
+&lt;h2&gt;Mount on Boot&lt;/h2&gt;
+&lt;p&gt;To mount the shared folder during boot, we need to do two things.&lt;/p&gt;
+&lt;p&gt;First, add this entry to &lt;tt class="docutils literal"&gt;/etc/fstab&lt;/tt&gt;&lt;/p&gt;
+&lt;pre class="code literal-block"&gt;
+vbox_share    /mnt/vbox_share  vboxsf  defaults    0   0
+&lt;/pre&gt;
+&lt;p&gt;Second, add this entry to &lt;tt class="docutils literal"&gt;/etc/modules&lt;/tt&gt;.&lt;/p&gt;
+&lt;pre class="code literal-block"&gt;
+vboxsf
+&lt;/pre&gt;
+&lt;p&gt;This is because the &lt;tt class="docutils literal"&gt;vboxsf&lt;/tt&gt; module will not be loaded by Linux by default
+during boot. Therefore the mounting will fail. Then entry in &lt;tt class="docutils literal"&gt;/etc/modules&lt;/tt&gt;
+tells Linux to load the module first before trying to mount the shared folder.&lt;/p&gt;
+&lt;p&gt;Thanks to this post: &lt;a class="reference external" href="http://askubuntu.com/questions/365346/virtualbox-shared-folder-mount-from-fstab-fails-works-once-bootup-is-complete"&gt;http://askubuntu.com/questions/365346/virtualbox-shared-folder-mount-from-fstab-fails-works-once-bootup-is-complete&lt;/a&gt;&lt;/p&gt;
+&lt;/div&gt;
+</summary><category term="virtualbox"></category><category term="ubuntu"></category><category term="shared folder"></category><category term="fstab"></category><category term="vboxsf"></category></entry><entry><title>Installing Tmux from Source (Non-Root)</title><link href="http://jhshi.me/2016/07/08/installing-tmux-from-source-non-root/index.html" rel="alternate"></link><updated>2016-07-08T14:03:40-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-07-08:2016/07/08/installing-tmux-from-source-non-root/index.html</id><summary type="html">&lt;p&gt;Recently I needed to install &lt;a class="reference external" href="https://tmux.github.io/"&gt;tmux&lt;/a&gt; on a server which runs some ancient RHEL
+and I do not have sudo access to. Here is how I did it. In fact it has tmux
+1.6 pre-installed, but my tmux configuration file is based on tmux 2.2, which
+contains many options that are absent in earlier versions of tmux.&lt;/p&gt;
+
+&lt;div class="section" id="libevent-setup"&gt;
+&lt;h2&gt;Libevent Setup&lt;/h2&gt;
+&lt;p&gt;&lt;tt class="docutils literal"&gt;libevent&lt;/tt&gt; will be most likely missing (as it is in my case). So first,
+let's set it up. Download the tarball from &lt;a class="reference external" href="http://libevent.org/"&gt;http://libevent.org/&lt;/a&gt;, extract it,
+configure and install.&lt;/p&gt;
+&lt;pre class="code bash literal-block"&gt;
+&lt;span class="nv"&gt;$ &lt;/span&gt;wget https://github.com/libevent/libevent/releases/download/release-2.0.22-stable/libevent-2.0.22-stable.tar.gz
+&lt;span class="nv"&gt;$ &lt;/span&gt;tar xvf libevent-2.0.22-stable.tar.gz
+&lt;span class="nv"&gt;$ &lt;/span&gt;&lt;span class="nb"&gt;cd &lt;/span&gt;libevent-2.0.22-stable
+&lt;span class="nv"&gt;$ &lt;/span&gt;./configure --prefix&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nv"&gt;$HOME&lt;/span&gt;
+&lt;span class="nv"&gt;$ &lt;/span&gt;make &lt;span class="c"&gt;# use make -j 8 to speed it up if your machine is capable
+&lt;/span&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;make install
+&lt;/pre&gt;
+&lt;p&gt;Note that since I do not have root access to this machine, I set the
+installation prefix to be my home directory.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="tmux-setup"&gt;
+&lt;h2&gt;Tmux Setup&lt;/h2&gt;
+&lt;p&gt;Second, download the tmux source tarball from &lt;a class="reference external" href="https://tmux.github.io/"&gt;https://tmux.github.io/&lt;/a&gt;. As of
+writing this blog, the latest version is 2.2.&lt;/p&gt;
+&lt;pre class="code bash literal-block"&gt;
+&lt;span class="nv"&gt;$ &lt;/span&gt;wget https://github.com/tmux/tmux/releases/download/2.2/tmux-2.2.tar.gz
+&lt;span class="nv"&gt;$ &lt;/span&gt;tar xvf tmux-2.2
+&lt;span class="nv"&gt;$ &lt;/span&gt;./configure --prefix&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nv"&gt;$HOME&lt;/span&gt; &lt;span class="nv"&gt;CFLAGS&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;-I&lt;/span&gt;&lt;span class="nv"&gt;$HOME&lt;/span&gt;&lt;span class="s2"&gt;/include&amp;quot;&lt;/span&gt; &lt;span class="nv"&gt;LDFLAGS&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;-L&lt;/span&gt;&lt;span class="nv"&gt;$HOME&lt;/span&gt;&lt;span class="s2"&gt;/lib&amp;quot;&lt;/span&gt;
+&lt;span class="nv"&gt;$ &lt;/span&gt;make
+&lt;span class="nv"&gt;$ &lt;/span&gt;make install
+&lt;/pre&gt;
+&lt;p&gt;Again, I set the installation prefix to be my home directory, and also tells
+gcc where to find the &lt;tt class="docutils literal"&gt;libevent&lt;/tt&gt; headers and libraries using the &lt;tt class="docutils literal"&gt;CCFLAGS&lt;/tt&gt;
+and &lt;tt class="docutils literal"&gt;LDFLAGS&lt;/tt&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="path-setup"&gt;
+&lt;h2&gt;$PATH Setup&lt;/h2&gt;
+&lt;p&gt;After this, &lt;tt class="docutils literal"&gt;tmux&lt;/tt&gt; binary will be installed in &lt;tt class="docutils literal"&gt;$HOME/bin&lt;/tt&gt;. Finally, we need
+to tweak the &lt;tt class="docutils literal"&gt;$PATH&lt;/tt&gt; variable a bit so that bash will find this binary before
+the system one.&lt;/p&gt;
+&lt;pre class="code bash literal-block"&gt;
+&lt;span class="nv"&gt;$ &lt;/span&gt;&lt;span class="nb"&gt;export &lt;/span&gt;&lt;span class="nv"&gt;PATH&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nv"&gt;$HOME&lt;/span&gt;/bin:&lt;span class="nv"&gt;$PATH&lt;/span&gt;
+&lt;/pre&gt;
+&lt;p&gt;You may want to also put the above line in your &lt;tt class="docutils literal"&gt;.bashrc&lt;/tt&gt;.&lt;/p&gt;
+&lt;p&gt;Now you should be able to use the shiningly new tmux.&lt;/p&gt;
+&lt;pre class="code bash literal-block"&gt;
+&lt;span class="nv"&gt;$ &lt;/span&gt;tmux -V
+tmux 2.2
+&lt;/pre&gt;
+&lt;/div&gt;
+</summary><category term="tmux"></category><category term="libevent"></category></entry><entry><title>Zathura: PDF Viewer for VIM Lovers</title><link href="http://jhshi.me/2016/03/09/zathura-pdf-viewer-for-vim-lovers/index.html" rel="alternate"></link><updated>2016-03-09T15:07:33-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-03-09:2016/03/09/zathura-pdf-viewer-for-vim-lovers/index.html</id><summary type="html">&lt;p&gt;I have been looking for a PDF viewer on Linux platform that is lightweight,
+keyboard driven. &lt;a class="reference external" href="https://wiki.gnome.org/Apps/Evince"&gt;Evince&lt;/a&gt; was once my favorite, until I met &lt;a class="reference external" href="https://pwmt.org/projects/zathura/"&gt;Zathura&lt;/a&gt;.&lt;/p&gt;
+
+&lt;div class="section" id="highlights"&gt;
+&lt;h2&gt;Highlights&lt;/h2&gt;
+&lt;p&gt;Here a few features of Zathura that I really appreciate:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;em&gt;Keyboard Driven&lt;/em&gt;: the keyboard shortcuts are very similar to Vim. A Vim user
+will immediately feel at home when using Zathura.&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;Minimal Design&lt;/em&gt;: but has almost all features you would expect from any decent
+PDF viewers. In particular, automatically reload the file if changes are
+detected. This comes handy together with the continuous preview mode of
+&lt;a class="reference external" href="http://users.phys.psu.edu/~collins/software/latexmk-jcc/"&gt;Latexmk&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;Customizibility&lt;/em&gt;: similar to Vim, there is a &lt;tt class="docutils literal"&gt;zathurarc&lt;/tt&gt; which you can use
+to customize Zathura.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class="section" id="installation"&gt;
+&lt;h2&gt;Installation&lt;/h2&gt;
+&lt;p&gt;Use this command to install Zathura and set it to default PDF viewer.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;sudo apt-get install zathura
+&lt;span class="nv"&gt;$ &lt;/span&gt;mimeopen -d *.pdf
+&lt;span class="c"&gt;# choose Zathura&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;div class="section" id="basic-usage"&gt;
+&lt;h2&gt;Basic Usage&lt;/h2&gt;
+&lt;p&gt;As I mentioned before, Zathura use almost the exact key mapping as Vim. For
+example, &lt;tt class="docutils literal"&gt;j, k, h, l&lt;/tt&gt; for navigation, &lt;tt class="docutils literal"&gt;gg, GG&lt;/tt&gt; to go to the first or last
+page, and &lt;tt class="docutils literal"&gt;J, K&lt;/tt&gt; for next and previous page. These are pretty much all you
+need for basic PDF viewing.&lt;/p&gt;
+&lt;p&gt;In particular, &lt;tt class="docutils literal"&gt;TAB&lt;/tt&gt; will show the table of content. For more keyboard
+shortcuts, checkout the manual.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="configuration"&gt;
+&lt;h2&gt;Configuration&lt;/h2&gt;
+&lt;p&gt;You can configure Zathura using &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;$HOME/.config/zathura/zathurarc&lt;/span&gt;&lt;/tt&gt;. Here is my
+&lt;tt class="docutils literal"&gt;zathurarc&lt;/tt&gt;.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c"&gt;# zoom and scroll step size&lt;/span&gt;
+&lt;span class="nb"&gt;set &lt;/span&gt;zoom-step 20
+&lt;span class="nb"&gt;set &lt;/span&gt;scroll-step 80
+
+&lt;span class="c"&gt;# copy selection to system clipboard&lt;/span&gt;
+&lt;span class="nb"&gt;set &lt;/span&gt;selection-clipboard clipboard
+
+&lt;span class="c"&gt;# enable incremental search&lt;/span&gt;
+&lt;span class="nb"&gt;set &lt;/span&gt;incremental-search &lt;span class="nb"&gt;true&lt;/span&gt;
+
+&lt;span class="c"&gt;# zoom&lt;/span&gt;
+map &amp;lt;C-i&amp;gt; zoom in
+map &amp;lt;C-o&amp;gt; zoom out
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+</summary><category term="zathura"></category><category term="pdf viewer"></category><category term="vim"></category></entry><entry><title>Fix Screen Brightness Issue with ThinkPad X1 Carbon 3rd Edition</title><link href="http://jhshi.me/2015/12/15/fix-screen-brightness-issue-with-thinkpad-x1-carbon-3rd/index.html" rel="alternate"></link><updated>2015-12-15T00:04:41-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2015-12-15:2015/12/15/fix-screen-brightness-issue-with-thinkpad-x1-carbon-3rd/index.html</id><summary type="html">&lt;p&gt;I recently installed Ubuntu 14.04.3 LTS on my Thinkpad X1 carbon (3rd Edition).
+Most of the stuff worked out of the box, yet the screen brightness adjustment
+key has no effect.&lt;/p&gt;
+
+&lt;p&gt;After Googling around, this solution works.&lt;/p&gt;
+&lt;p&gt;Create a file named &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;/usr/share/X11/xorg.conf.d/20-intel.conf&lt;/span&gt;&lt;/tt&gt;, with the
+following content.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3
+4
+5
+6&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;Section&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Device&amp;quot;&lt;/span&gt;
+        &lt;span class="nb"&gt;Identifier&lt;/span&gt;  &lt;span class="s2"&gt;&amp;quot;card0&amp;quot;&lt;/span&gt;
+        &lt;span class="nb"&gt;Driver&lt;/span&gt;      &lt;span class="s2"&gt;&amp;quot;intel&amp;quot;&lt;/span&gt;
+        &lt;span class="nb"&gt;Option&lt;/span&gt;      &lt;span class="s2"&gt;&amp;quot;Backlight&amp;quot;&lt;/span&gt;  &lt;span class="s2"&gt;&amp;quot;intel_backlight&amp;quot;&lt;/span&gt;
+        &lt;span class="nb"&gt;BusID&lt;/span&gt;       &lt;span class="s2"&gt;&amp;quot;PCI:0:2:0&amp;quot;&lt;/span&gt;
+&lt;span class="nb"&gt;EndSection&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Thanks to this post.&lt;/p&gt;
+&lt;p&gt;&lt;a class="reference external" href="http://itsfoss.com/fix-brightness-ubuntu-1310/"&gt;http://itsfoss.com/fix-brightness-ubuntu-1310/&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;In fact, this issue is probably not related to this particular hardware. I found
+another thread in &lt;a class="reference external" href="http://askubuntu.com/questions/599477/lenovo-x1-carbon-2015-3rd-gen-20-bs-trackpoint-clickpad-and-wifi"&gt;askubuntu.com&lt;/a&gt;. Yet the solution there did not work for me.&lt;/p&gt;
+</summary><category term="thinkpad"></category><category term="carbon"></category><category term="ubunut"></category><category term="screen"></category><category term="brightness"></category></entry><entry><title>Run Plex Media Server as Another User in Ubuntu</title><link href="http://jhshi.me/2015/12/05/run-plex-media-server-as-another-user-in-ubuntu/index.html" rel="alternate"></link><updated>2015-12-05T19:50:24-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2015-12-05:2015/12/05/run-plex-media-server-as-another-user-in-ubuntu/index.html</id><summary type="html">&lt;p&gt;Recently I installed &lt;a class="reference external" href="https://plex.tv/"&gt;Plex Media Server&lt;/a&gt; on my Ubuntu box. Here are what I did
+to make it run as my user so that it can index any of my media files without
+permission issues. The instructions here is for Ubuntu 14.04, but should be
+applicable to later Ubuntu version as well.&lt;/p&gt;
+
+&lt;p&gt;First, we need to tell Plex the user name it should run as.&lt;/p&gt;
+&lt;p&gt;In &lt;tt class="docutils literal"&gt;/etc/default/plexmediaserver&lt;/tt&gt;, change the &lt;tt class="docutils literal"&gt;PLEX_MEDIA_SERVER_USER&lt;/tt&gt;
+variable to the user name you want to run Plex as.&lt;/p&gt;
+&lt;p&gt;Second, we need to change the owner of Plex's App support directory. By default,
+it's &lt;tt class="docutils literal"&gt;/var/lib/plexmediaserver&lt;/tt&gt;. If in doubt, you can check the
+&lt;tt class="docutils literal"&gt;PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR&lt;/tt&gt; variable in
+&lt;tt class="docutils literal"&gt;/etc/systemd/system/plexmediaserver.service&lt;/tt&gt;.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;sudo chown -R user:user /var/lib/plexmediaserver
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Finally, restart Plex server:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;sudo service plexmediaserver stop
+&lt;span class="nv"&gt;$ &lt;/span&gt;sudo service plexmediaserver start
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Now make sure that the server is running as the user you specified:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;ps aux &lt;span class="p"&gt;|&lt;/span&gt; grep &lt;span class="s2"&gt;&amp;quot;plex&amp;quot;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</summary><category term="plex"></category></entry><entry><title>Fix MAC Address Clone in OpenWRT</title><link href="http://jhshi.me/2015/01/19/fix-mac-address-clone-in-openwrt/index.html" rel="alternate"></link><updated>2015-01-19T17:09:44-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2015-01-19:2015/01/19/fix-mac-address-clone-in-openwrt/index.html</id><summary type="html">&lt;p&gt;I used to be able to change the MAC address of WAN interface by specifying
+&lt;code&gt;macaddr&lt;/code&gt; option in &lt;code&gt;/etc/config/network&lt;/code&gt;. However, due to &lt;a href="https://dev.openwrt.org/ticket/18488"&gt;unknown reason&lt;/a&gt;,
+this no longer works in snapshot builds. Here is how to achieve the same effect
+using init scripts.&lt;/p&gt;
+
+
+&lt;p&gt;In my router (TP-LINK WDR3500), &lt;code&gt;eth1&lt;/code&gt; is the WAN interface. Adjust this
+according to you case.&lt;/p&gt;
+&lt;p&gt;First, verify that you can change WAN interface's MAC address using &lt;code&gt;ifconfig&lt;/code&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;root@OpenWrt:~# ifconfig eth1 down
+root@OpenWrt:~# ifconfig eth1 hw ether XX:XX:XX:XX:XX:XX
+root@OpenWrt:~# ifconfig eth1 up
+root@OpenWrt:~# ifconfig eth1
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Substitute &lt;code&gt;XX:XX:XX:XX:XX:XX&lt;/code&gt; with the MAC address you want to clone, and check
+the output of the last command to make sure the new MAC address is used.&lt;/p&gt;
+&lt;p&gt;Next we want to automatically override the MAC address when system boots up. We
+can use the init scripts. Edit &lt;code&gt;/etc/init.d/clonemac&lt;/code&gt; and put the following content in it.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c"&gt;#!/bin/sh /etc/rc.common&lt;/span&gt;
+&lt;span class="c"&gt;# Copyright (C) 2014 OpenWrt.org&lt;/span&gt;
+
+&lt;span class="nv"&gt;START&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;94
+&lt;span class="nv"&gt;STOP&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;15
+
+start&lt;span class="o"&gt;()&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    ifconfig eth1 down
+    ifconfig eth1 hw ether XX:XX:XX:XX:XX:XX
+    ifconfig eth1 up
+&lt;span class="o"&gt;}&lt;/span&gt;
+
+stop&lt;span class="o"&gt;()&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Stop.&amp;quot;&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;For details of OpenWrt init script, please check the &lt;a href="http://wiki.openwrt.org/doc/techref/initscripts"&gt;document&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Make the script executable, then we can change the MAC address simply by this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;root@OpenWrt:~# /etc/init.d/clonemac start
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;To execute the script automatically on system boot, we need to enable it:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;root@OpenWrt:~# /etc/init.d/clonemac &lt;span class="nb"&gt;enable&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;This will create a symbolic link to the &lt;code&gt;clonemac&lt;/code&gt; script in &lt;code&gt;/etc/rc.d&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Reboot the router and you will find the new MAC address be automatically used.&lt;/p&gt;</summary><category term="macaddr"></category><category term="openwrt"></category><category term="hwaddr"></category><category term="clone"></category><category term="overriding"></category></entry><entry><title>Mailman Configuration with Nginx+FastCGI+Postfix on Ubuntu</title><link href="http://jhshi.me/2014/11/16/mailman-configuration-with-nginx-plus-fastcgi-plus-postfix-on-ubuntu/index.html" rel="alternate"></link><updated>2014-11-16T13:02:25-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-11-16:2014/11/16/mailman-configuration-with-nginx-plus-fastcgi-plus-postfix-on-ubuntu/index.html</id><summary type="html">&lt;p&gt;Here are the steps and caveats to setup a proper mail list on Ubuntu server. The
+instructions are are for Ubuntu 14.04 LTS, and should be easy to adapt for other
+platforms.&lt;/p&gt;
+
+
+&lt;h2&gt;Assumptions&lt;/h2&gt;
+&lt;p&gt;Here we assume the following:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;You have an domain, &lt;code&gt;example.com&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;You want to mail list running at machine with host name &lt;code&gt;lists.example.com&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;The mail list address should look like &lt;code&gt;somelist@example.com&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;You have setup the &lt;a href="http://en.wikipedia.org/wiki/MX_record"&gt;DNS MX record&lt;/a&gt; for &lt;code&gt;example.com&lt;/code&gt; to point to
+     &lt;code&gt;lists.example.com&lt;/code&gt;. Please use &lt;a href="http://mxtoolbox.com/SuperTool.aspx"&gt;MX Toolbox&lt;/a&gt; to double check.&lt;/li&gt;
+&lt;li&gt;You already have a Nginx server up and running at &lt;code&gt;lists.exmaple.com&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Background&lt;/h2&gt;
+&lt;p&gt;Before we dive in the setup, here is the role of each tool:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Nginx: HTTP server, provide Mailman web interface.&lt;/li&gt;
+&lt;li&gt;FastCGI: CGI tool, dynamically generate Mailman HTML pages.&lt;/li&gt;
+&lt;li&gt;Postfix: Mail Transfer Agent, we use it to actually send and receive emails.&lt;/li&gt;
+&lt;li&gt;Mailman: Mail list tool, member management.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Suppose you send a email to &lt;code&gt;somelist@example.com&lt;/code&gt;. Here are what will happen:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;You email provider, say Gmail, queries the MX record of &lt;code&gt;example.com&lt;/code&gt;, figure
+     out is actually the IP address of &lt;code&gt;lists.example.com&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;Gmail send the email to &lt;code&gt;lists.example.com&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;Postfix receives the email, and route this to Mailman.&lt;/li&gt;
+&lt;li&gt;Mailman figure out who are in this list, then tell Postfix to forward the
+     email to them.&lt;/li&gt;
+&lt;li&gt;List members receive this email sent by Postfix.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Package Installation&lt;/h2&gt;
+&lt;h4&gt;FastCGI&lt;/h4&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;sudo apt-get install fcgiwrap
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Open &lt;code&gt;/etc/init.d/fcgiwrap&lt;/code&gt;, make sure &lt;code&gt;FCGI_USER&lt;/code&gt; and &lt;code&gt;FCGI_GROUP&lt;/code&gt; are both
+&lt;code&gt;www-data&lt;/code&gt;.&lt;/p&gt;
+&lt;h4&gt;Mailman&lt;/h4&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;sudo apt-get install mailman
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;During installation, choose language support, say &lt;code&gt;en&lt;/code&gt;. The instructions will
+also tell you to create a &lt;code&gt;mailman&lt;/code&gt; list. &lt;strong&gt;Do NOT do this yet&lt;/strong&gt;, we will create the
+list later, after we configured mailman properly.&lt;/p&gt;
+&lt;h4&gt;Postfix&lt;/h4&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;sudo apt-get install postfix
+&lt;span class="c"&gt;# or this if you have installed postfix&lt;/span&gt;
+&lt;span class="nv"&gt;$ &lt;/span&gt;sudo dpkg-reconfigure postfix
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Make sure you choose the following:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;General type of mail configuration: &lt;strong&gt;Internet Site&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;System mail name: &lt;strong&gt;example.com&lt;/strong&gt; (without &lt;code&gt;lists&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;Root and postmaster mail recipient: you Linux user name on &lt;code&gt;lists.example.com&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Other destinations to accept mail for: make sure &lt;code&gt;example.com&lt;/code&gt; is there.&lt;/li&gt;
+&lt;li&gt;Force synchronous updates on mail queue: No.&lt;/li&gt;
+&lt;li&gt;Local networks: make sure &lt;code&gt;example.com&lt;/code&gt; is there.&lt;/li&gt;
+&lt;li&gt;Mailbox size limit: 0.&lt;/li&gt;
+&lt;li&gt;Local address extension character: &lt;code&gt;+&lt;/code&gt; (the plus sign).&lt;/li&gt;
+&lt;li&gt;Internet protocols to use: all.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Nginx Configuration&lt;/h2&gt;
+&lt;p&gt;In &lt;code&gt;/etc/nginx/fastcgi_params&lt;/code&gt;, comment out this line:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="x"&gt;fastcgi_param SCRIPT_FILENAME &lt;/span&gt;&lt;span class="p"&gt;$&lt;/span&gt;&lt;span class="nv"&gt;request_filename&lt;/span&gt;&lt;span class="x"&gt;;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Suppose your web server is configured in &lt;code&gt;/etc/nginx/sites-available/www&lt;/code&gt;, add
+these lines to you server configuration:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nt"&gt;location&lt;/span&gt; &lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="nt"&gt;mailman&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;                                                            
+  &lt;span class="n"&gt;root&lt;/span&gt;  &lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;usr&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;lib&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;cgi&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;bin&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;                                                      
+  &lt;span class="n"&gt;fastcgi_split_path_info&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;^/&lt;/span&gt;&lt;span class="n"&gt;mailman&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="cp"&gt;[&lt;/span&gt;&lt;span class="p"&gt;^&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="cp"&gt;]&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="p"&gt;)(&lt;/span&gt;&lt;span class="o"&gt;/.*&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="err"&gt;$&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;                             
+  &lt;span class="n"&gt;fastcgi_pass&lt;/span&gt;  &lt;span class="n"&gt;unix&lt;/span&gt;&lt;span class="o"&gt;:///&lt;/span&gt;&lt;span class="n"&gt;var&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;run&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;fcgiwrap&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;socket&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;                               
+  &lt;span class="n"&gt;include&lt;/span&gt; &lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;etc&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;nginx&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;fastcgi_params&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;                                           
+  &lt;span class="n"&gt;fastcgi_param&lt;/span&gt; &lt;span class="n"&gt;SCRIPT_FILENAME&lt;/span&gt; &lt;span class="err"&gt;$&lt;/span&gt;&lt;span class="n"&gt;document_root&lt;/span&gt;&lt;span class="err"&gt;$&lt;/span&gt;&lt;span class="n"&gt;fastcgi_script_name&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;            
+  &lt;span class="n"&gt;fastcgi_param&lt;/span&gt; &lt;span class="n"&gt;PATH_INFO&lt;/span&gt;       &lt;span class="err"&gt;$&lt;/span&gt;&lt;span class="n"&gt;fastcgi_path_info&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;                            
+&lt;span class="p"&gt;}&lt;/span&gt;                                                                              
+&lt;span class="nt"&gt;location&lt;/span&gt; &lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="nt"&gt;images&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="nt"&gt;mailman&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;                                                     
+  &lt;span class="n"&gt;alias&lt;/span&gt; &lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;usr&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;share&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;images&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;mailman&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;                                           
+&lt;span class="p"&gt;}&lt;/span&gt;                                                                              
+&lt;span class="nt"&gt;location&lt;/span&gt; &lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="nt"&gt;pipermail&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;                                                          
+  &lt;span class="n"&gt;alias&lt;/span&gt; &lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;var&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;lib&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;mailman&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;archives&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;public&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;                                    
+  &lt;span class="n"&gt;autoindex&lt;/span&gt; &lt;span class="n"&gt;on&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;                                                              
+&lt;span class="p"&gt;}&lt;/span&gt;                               
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Restart Nginx server, you should be able to see the web page at http://lists.example.com/mailman/listinfo&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;sudo service nginx restart
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;Mailman Configuration&lt;/h2&gt;
+&lt;p&gt;Open &lt;code&gt;/etc/mailman/mm_cfg.py&lt;/code&gt;, modify these lines:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;DEFAULT_URL_PATTERN&lt;/code&gt;: should be &lt;code&gt;http://%s/mailman&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;DEFAULT_EMAIL_HOST&lt;/code&gt;: should be &lt;code&gt;example.com&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;DEFAULT_URL_HOST&lt;/code&gt;: should be &lt;code&gt;lists.example.com&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Postfix Configuration&lt;/h2&gt;
+&lt;p&gt;Open &lt;code&gt;/etc/postfix/main.cf&lt;/code&gt;, make sure these lines are correct:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="x"&gt;mydomain = example.com&lt;/span&gt;
+&lt;span class="x"&gt;myhostname = lists.&lt;/span&gt;&lt;span class="p"&gt;$&lt;/span&gt;&lt;span class="nv"&gt;mydomain&lt;/span&gt;&lt;span class="x"&gt;&lt;/span&gt;
+&lt;span class="x"&gt;myorigin = /etc/mailname&lt;/span&gt;
+&lt;span class="x"&gt;mydestination = &lt;/span&gt;&lt;span class="p"&gt;$&lt;/span&gt;&lt;span class="nv"&gt;mydomain&lt;/span&gt;&lt;span class="x"&gt; localhost.&lt;/span&gt;&lt;span class="p"&gt;$&lt;/span&gt;&lt;span class="nv"&gt;mydomain&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;$&lt;/span&gt;&lt;span class="nv"&gt;myhostname&lt;/span&gt;&lt;span class="x"&gt; localhost&lt;/span&gt;
+&lt;span class="x"&gt;mynetworks = &lt;/span&gt;&lt;span class="p"&gt;$&lt;/span&gt;&lt;span class="nv"&gt;mydomain&lt;/span&gt;&lt;span class="x"&gt; 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128&lt;/span&gt;
+
+&lt;span class="x"&gt;alias_maps = hash:/etc/aliases&lt;/span&gt;
+&lt;span class="x"&gt;alias_database = hash:/etc/aliases&lt;/span&gt;
+&lt;span class="x"&gt;local_recipient_maps = proxy:unix:passwd.byname &lt;/span&gt;&lt;span class="p"&gt;$&lt;/span&gt;&lt;span class="nv"&gt;alias_maps&lt;/span&gt;&lt;span class="x"&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;code&gt;local_recipient_maps&lt;/code&gt; tells Postfix how to route the emails.&lt;/p&gt;
+&lt;p&gt;If you use Sendgrid for outgoing emails, also add these lines:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;smtp_sasl_auth_enable = yes 
+smtp_sasl_password_maps = static:yourSendGridUsername:yourSendGridPassword 
+smtp_sasl_security_options = noanonymous 
+smtp_tls_security_level = encrypt
+header_size_limit = 4096000
+relayhost = [smtp.sendgrid.net]:587
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;Create the First Mail List&lt;/h2&gt;
+&lt;p&gt;Ok, now we pretty much configured everything. Let's create the first email list
+called &lt;code&gt;mailman&lt;/code&gt;, which will be used for Mailman logistics (like email
+reminders).&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;sudo newlist mailman
+&lt;span class="c"&gt;# Enter you email address and password&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;It will tell you to paste this lines to &lt;code&gt;/etc/aliases&lt;/code&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;## mailman mailing list                                                          
+mailman:              &amp;quot;|/var/lib/mailman/mail/mailman post mailman&amp;quot;              
+mailman-admin:        &amp;quot;|/var/lib/mailman/mail/mailman admin mailman&amp;quot;             
+mailman-bounces:      &amp;quot;|/var/lib/mailman/mail/mailman bounces mailman&amp;quot;           
+mailman-confirm:      &amp;quot;|/var/lib/mailman/mail/mailman confirm mailman&amp;quot;           
+mailman-join:         &amp;quot;|/var/lib/mailman/mail/mailman join mailman&amp;quot;              
+mailman-leave:        &amp;quot;|/var/lib/mailman/mail/mailman leave mailman&amp;quot;             
+mailman-owner:        &amp;quot;|/var/lib/mailman/mail/mailman owner mailman&amp;quot;             
+mailman-request:      &amp;quot;|/var/lib/mailman/mail/mailman request mailman&amp;quot;           
+mailman-subscribe:    &amp;quot;|/var/lib/mailman/mail/mailman subscribe mailman&amp;quot;         
+mailman-unsubscribe:  &amp;quot;|/var/lib/mailman/mail/mailman unsubscribe mailman&amp;quot;    
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then update the &lt;code&gt;/etc/aliases.db&lt;/code&gt; database:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;sudo newaliases
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then restart Mailman and Postfix:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;sudo service postfix restart
+&lt;span class="nv"&gt;$ &lt;/span&gt;sudo service mailman restart
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Now if you go to &lt;code&gt;http://lists.example.com/mailman/listinfo&lt;/code&gt;, you should see the
+newly created &lt;code&gt;Mailman&lt;/code&gt; list.&lt;/p&gt;
+&lt;p&gt;You can continue by adding other lists, and send test emails to these lists.&lt;/p&gt;
+&lt;h2&gt;About Aliases&lt;/h2&gt;
+&lt;p&gt;The &lt;code&gt;/etc/aliases&lt;/code&gt; file tells Postfix how to route the emails. In above
+&lt;code&gt;mailman&lt;/code&gt; example, when receiving emails to &lt;code&gt;mailman@example.com&lt;/code&gt;, Postfix will
+know to call the command &lt;code&gt;/var/lib/mailman/mail/mailman post mailman&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;You can also tell Postfix to forward certain emails to another email address.
+For example:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;help&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;  &lt;span class="n"&gt;example&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;help&lt;/span&gt;&lt;span class="err"&gt;@&lt;/span&gt;&lt;span class="n"&gt;gmail&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;com&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then if you send a email to &lt;code&gt;help@example.com&lt;/code&gt;, Postfix will forward it to
+&lt;code&gt;example.help@gmail.com&lt;/code&gt;.&lt;/p&gt;</summary><category term="mailman"></category><category term="nginx"></category><category term="fastcgi"></category><category term="postfix"></category><category term="maillist"></category></entry><entry><title>Replicate Gem Installation</title><link href="http://jhshi.me/2014/11/08/replicate-gem-installation/index.html" rel="alternate"></link><updated>2014-11-08T23:48:11-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-11-08:2014/11/08/replicate-gem-installation/index.html</id><summary type="html">&lt;p&gt;I use Octopress to manage my blogs, which rely on correct ruby gem version to
+work. Although Octopress use Bundler to manage the gem dependencies, sometimes a
+simple &lt;code&gt;bundle install&lt;/code&gt; does not work out of box. Since everything works fine on
+one of my machines, I decided to replicate the exact ruby/gem setup of that
+machine.&lt;/p&gt;
+
+
+&lt;h2&gt;Dump Gem list&lt;/h2&gt;
+&lt;p&gt;First, dump all the gems and version to a text file on the machine that you want
+to replicate.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;gem list &lt;span class="p"&gt;|&lt;/span&gt; tail -n+1 &lt;span class="p"&gt;|&lt;/span&gt; sed &lt;span class="s1"&gt;&amp;#39;s/(/--version /&amp;#39;&lt;/span&gt; &lt;span class="p"&gt;|&lt;/span&gt; sed &lt;span class="s1"&gt;&amp;#39;s/)//&amp;#39;&lt;/span&gt; &amp;gt; gemlist
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here we first dump all the gem files using &lt;code&gt;gem list&lt;/code&gt;, then we remove the first
+line of the output (&lt;code&gt;***LOCAL GEMS***&lt;/code&gt;), and replace left parenthesis with
+&lt;code&gt;--version&lt;/code&gt; for later convenience, and remove right parenthesis.&lt;/p&gt;
+&lt;p&gt;Suppose your app use Bundler, then you should use this command instead
+of the above one, to make sure the we install exactly the same set of gems for
+that app.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;bundle &lt;span class="p"&gt;|&lt;/span&gt; head -n-2 &lt;span class="p"&gt;|&lt;/span&gt; cut -d&lt;span class="s1"&gt;&amp;#39; &amp;#39;&lt;/span&gt; -f2,3 &lt;span class="p"&gt;|&lt;/span&gt; sed &lt;span class="s1"&gt;&amp;#39;s/ / --version /&amp;#39;&lt;/span&gt; &amp;gt; gemlist
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here since the output of &lt;code&gt;bundle&lt;/code&gt; is a bit different with &lt;code&gt;gem list&lt;/code&gt;, we first
+remove the last two lines of the output (see below), then we split each line
+using white space and only get the second (gem name) and third (version) parts,
+finally we substitute white space with &lt;code&gt;--version&lt;/code&gt;, similar as above.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;....
+Using stringex 1.4.0
+Using bundler 1.7.3
+Your bundle is complete!
+Use `bundle show [gemname]` to see where a bundled gem is installed.
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;Install the Gems&lt;/h2&gt;
+&lt;p&gt;Copy the &lt;code&gt;gemlist&lt;/code&gt; file to the machine that you want to install gems on, and use
+this command to install the gems. To make sure we have a clean slate, we first
+remove all Gems first.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;gem list &lt;span class="p"&gt;|&lt;/span&gt; cut -d&lt;span class="s2"&gt;&amp;quot; &amp;quot;&lt;/span&gt; -f1 &lt;span class="p"&gt;|&lt;/span&gt; xargs sudo gem uninstall -aIx
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then install all the Gems, here we do not install document for sake of time.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;cat gemlist &lt;span class="p"&gt;|&lt;/span&gt; xargs -L &lt;span class="m"&gt;1&lt;/span&gt; sudo gem install --no-ri --no-rdoc
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here we use &lt;code&gt;-L 1&lt;/code&gt; option to tell &lt;code&gt;xargs&lt;/code&gt; to treat each line as a separate
+command.&lt;/p&gt;
+&lt;p&gt;Finally, before you do &lt;code&gt;rake&lt;/code&gt; in your project, remember to delete the
+&lt;code&gt;Gemfile.lock&lt;/code&gt; file, it may contain some obsolete gems and misleading bundler.&lt;/p&gt;</summary><category term="ruby"></category><category term="gem"></category><category term="cut"></category><category term="xargs"></category></entry><entry><title>Install Acrobat Reader on Ubuntu 14.04</title><link href="http://jhshi.me/2014/10/06/install-acrobat-reader-on-ubuntu-14-dot-04/index.html" rel="alternate"></link><updated>2014-10-06T18:43:45-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-10-06:2014/10/06/install-acrobat-reader-on-ubuntu-14-dot-04/index.html</id><summary type="html">&lt;p&gt;Recently I need to install Adobe Acrobat Reader on couple of my Ubuntu boxes.
+The process is full of black magic that sometimes you can't find the documents
+anywhere. Hopefully this post will make the process less a pain.&lt;/p&gt;
+
+
+&lt;h3&gt;Install Dependencies&lt;/h3&gt;
+&lt;p&gt;This is probably a &lt;em&gt;superset&lt;/em&gt; of all the dependencies. I used trial and error
+in the process and I'm not quite sure which packages are really necessary...&lt;/p&gt;
+&lt;p&gt;With these packages, if I run &lt;code&gt;acroread&lt;/code&gt; from command line:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;There is no GTK warnings or whatsoever.&lt;/li&gt;
+&lt;li&gt;Can open PDF with forms (like the ones for Canada VISA application).&lt;/li&gt;
+&lt;li&gt;The icons and menus looks "normal".&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Note that since the Acrobat Reader is 32-bit application, so if you're on
+64-bit system, remember to append a &lt;code&gt;:i386&lt;/code&gt; on whatever extra packages you want
+to install besides the ones in this list.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;sudo apt-get install &lt;span class="se"&gt;\&lt;/span&gt;
+    libgtk2.0-0:i386 &lt;span class="se"&gt;\&lt;/span&gt;
+    libnss3-1d:i386 &lt;span class="se"&gt;\&lt;/span&gt;
+    libnspr4-0d:i386 &lt;span class="se"&gt;\&lt;/span&gt;
+    lib32nss-mdns &lt;span class="se"&gt;\&lt;/span&gt;
+    libxml2:i386 &lt;span class="se"&gt;\&lt;/span&gt;
+    libxslt1.1:i386 &lt;span class="se"&gt;\&lt;/span&gt;
+    libstdc++6:i386 &lt;span class="se"&gt;\&lt;/span&gt;
+    libcanberra-dev:i386 &lt;span class="se"&gt;\&lt;/span&gt;
+    libcanberra-gtk-dev:i386 &lt;span class="se"&gt;\&lt;/span&gt;
+    libcanberra-gtk-module:i386 &lt;span class="se"&gt;\&lt;/span&gt;
+    gtk2-engines:i386 &lt;span class="se"&gt;\&lt;/span&gt;
+    gtk2-engines-*:i386 &lt;span class="se"&gt;\&lt;/span&gt;
+    gnome-themes-standard:i386 &lt;span class="se"&gt;\&lt;/span&gt;
+    unity-gtk2-module:i386 &lt;span class="se"&gt;\&lt;/span&gt;
+    libpangoxft-1.0.0:i386 &lt;span class="se"&gt;\&lt;/span&gt;
+    libpangox-1.0.0:i386 &lt;span class="se"&gt;\&lt;/span&gt;
+    libidn11:i386 &lt;span class="se"&gt;\&lt;/span&gt;
+    dconf-gsettings-backend:i386
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;Download the Deb Package&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;cd&lt;/span&gt; ~/Downloads &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; wget -c http://ardownload.adobe.com/pub/adobe/reader/unix/9.x/9.5.5/enu/AdbeRdr9.5.5-1_i386linux_enu.deb
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;If the above link fails, try this one instead:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;cd&lt;/span&gt; ~/Downloads &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; wget -c ftp://ftp.adobe.com/pub/adobe/reader/unix/9.x/9.5.5/enu/AdbeRdr9.5.5-1_i386linux_enu.deb
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;Installation&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;sudo dpkg -i ~/Downloads/AdbeRdr9.5.5-1_i386linux_enu.deb
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;This should complete without any problems if you installed all the packages in the
+dependencies. But in case &lt;code&gt;dpkg&lt;/code&gt; still complains, run this command after &lt;code&gt;dpkt -i&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;sudo apt-get -f install
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;This should fix any further missing dependencies.&lt;/p&gt;
+&lt;h3&gt;Configuration&lt;/h3&gt;
+&lt;p&gt;If you want to use Acrobat Reader to open PDF files by default. Run this command and choose Acrobat Reader from the list:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;mimeopen -d *.pdf
+Please choose a default application &lt;span class="k"&gt;for&lt;/span&gt; files of &lt;span class="nb"&gt;type &lt;/span&gt;application/pdf
+
+    1&lt;span class="o"&gt;)&lt;/span&gt; Document Viewer  &lt;span class="o"&gt;(&lt;/span&gt;evince&lt;span class="o"&gt;)&lt;/span&gt;
+    2&lt;span class="o"&gt;)&lt;/span&gt; Print Preview  &lt;span class="o"&gt;(&lt;/span&gt;evince-previewer&lt;span class="o"&gt;)&lt;/span&gt;
+    3&lt;span class="o"&gt;)&lt;/span&gt; GIMP Image Editor  &lt;span class="o"&gt;(&lt;/span&gt;gimp&lt;span class="o"&gt;)&lt;/span&gt;
+    4&lt;span class="o"&gt;)&lt;/span&gt; Adobe Reader &lt;span class="m"&gt;9&lt;/span&gt;  &lt;span class="o"&gt;(&lt;/span&gt;AdobeReader&lt;span class="o"&gt;)&lt;/span&gt;
+    5&lt;span class="o"&gt;)&lt;/span&gt; Other...
+
+use application &lt;span class="c"&gt;# 4&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="acroread"></category><category term="ubuntu"></category><category term="adobe"></category><category term="acrobat"></category></entry><entry><title>Print uint64_t Properly In C</title><link href="http://jhshi.me/2014/07/11/print-uint64-t-properly-in-c/index.html" rel="alternate"></link><updated>2014-07-11T18:02:37-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-07-11:2014/07/11/print-uint64-t-properly-in-c/index.html</id><summary type="html">&lt;p&gt;&lt;code&gt;stdint.h&lt;/code&gt; provides various machine-independent integer types that are very
+handy to use, especially the &lt;code&gt;uint64_t&lt;/code&gt; family. You would assume it's something
+like &lt;code&gt;long long unsigned int&lt;/code&gt; and tempted to use &lt;code&gt;%llu&lt;/code&gt; in &lt;code&gt;printf&lt;/code&gt;, which, however, will be
+reported as a warning by any decent compiler.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;warning&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;format&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;%llu&amp;#39;&lt;/span&gt; &lt;span class="n"&gt;expects&lt;/span&gt; &lt;span class="n"&gt;argument&lt;/span&gt; &lt;span class="n"&gt;of&lt;/span&gt; &lt;span class="n"&gt;type&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;long long unsigned int&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;but&lt;/span&gt; &lt;span class="n"&gt;argument&lt;/span&gt; &lt;span class="mi"&gt;4&lt;/span&gt; &lt;span class="n"&gt;has&lt;/span&gt; &lt;span class="n"&gt;type&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;uint64_t&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;[-&lt;/span&gt;&lt;span class="n"&gt;Wformat&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+
+
+&lt;h3&gt;The Right Way&lt;/h3&gt;
+&lt;p&gt;The right way to print &lt;code&gt;uint64_t&lt;/code&gt; in &lt;code&gt;printf&lt;/code&gt;/&lt;code&gt;snprintf&lt;/code&gt; family
+functions is this (&lt;a href="http://stackoverflow.com/questions/8132399/how-to-printf-uint64-t"&gt;source&lt;/a&gt;):&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#define __STDC_FORMAT_MACROS&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;inttypes.h&amp;gt;&lt;/span&gt;
+
+&lt;span class="kt"&gt;uint64_t&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="n"&gt;printf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;%&amp;quot;&lt;/span&gt;&lt;span class="n"&gt;PRIu64&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;code&gt;PRIU64&lt;/code&gt; is a macro introduced in C99, and are supposed to mitigate platform
+differences and "just print the thing". More macros for &lt;code&gt;printf&lt;/code&gt; family can be
+found &lt;a href="http://en.cppreference.com/w/c/types/integer"&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;h3&gt;The Story&lt;/h3&gt;
+&lt;p&gt;In my case, I mistakenly use &lt;code&gt;%lu&lt;/code&gt; to print a &lt;code&gt;uint64_t&lt;/code&gt; integer. Of course, the
+compiler gave warning on this. But...you know, it's "just warnings", should be no big deal.
+Well, 80% of the time it is fine. Yet this time, it's not.
+Since &lt;code&gt;uint64_t&lt;/code&gt; takes 8 bytes but &lt;code&gt;%lu&lt;/code&gt; will only eat 4 bytes, so my next print
+argument, &lt;code&gt;%s&lt;/code&gt; comes in and happily print who knows what...&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Never ignore warnings, NEVER.&lt;/strong&gt;&lt;/p&gt;</summary><category term="printf"></category><category term="format"></category><category term="c"></category></entry><entry><title>LFS 5.5.1: Change GCC's Stack Protection Option</title><link href="http://jhshi.me/2012/09/08/change-gccs-stack-protection-option-in-lfs/index.html" rel="alternate"></link><updated>2012-09-08T15:39:27-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-09-08:2012/09/08/change-gccs-stack-protection-option-in-lfs/index.html</id><summary type="html">&lt;p&gt;In &lt;a href="http://www.linuxfromscratch.org/lfs/view/stable/chapter05/gcc-pass1.html"&gt;Chapter 5.5&lt;/a&gt;, there is one step that fixes the GCC's stack protection
+detection problem. The command is:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;sed -i &lt;span class="s1"&gt;&amp;#39;/k prot/agcc_cv_libc_provides_ssp=yes&amp;#39;&lt;/span&gt; gcc/configure
+&lt;/pre&gt;&lt;/div&gt;
+
+
+
+
+&lt;p&gt;This command seems weird to me at first glance. After digging a little more
+about &lt;code&gt;sed&lt;/code&gt; command, it's intention is much clear.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;-i&lt;/strong&gt; means change the file (i.e., &lt;code&gt;gcc/configure&lt;/code&gt;) in place&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;/k prot/&lt;/strong&gt; is the pattern. If you look at &lt;code&gt;gcc/configure&lt;/code&gt;, you'll find a
+line (around 26695) of comment that says:&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c"&gt;# Test for stack protector support in target C library&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;And you'll see that this is the only occurrence of "stack protector" (as well
+as &lt;code&gt;k prot&lt;/code&gt;. I think we'd better use &lt;code&gt;/stack protector/&lt;/code&gt; as the pattern for
+easy understanding.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;a&lt;/strong&gt; means append a line after the line that contains the pattern. (&lt;a href="http://www.grymoire.com/Unix/Sed.html#uh-40"&gt;sed document&lt;/a&gt;)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;gcc_cv_libc_provides_ssp=yes&lt;/strong&gt; is the actual line being appended.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;</summary><category term="lfs"></category><category term="gcc"></category><category term="sed"></category></entry><entry><title>Use rsync and cron to do regular backup (Part II)</title><link href="http://jhshi.me/2012/07/11/use-rsync-and-cron-to-do-regular-backup-part-ii/index.html" rel="alternate"></link><updated>2012-07-11T16:53:52-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-07-11:2012/07/11/use-rsync-and-cron-to-do-regular-backup-part-ii/index.html</id><summary type="html">&lt;p&gt;Now that we can &lt;a href="/2012/07/11/use-rsync-and-cron-to-do-regular-backup-part-i"&gt;take advantage of rsync to minimize the data to transfer when
+backup&lt;/a&gt;. But it's still a little uncomfortable if we need to do this manually
+everyday, right? Well, cron is here to solve the pain.&lt;/p&gt;
+
+
+&lt;p&gt;&lt;a href="http://en.wikipedia.org/wiki/Cron"&gt;Cron&lt;/a&gt; is kind of a system service that
+automatically do some job as you specified. Backup, for example, is a perfect
+kind of job that we can count on cron.&lt;/p&gt;
+&lt;p&gt;First, we need to specify a job that we want cron to do. In my case, I want
+cron to automatically sync my source tree folder on remote data center and my
+local backup folder. A simple rsync command seems meet my need. But actually,
+there are more to consider:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;I don't want to copy the obj files, since they are normally large in size
+and change frequently, but can be easily re-generated. But I also don't want to
+skip the entire build folder when do rsync since there are some configure files
+in there.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The backup process should be totally automated. More specifically, no
+password is needed when do rysnc.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Towards the first need, I can use ssh to send remote command to
+do necessary clean up work before rysnc. And the second need can
+be meted according to my previous post about &lt;a href="/2012/04/27/sshscp-without-password"&gt;ssh/scp without password&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;So my final backup script looks like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c"&gt;#!/bin/sh &lt;/span&gt;
+&lt;span class="c"&gt;# ~/backup.sh&lt;/span&gt;
+
+&lt;span class="nv"&gt;LOG_FILE&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;~/backup.log 
+&lt;span class="nv"&gt;SOURCE_DIR&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;b@B:~/src/ 
+&lt;span class="nv"&gt;TARGET_DIR&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;~/src_backup
+
+date &amp;gt;&amp;gt; &lt;span class="nv"&gt;$LOG_FILE&lt;/span&gt; 
+&lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Synchronization start...&amp;quot;&lt;/span&gt; &amp;gt;&amp;gt; &lt;span class="nv"&gt;$LOG_FILE&lt;/span&gt; 
+ssh b@B &lt;span class="err"&gt;&amp;#39;&lt;/span&gt;&lt;span class="nb"&gt;cd&lt;/span&gt; ~/src/build&lt;span class="p"&gt;;&lt;/span&gt; make clean&lt;span class="p"&gt;;&lt;/span&gt; rm -rf obj/&lt;span class="s2"&gt;&amp;quot; &amp;gt;&amp;gt; &lt;/span&gt;&lt;span class="nv"&gt;$LOG_FILE&lt;/span&gt;&lt;span class="s2"&gt; &lt;/span&gt;
+&lt;span class="s2"&gt;rsync -avz --exclude &amp;quot;&lt;/span&gt;tags&lt;span class="s2"&gt;&amp;quot; &lt;/span&gt;&lt;span class="nv"&gt;$SOURCE_DIR&lt;/span&gt;&lt;span class="s2"&gt; &lt;/span&gt;&lt;span class="nv"&gt;$TARGET_DIR&lt;/span&gt;&lt;span class="s2"&gt; &amp;gt;&amp;gt; &lt;/span&gt;&lt;span class="nv"&gt;$LOG_FILE&lt;/span&gt;&lt;span class="s2"&gt; &lt;/span&gt;
+&lt;span class="s2"&gt;echo &amp;quot;&lt;/span&gt;Synchronization &lt;span class="k"&gt;done&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot; &amp;gt;&amp;gt; &lt;/span&gt;&lt;span class="nv"&gt;$LOG_FILE&lt;/span&gt;&lt;span class="s2"&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Once we figure out what to do, we need to tell cron about our job. The
+configure file of cron is &lt;code&gt;/etc/crontab&lt;/code&gt;. A job description is like follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c1"&gt;# Example of job definition: &lt;/span&gt;
+&lt;span class="c1"&gt;# .----------------minute (0 - 59) &lt;/span&gt;
+&lt;span class="c1"&gt;# | .------------- hour (0 - 23) &lt;/span&gt;
+&lt;span class="c1"&gt;# | | .---------- day of month (1 - 31) &lt;/span&gt;
+&lt;span class="c1"&gt;# | | | .------- month (1 - 12) OR jan,feb,mar,apr ... &lt;/span&gt;
+&lt;span class="c1"&gt;# | | | | .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat &lt;/span&gt;
+&lt;span class="c1"&gt;# | | | | | &lt;/span&gt;
+&lt;span class="c1"&gt;# * * * * * user-name command to be executed 0 0 * * * jack ~/backup.sh&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;I want to do backup every day on midnight so I set the minute and hour both to
+0. The asterisk (&lt;code&gt;*&lt;/code&gt;) symbol in day/month means any valid values.&lt;/p&gt;
+&lt;p&gt;Now we are done. The back up process is completely automated and scheduled.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Reference&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;a href="http://myhowtosandprojects.blogspot.hk/2008/07/sincronize-folders-with-rsync-using-ssh.html"&gt;http://myhowtosandprojects.blogspot.hk/2008/07/sincronize-folders-with-rsync-using-ssh.html&lt;/a&gt;&lt;/p&gt;</summary><category term="cron"></category><category term="rsync"></category><category term="backup"></category></entry><entry><title>Use rsync and cron to do regular backup (Part I)</title><link href="http://jhshi.me/2012/07/11/use-rsync-and-cron-to-do-regular-backup-part-i/index.html" rel="alternate"></link><updated>2012-07-11T16:23:45-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-07-11:2012/07/11/use-rsync-and-cron-to-do-regular-backup-part-i/index.html</id><summary type="html">&lt;p&gt;Recently I do most of my work on a remote data center through a slow network
+connection (&amp;lt;100KB/sec). I usually backup my project source tree as follows.
+I first do make clean and also delete any unnecessary obj files to shrink the
+total file size, then I compress the whole source tree as a tar ball and then I
+use &lt;code&gt;scp&lt;/code&gt; locally to fetch the backup tar ball to my local machine. The procedure
+is quite boring since I need to do this every day before I go home, otherwise
+the whole bandwidth will be occupied for near an hour during which I can almost
+do nothing.&lt;/p&gt;
+&lt;p&gt;Situation gets better when I find &lt;code&gt;rsync&lt;/code&gt; and &lt;code&gt;cron&lt;/code&gt;. Here is how I do automatic
+regular (daily) backup with them.&lt;/p&gt;
+
+
+&lt;p&gt;&lt;a href="http://en.wikipedia.org/wiki/Rsync"&gt;Rsync&lt;/a&gt; is a file synchronization tool
+that aims to minimize the data transfer during copy files. This is done via
+only send the diffs to destination. It is perfect when you need to do regular
+copy between two fixed locations. Rsync has many options (well, as most of
+other GNU tools), here is two of them that are used more frequently:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c"&gt;# ensure that symbolic links, devices, attributes, permissions, &lt;/span&gt;
+&lt;span class="c"&gt;# ownerships, etc are preserved in the transfer &lt;/span&gt;
+-a, --archive
+
+&lt;span class="c"&gt;#compress data during transfer, especially useful when the bandwidth is limited&lt;/span&gt;
+-z, --compress
+
+&lt;span class="c"&gt;# exclude the directories or files that you don&amp;#39;t want to sync, such as obj&lt;/span&gt;
+&lt;span class="c"&gt;# files, tag files, etc &lt;/span&gt;
+--exclude
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Suppose that you have a source tree on host B: &lt;code&gt;~/src&lt;/code&gt;, and you want to sync this
+source tree with a local folder named: &lt;code&gt;~/src_backup&lt;/code&gt;, then the follow command
+will suffice:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;rsync -avz --exclude &lt;span class="s2"&gt;&amp;quot;obj/&amp;quot;&lt;/span&gt; --exclude &lt;span class="s2"&gt;&amp;quot;tags&amp;quot;&lt;/span&gt; --exclude &lt;span class="s2"&gt;&amp;quot;build&amp;quot;&lt;/span&gt; b@B:~/src/ ~/src_backup 
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The two exclude option will tell rsync to skip the obj subdirectory as well
+as the tags file. The trailing slash in the source (&lt;code&gt;b@B:~/src/&lt;/code&gt;) will tell
+rsync not to create an additional directory level at the destination. Without
+this slash, rsync will create a &lt;code&gt;src&lt;/code&gt; directory under &lt;code&gt;~/src_backup&lt;/code&gt;, which is not
+desirable.&lt;/p&gt;
+&lt;p&gt;Now that after the first time rsync, the following rsync commands will only
+transfer the file changes to local, which is a great save of the bandwidth.&lt;/p&gt;</summary><category term="cron"></category><category term="rsync"></category><category term="backup"></category></entry><entry><title>Use trap to Do Cleanup Work When Script Terminates</title><link href="http://jhshi.me/2012/05/07/use-trap-to-do-cleanup-work-when-script-terninates/index.html" rel="alternate"></link><updated>2012-05-07T19:08:56-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-05-07:2012/05/07/use-trap-to-do-cleanup-work-when-script-terninates/index.html</id><summary type="html">&lt;p&gt;Now I have the script that monitoring the output of several UART devices:&lt;/p&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c"&gt;#!/bin/bash&lt;/span&gt;
+
+&lt;span class="k"&gt;for&lt;/span&gt; i in &lt;span class="sb"&gt;`&lt;/span&gt;seq &lt;span class="m"&gt;0&lt;/span&gt; 7&lt;span class="sb"&gt;`&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+&lt;span class="c"&gt;# use grep here to enforce line-buffered output, so concurrent&lt;/span&gt;
+&lt;span class="c"&gt;# input from UART isn&amp;#39;t messed up&lt;/span&gt;
+    cat /dev/crbif0rb0c&lt;span class="si"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;i&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;ttyS0 &lt;span class="p"&gt;|&lt;/span&gt; grep ^ --line-buffered &lt;span class="p"&gt;&amp;amp;&lt;/span&gt;
+&lt;span class="k"&gt;done&lt;/span&gt;
+
+&lt;span class="nb"&gt;wait&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;But there is one problem, when you terminate the script (&lt;code&gt;ctrl+c&lt;/code&gt;), these cat
+processes won't be killed, so that the next time you run this script, you'll not
+be able to access these UART device since they are busy.&lt;/p&gt;
+&lt;p&gt;To solve this problem, we need to do some cleanup work when the script
+terminates. In this case, we need to kill these &lt;code&gt;cat&lt;/code&gt; processes. We can use the
+&lt;code&gt;trap&lt;/code&gt; command to do this. Basically, &lt;strong&gt;trap enables you to register a kind of
+handler for different kind of signals&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;In this case, we can add a line into the script:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;trap&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;pkill -P &lt;/span&gt;&lt;span class="nv"&gt;$$&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt; SIGINT
+
+&lt;span class="k"&gt;for&lt;/span&gt; i in &lt;span class="sb"&gt;`&lt;/span&gt;seq &lt;span class="m"&gt;0&lt;/span&gt; 7&lt;span class="sb"&gt;`&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+&lt;span class="c"&gt;# use grep here to enforce line-buffered output, so concurrent&lt;/span&gt;
+&lt;span class="c"&gt;# input from UART isn&amp;#39;t messed up&lt;/span&gt;
+    cat /dev/crbif0rb0c&lt;span class="si"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;i&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;ttyS0 &lt;span class="p"&gt;|&lt;/span&gt; grep ^ --line-buffered &lt;span class="p"&gt;&amp;amp;&lt;/span&gt;
+&lt;span class="k"&gt;done&lt;/span&gt;
+
+&lt;span class="nb"&gt;wait&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;code&gt;$$&lt;/code&gt; is the process id of the script. &lt;code&gt;pkill -P $$&lt;/code&gt; will kill all the child
+processes of &lt;code&gt;$$&lt;/code&gt;. So that when the script terminates (&lt;code&gt;SIGINT&lt;/code&gt; signal from
+&lt;code&gt;ctrl+c&lt;/code&gt;), this &lt;code&gt;pkill&lt;/code&gt; command will be executed and all the cat processes will
+be killed.&lt;/p&gt;
+&lt;p&gt;Thanks to these post.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://www.davidpashley.com/articles/writing-robust-shell-scripts.html#id2564782"&gt;http://www.davidpashley.com/articles/writing-robust-shell-scripts.html#id2564782&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</summary><category term="trap"></category><category term="shell script"></category></entry><entry><title>Line Buffered Cat</title><link href="http://jhshi.me/2012/05/04/line-buffered-cat/index.html" rel="alternate"></link><updated>2012-05-04T14:44:15-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-05-04:2012/05/04/line-buffered-cat/index.html</id><summary type="html">&lt;p&gt;I'd like to watch the output of a UART device in Linux, and I only want to see
+the content when there are a whole line. So I prefer some kind of line-buffered
+cat such as:&lt;/p&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;cat --line-buffered /dev/crbif0rb0c0ttyS0
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;But unfortunately, &lt;code&gt;cat&lt;/code&gt; doesn't have a line-buffered option. And fortunately,
+GNU &lt;code&gt;grep&lt;/code&gt; has such an option. So we can do&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;cat /dev/crbif0rb0c0ttyS0 &lt;span class="p"&gt;|&lt;/span&gt; grep ^ --line-buffered
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Since every line has a ^ (line start), so each line matches the &lt;code&gt;grep&lt;/code&gt;. Note
+that I ever tried&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;cat /dev/crbif0rb0c0ttyS0 &lt;span class="p"&gt;|&lt;/span&gt; grep . --line-buffered
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;But this does not work. Only empty lines are printed, and I don't know why...&lt;/p&gt;</summary><category term="cat"></category><category term="grep"></category></entry><entry><title>ssh/scp without password</title><link href="http://jhshi.me/2012/04/27/sshscp-without-password/index.html" rel="alternate"></link><updated>2012-04-27T16:45:41-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-27:2012/04/27/sshscp-without-password/index.html</id><summary type="html">&lt;p&gt;Suppose you have two machines: A and B. A is your work machine, you do most of
+your work on it. But B is a little special (e.g., connected to some specific
+hardware) that you need to ssh on it or copy some file from A to B from time to
+time. Here is the way that you can get rid of entering passwords every time you
+do ssh/scp.&lt;/p&gt;
+
+
+&lt;p&gt;First, on machine A, generate a DSA key pair:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;ssh-keygen -t rsa 
+Generating public/private rsa key pair. 
+Enter file in which to save the key &lt;span class="o"&gt;(&lt;/span&gt;YOUR_HOME/.ssh/id_rsa&lt;span class="o"&gt;)&lt;/span&gt;:
+&lt;span class="c"&gt;# press ENTER here to accept the default filename &lt;/span&gt;
+Enter passphrase &lt;span class="o"&gt;(&lt;/span&gt;empty &lt;span class="k"&gt;for&lt;/span&gt; no passphrase&lt;span class="o"&gt;)&lt;/span&gt;: 
+&lt;span class="c"&gt;# press ENTER here to use no passphrase, otherwise, you still need&lt;/span&gt;
+&lt;span class="c"&gt;# to enter this passphrase when ssh &lt;/span&gt;
+Enter same passphrase again: 
+&lt;span class="c"&gt;# press ENTER here &lt;/span&gt;
+Your identification has been saved in &lt;span class="nv"&gt;$HOME&lt;/span&gt;/.ssh/id_rsa. 
+Your public key has been saved in &lt;span class="nv"&gt;$HOME&lt;/span&gt;/.ssh/id_rsa.pub. 
+The key fingerprint is: ..... &lt;span class="o"&gt;(&lt;/span&gt;omited&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then, change the access mode of .ssh directory&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;chmod &lt;span class="m"&gt;775&lt;/span&gt; ~/.ssh 
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then append the content of your just generated &lt;code&gt;id_rsa.pub&lt;/code&gt; to the
+&lt;code&gt;$HOME/.ssh/authorized_keys&lt;/code&gt; file on machine B:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c"&gt;# copy the id_rsa.pub file to host B &lt;/span&gt;
+&lt;span class="nv"&gt;$ &lt;/span&gt;scp ~/.ssh/id_rsa.pub b@B:. 
+&lt;span class="c"&gt;# login to B &lt;/span&gt;
+&lt;span class="nv"&gt;$ &lt;/span&gt;ssh b@B 
+&lt;span class="c"&gt;# append the content to authorized_keys &lt;/span&gt;
+&lt;span class="nv"&gt;$ &lt;/span&gt;cat id_rsa.pub &amp;gt;&amp;gt; .ssh/authorized_keys 
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Finally, ssh on to B and change the access mode of the file &lt;code&gt;authorized_keys&lt;/code&gt;.
+This is optional, maybe you don't need to do this if you can already ssh
+without entering password.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;ssh b@B 
+&lt;span class="nv"&gt;$ &lt;/span&gt;chmod &lt;span class="m"&gt;700&lt;/span&gt; .ssh 
+&lt;span class="nv"&gt;$ &lt;/span&gt;chmod &lt;span class="m"&gt;640&lt;/span&gt; ~/.ssh/authorized_keys
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Depend on your version of ssh, you may also need to do the following:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;ssh b@B &lt;span class="nv"&gt;$ &lt;/span&gt;cp ~/.ssh/authorized_keys ~/.ssh/authorized_keys2
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;That it! Enjoy!&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Reference&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a href="http://www.cyberciti.biz/faq/ssh-password-less-login-with-dsa-publickey-authentication/"&gt;http://www.cyberciti.biz/faq/ssh-password-less-login-with-dsa-publickey-authentication/&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a href="http://www.linuxproblem.org/art_9.html"&gt;http://www.linuxproblem.org/art_9.html&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;</summary><category term="ssh"></category><category term="scp"></category></entry><entry><title>Bash Alias with Argument</title><link href="http://jhshi.me/2011/11/24/bash-alias-with-argument/index.html" rel="alternate"></link><updated>2011-11-24T19:47:51-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2011-11-24:2011/11/24/bash-alias-with-argument/index.html</id><summary type="html">&lt;p&gt;Alias is a very useful feature of shell (e.g. bash). For example, I have this
+line in my &lt;code&gt;.bashrc&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;alias &lt;/span&gt;&lt;span class="nv"&gt;ll&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;ls -alF | more&amp;quot;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+
+
+&lt;p&gt;So I can simply use &lt;code&gt;ll&lt;/code&gt; to view all the files in current directory and view
+them in my favorite style.&lt;/p&gt;
+&lt;p&gt;It works fine until one day, I want to view the files in a sub directory
+instead of current directory, so I tried:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;ll subdirectory/
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;But it failed - still just display the content of current directory. The reason
+is, for bash, the above command is interpreted as:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;ls -alF &lt;span class="p"&gt;|&lt;/span&gt; more subdirectory/
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;But what I have in mind is actually:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;ls -alF subdirectory &lt;span class="p"&gt;|&lt;/span&gt; more
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;I Googled and found that alias can just not take arguments, but devise a simple
+functions is applicable, so I have the below code instead of the &lt;code&gt;ll&lt;/code&gt; alias:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;unalias &lt;/span&gt;ll
+&lt;span class="k"&gt;function&lt;/span&gt; ll&lt;span class="o"&gt;(){&lt;/span&gt;
+    ls -alF &lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="nv"&gt;$@&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt; &lt;span class="p"&gt;|&lt;/span&gt; more&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;strong&gt;We need to first unalias since by default, &lt;code&gt;ll&lt;/code&gt; is aliased as &lt;code&gt;ls -l
+--color=auto&lt;/code&gt;. If we don't remove the alias, our function won't be invoked.&lt;/strong&gt;&lt;/p&gt;</summary><category term="bash"></category><category term="alias"></category><category term="argument"></category></entry></feed>

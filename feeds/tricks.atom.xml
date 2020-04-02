@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Pearls in Life</title><link href="http://jhshi.me/" rel="alternate"></link><link href="http://jhshi.me/feeds/tricks.atom.xml" rel="self"></link><id>http://jhshi.me/</id><updated>2013-12-17T15:52:00-05:00</updated><entry><title>Sum of N Largest Numbers in Google Spreadsheet</title><link href="http://jhshi.me/2013/12/17/sum-of-n-largest-numbers-in-google-spreadsheet/index.html" rel="alternate"></link><updated>2013-12-17T15:52:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-12-17:2013/12/17/sum-of-n-largest-numbers-in-google-spreadsheet/index.html</id><summary type="html">&lt;p&gt;I encountered this problem when trying to get the final grades for 
+&lt;a href="http://www.cse.buffalo.edu/~bina/cse241/fall2013/index.html"&gt;an course&lt;/a&gt; I TAed for this semester. There were 10 homework assignments
+throughout the semester, and we're supposed to only count the 8 highest grades. 
+So, how to accomplish this in Google Spreadsheet?&lt;/p&gt;
+
+
+&lt;h3&gt;First Try&lt;/h3&gt;
+&lt;p&gt;After poking around Google search results a little bit, I found this solution,
+which &lt;em&gt;seems&lt;/em&gt; to work.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;=ceiling(sum(filter(E2:N2,E2:N2&amp;gt;=large(E2:N2, 8)))/8,1)
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Where &lt;code&gt;E2:N2&lt;/code&gt; contains the 10 grades. The &lt;a href="https://support.google.com/drive/answer/3094008"&gt;&lt;code&gt;large&lt;/code&gt;&lt;/a&gt; function will return
+the 8th highest grade of the 10, and then we only sum the grades that larger
+than or equal to that grade.&lt;/p&gt;
+&lt;p&gt;This seems all fine until I accidentally found that some students got more than
+100 pts, which is impossible because all our grades are 100 based!&lt;/p&gt;
+&lt;h3&gt;The Problem&lt;/h3&gt;
+&lt;p&gt;Well, what's wrong with the previous formula? Suppose a student's 10 grades look
+like this&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;94  97  92  94  98  100 100 100 100 100
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Sort them in descending order&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt; 1   2   3   4   5   6   7   8   9   10
+100 100 100 100 100  98  97  94  94  92
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;So in this case the 8th largest number is 94, yet there are two 94, and we
+really just need one of them.&lt;/p&gt;
+&lt;h3&gt;The Solution&lt;/h3&gt;
+&lt;p&gt;After struggling in &lt;a href="https://support.google.com/drive/table/25273?hl=en"&gt;Google Spreadsheet function list&lt;/a&gt;, I found that we
+can actually do &lt;a href="https://developers.google.com/chart/interactive/docs/querylanguage"&gt;SQL-like queries&lt;/a&gt; within the spreadsheet! This leads to
+the final solution.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;=ceiling(sum(query(sort(transpose(E2:N2), 1, FALSE), &amp;quot;select * limit 8&amp;quot;))/8,1)
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here we first transpose the row data into column, then sort them in descending
+order, then we just take the first 8 grades when calculating the average.&lt;/p&gt;</summary><category term="query"></category><category term="sort"></category><category term="spreadsheet"></category></entry></feed>

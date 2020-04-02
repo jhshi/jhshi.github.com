@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns# fb: https://www.facebook.com/2008/fbml">
+<head>
+    <title>Customize USRP N2x0 DSP RX Chain - Pearls in Life</title>
+    <!-- Using the latest rendering mode for IE -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <link href="http://jhshi.me/images/favicon.ico" rel="icon">
+
+<link rel="canonical" href="http://jhshi.me/2016/07/08/customize-usrp-n2x0-dsp-rx-chain/index.html">
+
+        <meta name="author" content="Jinghao Shi" />
+        <meta name="keywords" content="usrp,sdr,dsp,fpga" />
+        <meta name="description" content="In one of my research projects, I need to develop some signal processing logic that runs on the FPGA of the USRP, to meeting some delay and timing requirements. Here is a general overview of the steps to customize the DSP Rx chain of USRP N2x0 devices. Details of my particular customization will be probably discussed in separate posts." />
+
+            <meta property="fb:app_id" content="156751911645324"/>
+        <meta property="og:site_name" content="Pearls in Life" />
+        <meta property="og:type" content="article"/>
+        <meta property="og:title" content="Customize USRP N2x0 DSP RX Chain"/>
+        <meta property="og:url" content="http://jhshi.me/2016/07/08/customize-usrp-n2x0-dsp-rx-chain/index.html"/>
+        <meta property="og:description" content="In one of my research projects, I need to develop some signal processing logic that runs on the FPGA of the USRP, to meeting some delay and timing requirements. Here is a general overview of the steps to customize the DSP Rx chain of USRP N2x0 devices. Details of my particular customization will be probably discussed in separate posts."/>
+        <meta property="article:published_time" content="2016-07-08" />
+            <meta property="article:section" content="research" />
+            <meta property="article:tag" content="usrp" />
+            <meta property="article:tag" content="sdr" />
+            <meta property="article:tag" content="dsp" />
+            <meta property="article:tag" content="fpga" />
+            <meta property="article:author" content="Jinghao Shi" />
+
+
+    <!-- Bootstrap -->
+        <link rel="stylesheet" href="http://jhshi.me/theme/css/bootstrap.readable.min.css" type="text/css"/>
+    <link href="http://jhshi.me/theme/css/font-awesome.min.css" rel="stylesheet">
+
+    <link href="http://jhshi.me/theme/css/pygments/friendly.css" rel="stylesheet">
+    <link href="http://jhshi.me/theme/tipuesearch/tipuesearch.css" rel="stylesheet">
+    <link rel="stylesheet" href="http://jhshi.me/theme/css/style.css" type="text/css"/>
+
+        <link href="http://jhshi.me/feeds/all.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life ATOM Feed"/>
+
+
+
+        <link href="http://jhshi.me/feeds/research.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life research ATOM Feed"/>
+
+</head>
+<body>
+
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({
+            appId      : "156751911645324",
+          xfbml      : true,
+          version    : 'v2.11'
+        });
+        FB.AppEvents.logPageView();
+      };
+
+      (function(d, s, id){
+         var js, fjs = d.getElementsByTagName(s)[0];
+         if (d.getElementById(id)) {return;}
+         js = d.createElement(s); js.id = id;
+         js.src = "https://connect.facebook.net/en_US/sdk.js";
+         fjs.parentNode.insertBefore(js, fjs);
+       }(document, 'script', 'facebook-jssdk'));
+    </script>
+
+<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+	<div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a href="http://jhshi.me/" class="navbar-brand">
+Pearls in Life            </a>
+        </div>
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav">
+                    <li><a href="/home">Home</a></li>
+                    <li><a href="/">Blog</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+              <li><span>
+                <form class="navbar-search" action="/search.html">
+                  <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input" required>
+                </form></span>
+              </li>
+              <li><a href="http://jhshi.me/blog/archives/index.html"><i class="fa fa-th-list"></i><span class="icon-label">Archives</span></a></li>
+            </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+</div> <!-- /.navbar -->
+<!-- Banner -->
+<!-- End Banner -->
+<div class="container">
+    <div class="row">
+        <div class="col-sm-9">
+    <section id="content">
+        <article>
+            <header class="page-header">
+                <h1>
+                    <a href="http://jhshi.me/2016/07/08/customize-usrp-n2x0-dsp-rx-chain/index.html"
+                       rel="bookmark"
+                       title="Permalink to Customize USRP N2x0 DSP RX Chain">
+                        Customize USRP N2x0 DSP RX Chain
+                    </a>
+                </h1>
+            </header>
+            <div class="entry-content">
+                <div class="panel">
+                    <div class="panel-body">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2016-07-08T15:19:08.923967-04:00"> Fri 08 July 2016</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/research/index.html">research</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/usrp/index.html">usrp</a>
+        /
+	<a href="http://jhshi.me/blog/tag/sdr/index.html">sdr</a>
+        /
+	<a href="http://jhshi.me/blog/tag/dsp/index.html">dsp</a>
+        /
+	<a href="http://jhshi.me/blog/tag/fpga/index.html">fpga</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                </div>
+                <p>In one of my research projects, I need to develop some signal processing logic
+that runs on the FPGA of the USRP, to meeting some delay and timing
+requirements. Here is a general overview of the steps to customize the DSP Rx
+chain of USRP N2x0 devices. Details of my particular customization will be
+probably discussed in separate posts.</p>
+
+<div class="section" id="dsp-rx-chain-overview">
+<h2>DSP Rx Chain Overview</h2>
+<p>The spirit of Software Defined Radios is to push as much as of the signal
+processing to the host PC, enabling easy development and fast prototyping and
+easy. However, there are certain tasks that are just too timing/performance
+sensitive to be put on the host PC. Therefore, USRPs has a FPGA on board to
+perform several pre-processing of the signal samples before they are sent to the
+host PC.</p>
+<img alt="Pipeline of DSP Rx Chain" src="/images/dsp_rx_chain.png" />
+<p>The above diagram shows the pipeline of the DSP receive chain on the FPGA. The
+RF signal are sampled and converted by the ADC module, and the raw samples are
+processed by the Rx Frontend module for scaling and converting the samples to
+the familiar I/Q values.</p>
+<p>Next, the I/Q values (<tt class="docutils literal">frontend_i, frontend_q</tt>) are sent to a dummpy custom
+module. By default, this Custom module just pipe the I/Q samples directly to
+the Digital Down Converter (DDC) module to extract the baseband signal.</p>
+<p>Then the baseband signals (<tt class="docutils literal">ddc_out_sample</tt>) are passed into the Custom module
+again, which in turn pass them directly to the VITA49 core, which will frame
+these samples and send them to host PC.</p>
+<p>As we can clear see, the USRP FPGA framework already provides us a nice custom
+valve where we can perform custom processing either before or after the DDC
+stage.</p>
+</div>
+<div class="section" id="enable-custom-build">
+<h2>Enable Custom Build</h2>
+<p>By default, the Custom module is disabled. To enable it, we need to make the
+following changes. Here we use the N200R4 as an example. The steps are the same
+for other N2x0 devices.</p>
+<p>First, clone the USRP FPGA source (if you haven't done so).</p>
+<pre class="code bash literal-block">
+<span class="nv">$ </span>git clone git&#64;github.com:EttusResearch/fpga.git
+<span class="nv">$ </span><span class="nb">cd </span>fpga/usrp2/top/N2x0/
+</pre>
+<p>Next, make a copy the original Makefile.</p>
+<pre class="code bash literal-block">
+<span class="nv">$ </span>cp Makefile.N200R4 Makefile.N200R4.custom
+</pre>
+<p>Then make these changes to <tt class="docutils literal">Makefile.N200R4.custom</tt>.</p>
+<pre class="code diff literal-block">
+# use a differnet build directory
+<span class="gd">- BUILD_DIR = $(abspath build$(ISE)-N200R4)
+</span><span class="gi">+ BUILD_DIR = $(abspath build$(ISE)-N200R4-custom)
+</span>
+# remove these two lines, as we will set them later
+<span class="gd">- CUSTOM_SRCS =
+- CUSTOM_DEFS =
+</span>
+
+# include a custom src list file that we will create later, this file sets
+# the CUSTOM_SRCS variable
+<span class="gi">+ include ../../custom/Makefile.srcs
+</span>
+
+# Enable the custom module using verilog macro
+<span class="gd">-&quot;Verilog Macros&quot; &quot;LVDS=1|RX_DSP0_MODULE=custom_dsp_rx&quot;
+</span><span class="gi">+&quot;Verilog Macros&quot; &quot;LVDS=1|RX_DSP0_MODULE=custom_dsp_rx|RX_DSP1_MODULE=custom_dsp_rx&quot;</span>
+</pre>
+<p>Then in <tt class="docutils literal">fpga/custom/</tt> directory, create a file named <tt class="docutils literal">Makefile.srcs</tt>.</p>
+<pre class="code Makefile literal-block">
+<span class="nv">CUSTOM_SRCS</span> <span class="o">=</span> <span class="k">$(</span>abspath <span class="k">$(</span>addprefix <span class="k">$(</span>BASE_DIR<span class="k">)</span>/../custom/, <span class="se">\
+</span>    custom_dsp_rx.v<span class="se">\
+</span>    <span class="o">))</span>
+</pre>
+<p>As you continue the development, you'll probably create more Verilog modules.
+Just add their file names here.</p>
+</div>
+<div class="section" id="checkpoint">
+<h2>Checkpoint</h2>
+<p>Now the build system will include the <tt class="docutils literal">custom_dsp_rx.v</tt> file. Before you do
+any changes to that file, I suggest you compile the whole project for sanity
+check.</p>
+<pre class="code bash literal-block">
+<span class="nv">$ </span><span class="nb">cd </span>fpga/top/N2x0/
+<span class="nv">$ </span>make -f Makefile.N200R4.custom clean bin
+<span class="nv">$ </span>uhd_image_loader --args<span class="o">=</span><span class="s2">&quot;type=usrp2&quot;</span> --fpga-path build-custom/u2plus.bin --fw-path path/to/your/firmware
+</pre>
+<p>This should succeed and the functionality of the FPAG image should be exactly
+the same as before since the default Custom module only passes through signals.</p>
+<p>Note: to flash the FPGA image, you'll also need a <em>compatible</em> firmware image.
+So I recommend you to clone the uhd and fpga repos and build them together.</p>
+</div>
+
+            </div>
+            <!-- /.entry-content -->
+<section class="well" id="related-posts">
+    <h4>Related Posts:</h4>
+    <ul>
+        <li><a href="http://jhshi.me/2016/07/12/setting-up-usrpn2x0-in-virtualbox/index.html">Setting Up USRPN2x0 in VirtualBox</a></li>
+    </ul>
+</section>
+<section class="well" id="related-posts">
+      <h4><a href=https://github.com/jhshi/blog_source/commits/master/content/2016-07-08-customize-usrp-n2x0-dsp-rx-chain.rst>Post History:</a></h4>
+
+      <b>Friday 05:35 PM, July 08 2016</b><br/><p>new post</p>
+</section>
+<div class="fb-like" 
+     data-href="http://jhshi.me/2016/07/08/customize-usrp-n2x0-dsp-rx-chain/index.html"
+     data-layout="standard" 
+     data-action="like" 
+     data-show-faces="true">
+</div>
+
+
+<div class="fb-comments"
+     data-href="http://jhshi.me/2016/07/08/customize-usrp-n2x0-dsp-rx-chain/index.html"
+     data-numposts="5"
+     data-order-by="reverse_time"
+     data-width="100%"
+    ></div>
+        </article>
+    </section>
+
+        </div>
+        <div class="col-sm-3" id="sidebar">
+            <aside>
+
+<section class="well well-sm">
+    <ul class="list-group list-group-flush">
+        <li class="list-group-item"><h4><i class="fa fa-eye"></i><span class="icon-label">0 Hits</span></h4>
+    <li class="list-group-item"><h4><i class="fa fa-fire fa-lg"></i><span class="icon-label">Popular Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Recent Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/categories/index.html"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Categories</span></h4></a>
+        <ul class="list-group" id="categories">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/os161/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> os161 [27]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/linux/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> linux [24]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/android/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> android [20]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/errors/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> errors [14]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/network/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> network [11]
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/tags/index.html"><h4><i class="fa fa-tags fa-lg"></i><span class="icon-label">Tags</span></h4></a>
+        <ul class="list-group list-inline tagcloud" id="tags">
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/aosp/index.html">
+                    AOSP
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/backup/index.html">
+                    backup
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/beamer/index.html">
+                    beamer
+                </a>
+            </li>
+            <li class="list-group-item tag-7">
+                <a href="http://jhshi.me/blog/tag/blog/index.html">
+                    blog
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/c/index.html">
+                    c
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/gdb/index.html">
+                    gdb
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/hammerhead/index.html">
+                    hammerhead
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/jekyll/index.html">
+                    jekyll
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/mac/index.html">
+                    mac
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ns2/index.html">
+                    ns2
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ota/index.html">
+                    OTA
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/plugin/index.html">
+                    plugin
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/python/index.html">
+                    python
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ruby/index.html">
+                    ruby
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ssh/index.html">
+                    ssh
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/synchronization/index.html">
+                    synchronization
+                </a>
+            </li>
+            <li class="list-group-item tag-1">
+                <a href="http://jhshi.me/blog/tag/syscall/index.html">
+                    syscall
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/travis/index.html">
+                    travis
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ubuntu/index.html">
+                    ubuntu
+                </a>
+            </li>
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/vm/index.html">
+                    vm
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Social</span></h4>
+      <ul class="list-group" id="social">
+        <li class="list-group-item"><a href="https://github.com/jhshi"><i class="fa fa-github-square fa-lg"></i> github</a></li>
+        <li class="list-group-item"><a href="http://stackoverflow.com/users/963538/jinghao-shi"><i class="fa fa-stack-overflow fa-lg"></i> stack-overflow</a></li>
+      </ul>
+    </li>
+
+    <li class="list-group-item"><h4><i class="fa fa-github fa-lg"></i><span class="icon-label">GitHub Repos</span></h4>
+        <div id="gh_repos">
+            <p class="list-group-item">Status updating...</p>
+        </div>
+            <a href="https://github.com/jhshi">@jhshi</a> on GitHub
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-external-link-square fa-lg"></i><span class="icon-label">Links</span></h4>
+      <ul class="list-group" id="links">
+        <li class="list-group-item">
+            <a href="http://blue.cse.buffalo.edu" target="_blank">
+                blue Systems Group
+            </a>
+        </li>
+        <li class="list-group-item">
+            <a href="http://www.buffalo.edu" target="_blank">
+                University at Buffalo
+            </a>
+        </li>
+      </ul>
+    </li>
+    </ul>
+</section>            </aside>
+        </div>
+    </div>
+</div>
+<footer>
+   <div class="container">
+      <hr>
+      <div class="row">
+         <div class="col-xs-10">&copy; 2018 Jinghao Shi
+            &middot;
+            Updated on 2020-04-02
+            &middot; Powered by <a href="https://github.com/jhshi/pelican-bootstrap3" target="_blank">pelican-bootstrap3</a>,
+            <a href="http://docs.getpelican.com/" target="_blank">Pelican</a>,
+            <a href="http://getbootstrap.com" target="_blank">Bootstrap</a>         </div>
+         <div class="col-xs-2"><p class="pull-right"><i class="fa fa-arrow-up"></i> <a href="#">Back to top</a></p></div>
+      </div>
+   </div>
+</footer>
+<script src="http://jhshi.me/theme/js/jquery.min.js"></script>
+
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="http://jhshi.me/theme/js/bootstrap.min.js"></script>
+
+<!-- Enable responsive features in IE8 with Respond.js (https://github.com/scottjehl/Respond) -->
+<script src="http://jhshi.me/theme/js/respond.min.js"></script>
+
+    <!-- GitHub JS -->
+    <script type="text/javascript">
+        $(document).ready(function () {
+            if (!window.jXHR) {
+                var jxhr = document.createElement('script');
+                jxhr.type = 'text/javascript';
+                jxhr.src = 'http://jhshi.me/theme/js/jXHR.js';
+                var s = document.getElementsByTagName('script')[0];
+                s.parentNode.insertBefore(jxhr, s);
+            }
+
+            github.showRepos({
+                user: 'jhshi',
+                count: 5,
+                skip_forks: true,
+                target: '#gh_repos'
+            });
+        });
+    </script>
+    <script src="http://jhshi.me/theme/js/github.js" type="text/javascript"></script>
+    <!-- End GitHub JS Code -->
+    <!-- Google Analytics -->
+    <script type="text/javascript">
+
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-39842003-1']);
+        _gaq.push(['_trackPageview']);
+
+        (function () {
+            var ga = document.createElement('script');
+            ga.type = 'text/javascript';
+            ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+    <!-- End Google Analytics Code -->
+
+        <script type="text/javascript">var addthis_config = {"data_track_addressbar": true};</script>
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5a6b8e0310bbbd35"></script>
+</body>
+</html>

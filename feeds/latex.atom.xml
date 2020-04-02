@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Pearls in Life</title><link href="http://jhshi.me/" rel="alternate"></link><link href="http://jhshi.me/feeds/latex.atom.xml" rel="self"></link><id>http://jhshi.me/</id><updated>2017-03-02T14:13:07-05:00</updated><entry><title>Generating All-In-One LaTex File for Journal Submission</title><link href="http://jhshi.me/2017/03/02/generating-all-in-one-latex-file-for-journal-submission/index.html" rel="alternate"></link><updated>2017-03-02T14:13:07-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2017-03-02:2017/03/02/generating-all-in-one-latex-file-for-journal-submission/index.html</id><summary type="html">&lt;p&gt;Recently I need to submit to a journal that does NOT accept the final PDF but
+requires all LaTex sources so that they can compile the PDF on their own. Given
+that any LaTex projects with reasonable size would have multiple &lt;tt class="docutils literal"&gt;*.tex&lt;/tt&gt;,
+&lt;tt class="docutils literal"&gt;*.bib&lt;/tt&gt; and figure files. It'll be nice to &lt;em&gt;flatten&lt;/em&gt; the LaTex project so that
+we have as few as files to upload. Here is how.&lt;/p&gt;
+
+&lt;div class="section" id="latexpand"&gt;
+&lt;h2&gt;latexpand&lt;/h2&gt;
+&lt;p&gt;There is a &lt;tt class="docutils literal"&gt;latexpand&lt;/tt&gt; &lt;a class="reference external" href="https://www.ctan.org/pkg/latexpand?lang=en"&gt;utility&lt;/a&gt;
+that comes with the TexLive package in Ubuntu. It does almost exactly what we
+need: &lt;em&gt;expand&lt;/em&gt; latex files. I used it as follows:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;latexpand --expand-bbl main.bbl main.tex -o all-in-one.tex
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;The &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--expand-bbl&lt;/span&gt;&lt;/tt&gt; option will replace the &lt;tt class="docutils literal"&gt;\bibliography&lt;/tt&gt; command with a
+list of &lt;tt class="docutils literal"&gt;bibitem&lt;/tt&gt; so that the &lt;tt class="docutils literal"&gt;main.bib&lt;/tt&gt; does not need to be uploaded.&lt;/p&gt;
+&lt;p&gt;The &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;all-in-one.tex&lt;/span&gt;&lt;/tt&gt; will be the ONLY LaTex file we need to upload.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="figures"&gt;
+&lt;h2&gt;Figures&lt;/h2&gt;
+&lt;p&gt;We still need to upload all the included figures. Often times we generate more
+figures than we actually include in the final manuscript. We can get the list of
+actually included figures using this command:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;grep &lt;span class="s2"&gt;&amp;quot;includegraphics&amp;quot;&lt;/span&gt; all-in-one.tex &lt;span class="p"&gt;|&lt;/span&gt; cut -d &lt;span class="se"&gt;\{&lt;/span&gt; -f &lt;span class="m"&gt;2&lt;/span&gt; &lt;span class="p"&gt;|&lt;/span&gt; cut -d &lt;span class="se"&gt;\}&lt;/span&gt; -f 1
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;One caveat is that if all figures are put in a dedicated directory, e.g.,
+&lt;tt class="docutils literal"&gt;./figures&lt;/tt&gt;, you'll have to use Latex's &lt;tt class="docutils literal"&gt;\graphicspath&lt;/tt&gt; command to specify
+the path, and use only the file name in &lt;tt class="docutils literal"&gt;includegraphics&lt;/tt&gt;. In other words,
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;\includegraphics{./figures/abc.pdf}&lt;/span&gt;&lt;/tt&gt; will not work in the &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;all-in-one.tex&lt;/span&gt;&lt;/tt&gt;
+unless you create that directory structure in the submission site. So instead,
+do this:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3
+4
+5
+6
+7&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;\usepackage&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;graphicx&lt;span class="nb"&gt;}&lt;/span&gt;
+&lt;span class="c"&gt;% note the path must ends with &amp;quot;/&amp;quot;&lt;/span&gt;
+&lt;span class="k"&gt;\graphicspath&lt;/span&gt;&lt;span class="nb"&gt;{{&lt;/span&gt;./figures/&lt;span class="nb"&gt;}}&lt;/span&gt;
+
+&lt;span class="k"&gt;\begin&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;figure&lt;span class="nb"&gt;}&lt;/span&gt;
+    &lt;span class="k"&gt;\includegraphics&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;abc.pdf&lt;span class="nb"&gt;}&lt;/span&gt;
+&lt;span class="k"&gt;\end&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;figure&lt;span class="nb"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;With the above organization, this Makefile snippet will generate the
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;all-in-one.tex&lt;/span&gt;&lt;/tt&gt; file and also copy all included figures into a separate
+directory (&lt;tt class="docutils literal"&gt;submitted&lt;/tt&gt;).&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3
+4
+5&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nf"&gt;submit&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;
+    @mkdir -p submitted
+    @latexpand --expand-bbl main.bbl main.tex -o submitted/all-in-one.tex
+    @&lt;span class="k"&gt;$(&lt;/span&gt;foreach fig, &lt;span class="k"&gt;$(&lt;/span&gt;shell grep &lt;span class="s2"&gt;&amp;quot;includegraphics&amp;quot;&lt;/span&gt; submitted/all-in-one.tex  &lt;span class="p"&gt;|&lt;/span&gt; cut -d &lt;span class="se"&gt;\{&lt;/span&gt; -f &lt;span class="m"&gt;2&lt;/span&gt; &lt;span class="p"&gt;|&lt;/span&gt; cut -d &lt;span class="se"&gt;\}&lt;/span&gt; -f 1&lt;span class="k"&gt;)&lt;/span&gt;, /bin/cp -rfv ./figures/&lt;span class="k"&gt;$(&lt;/span&gt;fig&lt;span class="k"&gt;)&lt;/span&gt; submitted/&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;
+&lt;span class="c"&gt;    # note the final semi-colon in the last command&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;The files in &lt;tt class="docutils literal"&gt;submitted&lt;/tt&gt; directory is all the files you need to upload.&lt;/p&gt;
+&lt;/div&gt;
+</summary><category term="latexpand"></category></entry><entry><title>Remove the Figure Prefix of Caption in Beamer</title><link href="http://jhshi.me/2013/12/02/remove-the-figure-prefix-of-caption-in-beamer/index.html" rel="alternate"></link><updated>2013-12-02T21:52:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-12-02:2013/12/02/remove-the-figure-prefix-of-caption-in-beamer/index.html</id><summary type="html">&lt;p&gt;Sometimes it's annoying to have a "Figure" prefix when you add caption to a
+figure in beamer. Here is a way of how to eliminate that.&lt;/p&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;\usepackage&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;caption&lt;span class="nb"&gt;}&lt;/span&gt;
+&lt;span class="k"&gt;\captionsetup&lt;/span&gt;&lt;span class="na"&gt;[figure]&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;labelformat=empty&lt;span class="nb"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Before
+&lt;img src="/images/caption_before.png"&gt;&lt;/p&gt;
+&lt;p&gt;After
+&lt;img src="/images/caption_after.png"&gt;&lt;/p&gt;</summary><category term="beamer"></category><category term="caption"></category></entry><entry><title>Place Logo Properly in Beamer</title><link href="http://jhshi.me/2013/12/02/place-logo-properly-in-beamer/index.html" rel="alternate"></link><updated>2013-12-02T21:17:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-12-02:2013/12/02/place-logo-properly-in-beamer/index.html</id><summary type="html">&lt;p&gt;It's stylish to place an low-profile yet charming logo in some corner of your
+slides. Here we use the &lt;code&gt;pgf&lt;/code&gt; package to accomplish this.&lt;/p&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;\usepackage&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;pgf&lt;span class="nb"&gt;}&lt;/span&gt;  
+&lt;span class="k"&gt;\logo&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;&lt;span class="k"&gt;\pgfputat&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;&lt;span class="k"&gt;\pgfxy&lt;/span&gt;(9.45,1.5)&lt;span class="nb"&gt;}{&lt;/span&gt;&lt;span class="k"&gt;\pgfbox&lt;/span&gt;&lt;span class="na"&gt;[center,base]&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;&lt;span class="k"&gt;\includegraphics&lt;/span&gt;&lt;span class="na"&gt;[width=1.7cm]&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;logo.png&lt;span class="nb"&gt;}}}}&lt;/span&gt;  
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;You probably need to tweak the coordinates a little bit to fit the logo to your
+slides.&lt;/p&gt;
+&lt;p&gt;Also, to hide logo and also page number on title page, you'll need to this.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;\begin&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;document&lt;span class="nb"&gt;}&lt;/span&gt;
+&lt;span class="nb"&gt;{&lt;/span&gt;
+&lt;span class="c"&gt;% no page #, no logo on title page&lt;/span&gt;
+&lt;span class="k"&gt;\setbeamertemplate&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;footline&lt;span class="nb"&gt;}{}&lt;/span&gt;
+&lt;span class="k"&gt;\setbeamertemplate&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;logo&lt;span class="nb"&gt;}{}&lt;/span&gt;
+&lt;span class="k"&gt;\begin&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;frame&lt;span class="nb"&gt;}&lt;/span&gt;
+  &lt;span class="k"&gt;\titlepage&lt;/span&gt;
+&lt;span class="k"&gt;\end&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;frame&lt;span class="nb"&gt;}&lt;/span&gt;
+&lt;span class="nb"&gt;}&lt;/span&gt;
+
+&lt;span class="c"&gt;% other frames&lt;/span&gt;
+&lt;span class="k"&gt;\end&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;document&lt;span class="nb"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here is how they look like.&lt;/p&gt;
+&lt;p&gt;&lt;img src="/images/title_page.png"&gt;
+&lt;img src="/images/first_page.png"&gt;&lt;/p&gt;</summary><category term="logo"></category><category term="beamer"></category><category term="pgf"></category></entry><entry><title>Remove the Navigation Bar of Beamer</title><link href="http://jhshi.me/2013/12/02/remove-the-navigation-bar-of-beamer/index.html" rel="alternate"></link><updated>2013-12-02T21:11:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-12-02:2013/12/02/remove-the-navigation-bar-of-beamer/index.html</id><summary type="html">&lt;p&gt;Honestly, I never clicked the navigation bar in beamer slides, and I really
+wondered whether anyone has used it or not. I suspect that most people keep it just
+to show the pride that he's using beamer...&lt;/p&gt;
+
+
+&lt;p&gt;Anyways, the navigation bar can be annoying sometimes, especially when you have
+some long foot notes that overlap it. Put this line in the preamble to remove
+the navigation bar.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;\beamertemplatenavigationsymbolsempty&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="beamer"></category><category term="navigation"></category></entry><entry><title>Specify graphics path in Latex</title><link href="http://jhshi.me/2012/06/22/specify-graphicspath-in-latex/index.html" rel="alternate"></link><updated>2012-06-22T13:34:33-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-06-22:2012/06/22/specify-graphicspath-in-latex/index.html</id><summary type="html">&lt;p&gt;We can use the &lt;code&gt;graphicx&lt;/code&gt; package together with the &lt;code&gt;graphicspath&lt;/code&gt; command to
+specify the looking up path for pictures. A typical structure may look like
+this:&lt;/p&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;\usepackage&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;graphicx&lt;span class="nb"&gt;}&lt;/span&gt;
+&lt;span class="c"&gt;% Must use this command BEFORE you begin document!&lt;/span&gt;
+&lt;span class="k"&gt;\graphicspath&lt;/span&gt;&lt;span class="nb"&gt;{{&lt;/span&gt;pic&lt;span class="nb"&gt;_&lt;/span&gt;path1/&lt;span class="nb"&gt;}{&lt;/span&gt;pic&lt;span class="nb"&gt;_&lt;/span&gt;path2&lt;span class="nb"&gt;}}&lt;/span&gt;
+&lt;span class="k"&gt;\begin&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;document&lt;span class="nb"&gt;}&lt;/span&gt;
+&lt;span class="c"&gt;% some content&lt;/span&gt;
+&lt;span class="k"&gt;\end&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;document&lt;span class="nb"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;As you can see, the syntax of &lt;code&gt;graphicspath&lt;/code&gt; command is very simple. You just
+enclose your picture path, either relative to current work path, or absolute
+path, in a pair of curly braces. Note that you must place this command before
+you begin document otherwise it will take no effect.&lt;/p&gt;
+&lt;p&gt;Please refer to &lt;a href="http://www.tex.ac.uk/cgi-bin/texfaq2html?label=graphicspath"&gt;this page&lt;/a&gt; for more details about &lt;code&gt;graphicspath&lt;/code&gt; command.&lt;/p&gt;</summary><category term="graphicx"></category><category term="graphicspath"></category></entry><entry><title>Directly install sty files using yum</title><link href="http://jhshi.me/2012/02/11/directly-install-sty-files-using-yum/index.html" rel="alternate"></link><updated>2012-02-11T22:10:06-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-02-11:2012/02/11/directly-install-sty-files-using-yum/index.html</id><summary type="html">&lt;p&gt;Use the following command to install sty files, say &lt;code&gt;multirow.sty&lt;/code&gt;, using yum:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="p"&gt;$&lt;/span&gt;&lt;span class="nv"&gt;sudo&lt;/span&gt;&lt;span class="x"&gt; yum -y install &amp;#39;tex(multirow.sty)&amp;#39;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="fedora"></category><category term="yum sty"></category></entry><entry><title>Center the Caption of Figure or Table</title><link href="http://jhshi.me/2011/11/18/center-the-caption-of-figure-or-table/index.html" rel="alternate"></link><updated>2011-11-18T15:30:03-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2011-11-18:2011/11/18/center-the-caption-of-figure-or-table/index.html</id><summary type="html">&lt;p&gt;In latex, the caption of figure or table is aligned left by default. Sometimes,
+it's not that beautiful, especially when your article is two column.&lt;/p&gt;
+
+
+&lt;p&gt;To fix this, use the &lt;code&gt;caption&lt;/code&gt; package with &lt;code&gt;center&lt;/code&gt; as the option.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;\usepackage[center]{caption}
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;If you like, you can also substitute &lt;code&gt;center&lt;/code&gt; with &lt;code&gt;left&lt;/code&gt; or &lt;code&gt;right&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;Here is a &lt;a href="http://ctan.math.utah.edu/ctan/tex-archive/macros/latex/contrib/caption/caption-eng.pdf"&gt;detailed manual&lt;/a&gt; of &lt;code&gt;caption&lt;/code&gt; package.&lt;/p&gt;</summary><category term="caption"></category><category term="table"></category><category term="figure"></category></entry><entry><title>Figure Over Two Columns in Latex</title><link href="http://jhshi.me/2011/11/17/figure-over-two-columns-in-latex/index.html" rel="alternate"></link><updated>2011-11-17T21:26:21-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2011-11-17:2011/11/17/figure-over-two-columns-in-latex/index.html</id><summary type="html">&lt;p&gt;You may often find a table or figure is too big to fit into one column when
+your article has two columns. Use this to insert a figure (same with table) and
+it will save you:&lt;/p&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;\begin&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;figure*&lt;span class="nb"&gt;}&lt;/span&gt;
+&lt;span class="c"&gt;% figure here&lt;/span&gt;
+&lt;span class="k"&gt;\end&lt;/span&gt;&lt;span class="nb"&gt;{&lt;/span&gt;figure*&lt;span class="nb"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Note the star (&lt;code&gt;*&lt;/code&gt;) appended after figure? That's the trick.&lt;/p&gt;</summary><category term="figure"></category></entry><entry><title>Set sty file path of Latex in Linux</title><link href="http://jhshi.me/2011/11/13/set-sty-file-path-of-latex-in-fedora-linux/index.html" rel="alternate"></link><updated>2011-11-13T15:19:33-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2011-11-13:2011/11/13/set-sty-file-path-of-latex-in-fedora-linux/index.html</id><summary type="html">&lt;p&gt;From time to time, you may want to compose your own sty files to eliminate
+long header in your tex file. But it's boring to put you sty file in the same
+directory of your tex file every time since you really want your sty file to be
+common, i.e., can be accessed everywhere in your system.&lt;/p&gt;
+
+
+&lt;p&gt;One way to achieve this is put your sty file in the system latex directory
+(e.g. &lt;code&gt;/usr/share/texlive/texmf-dist/tex/latex&lt;/code&gt;), and then use &lt;code&gt;texhash&lt;/code&gt; to
+refresh the database.&lt;/p&gt;
+&lt;p&gt;But if you would prefer not touch the system directory and want to put the sty
+file somewhere that easy to access and backup, that will not be a very good
+practice.&lt;/p&gt;
+&lt;p&gt;So you can just tell latex where to find its sty files, i.e.,
+set the system sty file looking up path. Do this by editing
+&lt;code&gt;/usr/share/texlive/texmf/web2c/texmf.cnf&lt;/code&gt;. Find the variable called
+&lt;code&gt;TEXINPUTS.tex&lt;/code&gt;, add your own sty path there. Don't forget to separate the
+directory using ";" and append "//" to the last directory.&lt;/p&gt;
+&lt;p&gt;When you finish, execute &lt;code&gt;texhash&lt;/code&gt; in a terminal. Then you can just feel free
+to put your sty files in the directory you just specified, latex will now know
+where to find them.&lt;/p&gt;
+&lt;p&gt;BTW, the comments in &lt;code&gt;texmf.cnf&lt;/code&gt; are very useful if you want to do any other tricks.&lt;/p&gt;</summary><category term="sty"></category><category term="path"></category></entry></feed>

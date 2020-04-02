@@ -1,0 +1,1568 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Pearls in Life</title><link href="http://jhshi.me/" rel="alternate"></link><link href="http://jhshi.me/feeds/android.atom.xml" rel="self"></link><id>http://jhshi.me/</id><updated>2016-08-06T14:47:52-04:00</updated><entry><title>How to Properly Mirror CyanogenMod</title><link href="http://jhshi.me/2016/08/06/how-to-properly-mirror-cyanogenmod/index.html" rel="alternate"></link><updated>2016-08-06T14:47:52-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-08-06:2016/08/06/how-to-properly-mirror-cyanogenmod/index.html</id><summary type="html">&lt;p&gt;Recently I needed to create a mirror of CyanogenMod to facilities further
+development of our smartphone testbed PhoneLab. The goal is to have a working
+mirror that we can stage any experimental changes on our own server, since there
+is no plan to publish such changes to upstream (at least for now). Quite
+surprisingly, I found this to be a non-trivial task. Here is a log of I walked
+around the minefield.&lt;/p&gt;
+
+&lt;div class="section" id="background-and-goal"&gt;
+&lt;h2&gt;Background and Goal&lt;/h2&gt;
+&lt;p&gt;We are using Gerrit as a Git server. It's a decent Git host solution has some
+nice access control features. We have built a set of tools that can
+automatically merge a given set of experimental branches to our baseline branch,
+and generates incremental OTA updates that we can push to our participants.&lt;/p&gt;
+&lt;p&gt;Starting from summer 2016, we are using the Nexus
+6 device (code name &lt;tt class="docutils literal"&gt;shamu&lt;/tt&gt;).  We have been using the stock AOSP mirrors since
+the very beginning. But this year we decided to give CyanogenMod a try
+(particularly because it is a huge pain to even get a working ROM for Nexus 6
+using stock AOSP). But we still want the automated process of merging
+experimental changes and do OTA updates.&lt;/p&gt;
+&lt;p&gt;The goals of our mirror are:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;A simple &lt;tt class="docutils literal"&gt;repo init/repo sync&lt;/tt&gt; using our manifest should give you a working
+code-base, meaning you can build a working ROM for Nexus 6 with it. No any
+special tweaks needed on the experimenter's side.&lt;/li&gt;
+&lt;li&gt;Each repo should have a common baseline branch (called
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;phonelab/cm-13.0/develop&lt;/span&gt;&lt;/tt&gt; that somebody can fork from and start making
+experimental changes.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class="section" id="the-overall-picture"&gt;
+&lt;h2&gt;The Overall Picture&lt;/h2&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;Produce a local clone that are suitable to server as a mirror&lt;/li&gt;
+&lt;li&gt;Push this local clone to our Gerrit server&lt;/li&gt;
+&lt;li&gt;Compose a proper repo manifest to point things to the right place.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class="section" id="get-a-working-mirror-repo"&gt;
+&lt;h2&gt;Get a Working Mirror Repo&lt;/h2&gt;
+&lt;p&gt;We have chosen the latest stable CyanogenMod release for Nexus 6
+(&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;stable/cm-13.0-ZNH2K&lt;/span&gt;&lt;/tt&gt;). The first trap is that: the default manifest does
+not work if you want to create a mirror. In particular, CM has used shallow
+clones (&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;clone-depth=&amp;quot;1&amp;quot;&lt;/span&gt;&lt;/tt&gt;) for certain repos. This is OK if you do not intent
+to ever push the repo, but most likely Gerrit will complain about this and
+eventually claim that these repos are corrupted because the history is not
+complete.&lt;/p&gt;
+&lt;p&gt;So the first step is to fork the CyanogenMod manifest (mine is here:
+&lt;a class="reference external" href="https://github.com/jhshi/android"&gt;https://github.com/jhshi/android&lt;/a&gt;, check the &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;stable/cm-13.0-ZNH2K&lt;/span&gt;&lt;/tt&gt; branch) and
+remove any shallow clones. This can be done via this VIM command:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;%s:&lt;span class="sr"&gt;/clone-depth=&amp;quot;1&amp;quot; /&lt;/span&gt;/&lt;span class="k"&gt;g&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Also, since we are using a different manfiest repos, we also set the default
+fetch URL to be an absolute path:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;remote name&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;github&amp;quot;&lt;/span&gt;
+    fetch&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;https://github.com/&amp;quot;&lt;/span&gt;
+    review&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;review.cyanogenmod.org&amp;quot;&lt;/span&gt; /&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Now, do a &lt;tt class="docutils literal"&gt;repo init&lt;/tt&gt; using this manifest.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;repo init -u https://github.com/jhshi/android -b stable/cm-13.0-ZNH2K
+&lt;span class="nv"&gt;$ &lt;/span&gt;repo sync
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;This will download all repositories properly. After this finished, we need to
+also grab the repos for our specific device.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;&lt;span class="nb"&gt;source &lt;/span&gt;build/envsetup.sh
+&lt;span class="nv"&gt;$ &lt;/span&gt;breakfast shamu
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;This will grab two extra repos:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;tt class="docutils literal"&gt;device/moto/shamu&lt;/tt&gt;&lt;/li&gt;
+&lt;li&gt;&lt;tt class="docutils literal"&gt;kernel/moto/shamu&lt;/tt&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The next step is to create a common baseline branch based on the current tip.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;repo forall -ec &lt;span class="s1"&gt;&amp;#39;echo $REPO_PATH; git checkout -b phonelab/cm-13.0/develop&amp;#39;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Then, we create the corresponding repositories on the Gerrit server. Here is the
+second trap. In the CM manifest, there are several these projects:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3
+4
+5
+6
+7
+8&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nt"&gt;&amp;lt;project&lt;/span&gt; &lt;span class="na"&gt;path=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;hardware/qcom/audio-caf/apq8084&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;name=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;CyanogenMod/android_hardware_qcom_audio&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;groups=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;qcom,qcom_audio&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;revision=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;stable/cm-13.0-caf-8084-ZNH2K&amp;quot;&lt;/span&gt; &lt;span class="nt"&gt;/&amp;gt;&lt;/span&gt;
+&lt;span class="nt"&gt;&amp;lt;project&lt;/span&gt; &lt;span class="na"&gt;path=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;hardware/qcom/audio-caf/msm8916&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;name=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;CyanogenMod/android_hardware_qcom_audio&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;groups=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;qcom,qcom_audio&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;revision=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;stable/cm-13.0-caf-8916-ZNH2K&amp;quot;&lt;/span&gt; &lt;span class="nt"&gt;/&amp;gt;&lt;/span&gt;
+&lt;span class="nt"&gt;&amp;lt;project&lt;/span&gt; &lt;span class="na"&gt;path=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;hardware/qcom/audio-caf/msm8937&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;name=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;CyanogenMod/android_hardware_qcom_audio&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;groups=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;qcom,qcom_audio&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;revision=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;stable/cm-13.0-caf-8937-ZNH2K&amp;quot;&lt;/span&gt; &lt;span class="nt"&gt;/&amp;gt;&lt;/span&gt;
+&lt;span class="nt"&gt;&amp;lt;project&lt;/span&gt; &lt;span class="na"&gt;path=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;hardware/qcom/audio-caf/msm8952&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;name=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;CyanogenMod/android_hardware_qcom_audio&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;groups=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;qcom,qcom_audio&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;revision=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;stable/cm-13.0-caf-8952-ZNH2K&amp;quot;&lt;/span&gt; &lt;span class="nt"&gt;/&amp;gt;&lt;/span&gt;
+&lt;span class="nt"&gt;&amp;lt;project&lt;/span&gt; &lt;span class="na"&gt;path=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;hardware/qcom/audio-caf/msm8960&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;name=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;CyanogenMod/android_hardware_qcom_audio&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;groups=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;qcom,qcom_audio&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;revision=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;stable/cm-13.0-caf-8960-ZNH2K&amp;quot;&lt;/span&gt; &lt;span class="nt"&gt;/&amp;gt;&lt;/span&gt;
+&lt;span class="nt"&gt;&amp;lt;project&lt;/span&gt; &lt;span class="na"&gt;path=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;hardware/qcom/audio-caf/msm8974&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;name=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;CyanogenMod/android_hardware_qcom_audio&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;groups=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;qcom,qcom_audio&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;revision=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;stable/cm-13.0-caf-8974-ZNH2K&amp;quot;&lt;/span&gt; &lt;span class="nt"&gt;/&amp;gt;&lt;/span&gt;
+&lt;span class="nt"&gt;&amp;lt;project&lt;/span&gt; &lt;span class="na"&gt;path=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;hardware/qcom/audio-caf/msm8994&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;name=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;CyanogenMod/android_hardware_qcom_audio&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;groups=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;qcom,qcom_audio&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;revision=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;stable/cm-13.0-caf-8994-ZNH2K&amp;quot;&lt;/span&gt; &lt;span class="nt"&gt;/&amp;gt;&lt;/span&gt;
+&lt;span class="nt"&gt;&amp;lt;project&lt;/span&gt; &lt;span class="na"&gt;path=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;hardware/qcom/audio-caf/msm8996&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;name=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;CyanogenMod/android_hardware_qcom_audio&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;groups=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;qcom,qcom_audio&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;revision=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;stable/cm-13.0-caf-8996-ZNH2K&amp;quot;&lt;/span&gt; &lt;span class="nt"&gt;/&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;As you can see, they are in fact from the same remove repositories, just with
+different revision name, and they are expected in different folders. Since we
+want a common branch name for each repository, we have to create multiple
+repositories on our server, so that we can let the same name
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;phonelab/cm-13.0/develop&lt;/span&gt;&lt;/tt&gt; to point to different commits. The key point here
+is: &lt;tt class="docutils literal"&gt;name&lt;/tt&gt; is no longer a unique key to identify a project, but &lt;tt class="docutils literal"&gt;path&lt;/tt&gt; are.
+So we will name the repos by their &lt;tt class="docutils literal"&gt;path&lt;/tt&gt;, not by &lt;tt class="docutils literal"&gt;name&lt;/tt&gt;.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;repo forall -ec &lt;span class="s1"&gt;&amp;#39;echo $REPO_PATH &amp;amp;&amp;amp; ssh -p 29418 user@server gerrit create-project cm-shamu/$REPO_PATH&amp;#39;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Note that I am using &lt;tt class="docutils literal"&gt;$REPO_PATH&lt;/tt&gt;, which is the local filesystem folder name,
+rather than &lt;tt class="docutils literal"&gt;$REPO_NAME&lt;/tt&gt;. Also, all such repos are under the &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;cm-shamu/&lt;/span&gt;&lt;/tt&gt; name
+space on our server.&lt;/p&gt;
+&lt;p&gt;Next, upload all those repos:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;repo forall -ec &lt;span class="s1"&gt;&amp;#39;echo $REPO_PATH &amp;amp;&amp;amp; git push user@server:29418/cm-shamu/$REPO_PATH refs/heads/*&amp;#39;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;This shall take a while.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="get-a-working-manifest"&gt;
+&lt;h2&gt;Get a Working Manifest&lt;/h2&gt;
+&lt;p&gt;Now all repos are in our Gerrit server, we need to compose a proper manifest for
+&lt;tt class="docutils literal"&gt;repo init&lt;/tt&gt;.&lt;/p&gt;
+&lt;p&gt;Start with the default manifest at &lt;a class="reference external" href="https://github.com/CyanogenMod/android"&gt;https://github.com/CyanogenMod/android&lt;/a&gt;. We
+made these changes:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;There should be only one remote called &lt;tt class="docutils literal"&gt;phonelab&lt;/tt&gt;, which points to our
+Gerrit server.&lt;/li&gt;
+&lt;li&gt;The default revision of every project should be &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;phonelab/cm-13.0/develop&lt;/span&gt;&lt;/tt&gt;.&lt;/li&gt;
+&lt;li&gt;Remove any individual &lt;tt class="docutils literal"&gt;revision&lt;/tt&gt; or &lt;tt class="docutils literal"&gt;remote&lt;/tt&gt; project attributes. This can
+be done by this VIM command: &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;:%s/revision=&amp;quot;.\{-}&amp;quot;&lt;/span&gt; //g&lt;/tt&gt; and
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;:%s/remote=&amp;quot;.\{-}&amp;quot;&lt;/span&gt; //g&lt;/tt&gt;, where &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;.\{-}&lt;/span&gt;&lt;/tt&gt; is VIM's non-greedy regex syntax.&lt;/li&gt;
+&lt;li&gt;Remove all &lt;tt class="docutils literal"&gt;name&lt;/tt&gt; attribute, since the name will be the path:
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;:%s/name=&amp;quot;.\{-}&amp;quot;&lt;/span&gt; //g&lt;/tt&gt;.&lt;/li&gt;
+&lt;li&gt;Change &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;path=..&lt;/span&gt;&lt;/tt&gt; to be &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;name=..&lt;/span&gt;&lt;/tt&gt;: &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;:%s/path=/name=/g&lt;/span&gt;&lt;/tt&gt;.&lt;/li&gt;
+&lt;li&gt;Change default fetch URL to be &lt;tt class="docutils literal"&gt;.&lt;/tt&gt; since the manifest and all other repos
+are now in the same level.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;I ended with this manifest:
+&lt;a class="reference external" href="https://github.com/jhshi/cm.manifest.shamu/blob/phonelab/cm-13.0/develop/default.xml"&gt;https://github.com/jhshi/cm.manifest.shamu/blob/phonelab/cm-13.0/develop/default.xml&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Create a Gerrit project with the path &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;cm-shamu/manifest.git&lt;/span&gt;&lt;/tt&gt; and push the
+modified manifest to it.&lt;/p&gt;
+&lt;p&gt;At this point, anybody should be able to do a single &lt;tt class="docutils literal"&gt;repo init&lt;/tt&gt; using the
+above manifest, and all repos will be pulled from our Gerrit server.&lt;/p&gt;
+&lt;/div&gt;
+</summary><category term="CyanogenMod"></category><category term="mirror"></category><category term="aosp"></category><category term="repo"></category><category term="manifest"></category></entry><entry><title>Build AOSP 5.1.1 for Nexus 5</title><link href="http://jhshi.me/2015/09/23/build-aosp-5-dot-1-1-for-nexus-5/index.html" rel="alternate"></link><updated>2015-09-23T17:47:36-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2015-09-23:2015/09/23/build-aosp-5-dot-1-1-for-nexus-5/index.html</id><summary type="html">&lt;p&gt;I this post I will talk about the &lt;em&gt;extra&lt;/em&gt; steps to build a &lt;em&gt;usable&lt;/em&gt; Lollipop
+(5.1.1) ROM for LG Nexus 5 (hammerhead) device. Most of the functionalities work
+out of box (bluetooh, Wifi tethering, camera, etc), but there are some
+show-stoppers.&lt;/p&gt;
+
+
+&lt;h1&gt;LGE Vendor Blobs&lt;/h1&gt;
+&lt;p&gt;For some unknown reason, the &lt;a href="https://developers.google.com/android/nexus/drivers"&gt;official LGE vendor blobs&lt;/a&gt; does not work out of the
+box, at least for Sprint phones. More specifically:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;No cellular data connection.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;No Sprint hidden menu app.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Can not update cellular profile and PRL. (Settings-&amp;gt;More-&amp;gt;Cellular
+     Networks-&amp;gt;Carrier Settings)&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;I had this issue for KitKat before. Please refer to my &lt;a href="/2014/06/27/fix-data-connection-for-nexus-5-hammerhead-on-android-4-dot-4-4-kitkat/"&gt;previous post&lt;/a&gt; on
+how I resolved it last time. Long story short, I repeated the steps there and
+come up with a &lt;a href="https://github.com/jhshi/aosp.vendor_lge_hammerhead"&gt;LGE vendor blob repo&lt;/a&gt; that fixes the problems
+mentioned above.&lt;/p&gt;
+&lt;p&gt;Just clone the repo, put it in &lt;code&gt;/vendor/lge/&lt;/code&gt; directory in your AOSP root, and
+check out the &lt;code&gt;for_android-5.1.1_r3&lt;/code&gt; tag.&lt;/p&gt;
+&lt;p&gt;Apparently the repo was built specifically for &lt;code&gt;android-5.1.1_r3&lt;/code&gt; tag from AOSP, but
+they should work for other 5.1.1 revisions as well. If not, just follow the
+steps in my &lt;a href="/2014/06/27/fix-data-connection-for-nexus-5-hammerhead-on-android-4-dot-4-4-kitkat/"&gt;previous post&lt;/a&gt; to update the binaries.&lt;/p&gt;
+&lt;h1&gt;Google Apps&lt;/h1&gt;
+&lt;p&gt;By default, AOSP does no contain any Google apps and services, there are many
+resources online. I put up a version in &lt;a href="https://github.com/jhshi/aosp.vendor_google_gapps"&gt;this repo&lt;/a&gt; which contains pretty
+much most of the major Google apps and services.&lt;/p&gt;
+&lt;p&gt;A special note: do not attempt to push too many Gapps, otherwise you could
+easily exceed the 1GB limit on system partition size!&lt;/p&gt;
+&lt;h1&gt;Fused Location Provider&lt;/h1&gt;
+&lt;p&gt;Fused location provider let your phone get more accurate location much faster.
+It is provided through Google services so it is not enabled by default in AOSP.&lt;/p&gt;
+&lt;p&gt;This patch enables fused location service (in &lt;code&gt;device/lge/hammerhead&lt;/code&gt;).&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="gh"&gt;diff --git a/overlay/frameworks/base/core/res/res/values/config.xml b/overlay/frameworks/base/core/res/res/values/config.xml&lt;/span&gt;
+&lt;span class="gh"&gt;index 8caef0c..a807ddc 100644&lt;/span&gt;
+&lt;span class="gd"&gt;--- a/overlay/frameworks/base/core/res/res/values/config.xml&lt;/span&gt;
+&lt;span class="gi"&gt;+++ b/overlay/frameworks/base/core/res/res/values/config.xml&lt;/span&gt;
+&lt;span class="gu"&gt;@@ -287,4 +287,19 @@&lt;/span&gt;
+         &amp;lt;item&amp;gt;hsupa:4094,87380,704512,4096,16384,110208&amp;lt;/item&amp;gt;
+     &amp;lt;/string-array&amp;gt;
+
+&lt;span class="gi"&gt;+    &amp;lt;!-- Enable overlay for all location components. --&amp;gt;&lt;/span&gt;
+&lt;span class="gi"&gt;+    &amp;lt;bool name=&amp;quot;config_enableNetworkLocationOverlay&amp;quot; translatable=&amp;quot;false&amp;quot;&amp;gt;true&amp;lt;/bool&amp;gt;&lt;/span&gt;
+&lt;span class="gi"&gt;+    &amp;lt;bool name=&amp;quot;config_enableFusedLocationOverlay&amp;quot; translatable=&amp;quot;false&amp;quot;&amp;gt;true&amp;lt;/bool&amp;gt;&lt;/span&gt;
+&lt;span class="gi"&gt;+    &amp;lt;bool name=&amp;quot;config_enableGeocoderOverlay&amp;quot; translatable=&amp;quot;false&amp;quot;&amp;gt;true&amp;lt;/bool&amp;gt;&lt;/span&gt;
+&lt;span class="gi"&gt;+    &amp;lt;bool name=&amp;quot;config_enableGeofenceOverlay&amp;quot; translatable=&amp;quot;false&amp;quot;&amp;gt;true&amp;lt;/bool&amp;gt;&lt;/span&gt;
+&lt;span class="gi"&gt;+&lt;/span&gt;
+&lt;span class="gi"&gt;+    &amp;lt;!--&lt;/span&gt;
+&lt;span class="gi"&gt;+      Sets the package names whose certificates should be used to&lt;/span&gt;
+&lt;span class="gi"&gt;+      verify location providers are allowed to be loaded.&lt;/span&gt;
+&lt;span class="gi"&gt;+    --&amp;gt;&lt;/span&gt;
+&lt;span class="gi"&gt;+    &amp;lt;string-array name=&amp;quot;config_locationProviderPackageNames&amp;quot; translatable=&amp;quot;false&amp;quot;&amp;gt;&lt;/span&gt;
+&lt;span class="gi"&gt;+      &amp;lt;item&amp;gt;com.google.android.gms&amp;lt;/item&amp;gt;&lt;/span&gt;
+&lt;span class="gi"&gt;+      &amp;lt;item&amp;gt;com.android.location.fused&amp;lt;/item&amp;gt;&lt;/span&gt;
+&lt;span class="gi"&gt;+    &amp;lt;/string-array&amp;gt;&lt;/span&gt;
+ &amp;lt;/resources&amp;gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h1&gt;Build Kernel In-Tree&lt;/h1&gt;
+&lt;p&gt;This is optional, but is a must if you want to do kernel development. Please
+refer to my &lt;a href="/2014/06/30/build-kernel-in-tree-with-aosp-for-nexus-5-hammerhead/"&gt;previous post&lt;/a&gt; on how to integrate the kernel source into AOSP so
+that it gets built together with the rest of AOSP.&lt;/p&gt;</summary><category term="aosp"></category><category term="lollipop"></category><category term="hammerhead"></category><category term="rom"></category></entry><entry><title>Bypass Android Lockscreen PIN Code Using Recovery and ADB</title><link href="http://jhshi.me/2015/06/01/bypass-android-lockscreen-pin-code-using-recovery-and-adb/index.html" rel="alternate"></link><updated>2015-06-01T16:38:16-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2015-06-01:2015/06/01/bypass-android-lockscreen-pin-code-using-recovery-and-adb/index.html</id><summary type="html">&lt;p&gt;One of the PhoneLab participants accidentally forgot the PIN code for his
+phone, thus can not access the phone at all. There are tremendous tutorials online
+on how to solve this. This is what I tested and worked.&lt;/p&gt;
+
+
+&lt;p&gt;Since PhoneLab devices are flashed with Clockworkmod recovery, I reboot the
+phone (Nexus 5) into recovery mode, mount &lt;code&gt;/system&lt;/code&gt; and &lt;code&gt;/data&lt;/code&gt; partitions, &lt;code&gt;adb
+shell&lt;/code&gt; into the phone, and delete these two files: &lt;code&gt;/data/system/password.key&lt;/code&gt;
+and &lt;code&gt;/data/system/gesture.key&lt;/code&gt;. Then the problem was fixed: no lock screen after
+powering on the phone.&lt;/p&gt;
+&lt;p&gt;These are two methods that I tried yet &lt;strong&gt;failed&lt;/strong&gt;. Both have something to do
+with the &lt;code&gt;settings.db&lt;/code&gt; file.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;adb shell
+&lt;span class="nb"&gt;cd&lt;/span&gt; /data/data/com.android.providers.settings/databases
+sqlite3 settings.db
+update system &lt;span class="nb"&gt;set &lt;/span&gt;&lt;span class="nv"&gt;value&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;0&lt;/span&gt; where &lt;span class="nv"&gt;name&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;lock_pattern_autolock&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+update system &lt;span class="nb"&gt;set &lt;/span&gt;&lt;span class="nv"&gt;value&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;0&lt;/span&gt; where &lt;span class="nv"&gt;name&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;lockscreen.lockedoutpermanently&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+.quit
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;And this one (from &lt;a href="http://forum.xda-developers.com/showthread.php?t=1409304"&gt;xda-developers forum&lt;/a&gt;):&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;adb shell
+sqlite3 /data/data/com.android.providers.settings/databases/settings.db
+sqlite&amp;gt; update secure &lt;span class="nb"&gt;set &lt;/span&gt;&lt;span class="nv"&gt;value&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;65536&lt;/span&gt; where &lt;span class="nv"&gt;name&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;lockscreen.password_type&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+sqlite&amp;gt; .exit
+&lt;span class="c"&gt;# exit&lt;/span&gt;
+adb reboot
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="PIN"></category><category term="recovery"></category><category term="adb"></category></entry><entry><title>Benchmark Android File System Using IOzone</title><link href="http://jhshi.me/2014/12/31/benchmarking-android-file-system-using-iozone/index.html" rel="alternate"></link><updated>2014-12-31T12:21:17-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-12-31:2014/12/31/benchmarking-android-file-system-using-iozone/index.html</id><summary type="html">&lt;p&gt;&lt;a href="http://www.iozone.org/"&gt;IOzone&lt;/a&gt; is a famous file system benchmark tool in *nix world. In this
+post, I'll show you how to port it to Android and how to use it to benchmark
+both flash and Ramdisk's performance.&lt;/p&gt;
+
+
+&lt;h3&gt;Build IOZone with AOSP&lt;/h3&gt;
+&lt;p&gt;I work on AOSP tree on daily basis, so it's handy for me to incorporate it into
+AOSP tree to take advantage of the AOSP tool chain. The key part is to come up
+with a appropriate &lt;code&gt;Android.mk&lt;/code&gt; file so that it gets built along with other
+sub-projects of AOSP.&lt;/p&gt;
+&lt;p&gt;First, download IOzone source tarball from its website. I'm using the latest
+tarball as of now (12/31/2014) with version 3.429. Then extract it to
+&lt;code&gt;external/iozone&lt;/code&gt;--the usual place where we put all external upstream repos.&lt;/p&gt;
+&lt;p&gt;Add a &lt;code&gt;Android.mk&lt;/code&gt; file like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;LOCAL_PATH&lt;/span&gt; &lt;span class="o"&gt;:=&lt;/span&gt; &lt;span class="k"&gt;$(&lt;/span&gt;call my-dir&lt;span class="k"&gt;)&lt;/span&gt;
+
+&lt;span class="cp"&gt;include $(CLEAR_VARS)&lt;/span&gt;
+
+&lt;span class="nv"&gt;OBJS&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; iozone.o libbif.o
+
+&lt;span class="nv"&gt;ALL&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; iozone
+
+&lt;span class="nf"&gt;%.o&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; %.&lt;span class="n"&gt;c&lt;/span&gt;
+    @&lt;span class="k"&gt;$(&lt;/span&gt;NQ&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39; CC  &amp;#39;&lt;/span&gt; &lt;span class="nv"&gt;$@&lt;/span&gt;
+    &lt;span class="k"&gt;$(&lt;/span&gt;Q&lt;span class="k"&gt;)$(&lt;/span&gt;CC&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="k"&gt;$(&lt;/span&gt;CFLAGS&lt;span class="k"&gt;)&lt;/span&gt; -c -o &lt;span class="nv"&gt;$@&lt;/span&gt; &lt;span class="nv"&gt;$&amp;lt;&lt;/span&gt;
+
+&lt;span class="nf"&gt;iozone&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="k"&gt;$(&lt;/span&gt;&lt;span class="nv"&gt;OBJS&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;$(&lt;/span&gt;CC&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="k"&gt;$(&lt;/span&gt;LDFLAGS&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="k"&gt;$(&lt;/span&gt;OBJS&lt;span class="k"&gt;)&lt;/span&gt; -lrt -lpthread -o iozone
+
+&lt;span class="nv"&gt;LOCAL_SRC_FILES&lt;/span&gt; &lt;span class="o"&gt;:=&lt;/span&gt; &lt;span class="k"&gt;$(&lt;/span&gt;patsubst %.o,%.c,&lt;span class="k"&gt;$(&lt;/span&gt;OBJS&lt;span class="k"&gt;))&lt;/span&gt;
+
+&lt;span class="nv"&gt;LOCAL_CFLAGS&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; -Wall -DANDROID -DO_RSYNC&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;0&lt;/span&gt; -DNO_THREADS
+&lt;span class="nv"&gt;LOCAL_CFLAGS&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; -O3 -Dunix -DHAVE_ANSIC_C -DNAME&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;&amp;quot;linux-arm&amp;quot;&amp;#39;&lt;/span&gt; -DLINUX_ARM -Dlinux 
+
+&lt;span class="nv"&gt;LOCAL_C_INCLUDES&lt;/span&gt; &lt;span class="o"&gt;:=&lt;/span&gt; &lt;span class="k"&gt;$(&lt;/span&gt;KERNEL_HEADERS&lt;span class="k"&gt;)&lt;/span&gt;
+
+&lt;span class="nv"&gt;LOCAL_LDFLAGS&lt;/span&gt; &lt;span class="o"&gt;:=&lt;/span&gt; -Wl,--no-fatal-warnings
+&lt;span class="nv"&gt;LOCAL_MODULE_TAGS&lt;/span&gt; &lt;span class="o"&gt;:=&lt;/span&gt; eng
+&lt;span class="nv"&gt;LOCAL_SHARED_LIBRARIES&lt;/span&gt; &lt;span class="o"&gt;:=&lt;/span&gt; libc
+&lt;span class="nv"&gt;LOCAL_LDLIBS&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; -lpthread
+&lt;span class="nv"&gt;LOCAL_MODULE&lt;/span&gt; &lt;span class="o"&gt;:=&lt;/span&gt; iozone
+
+&lt;span class="cp"&gt;include $(BUILD_EXECUTABLE)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Changes against the original &lt;code&gt;Makefile&lt;/code&gt; that comes with the source code are:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Do not build &lt;code&gt;fileop.c&lt;/code&gt;, &lt;code&gt;libasync.c&lt;/code&gt; and &lt;code&gt;pit_server.c&lt;/code&gt;. They're not
+     compatible with AOSP source and we will not use them anyway.&lt;/li&gt;
+&lt;li&gt;Define &lt;code&gt;ANDROID&lt;/code&gt; in &lt;code&gt;CFLAGS&lt;/code&gt;, which we'll use for some minor changes
+     to the source code later.&lt;/li&gt;
+&lt;li&gt;Define &lt;code&gt;O_RSYNC&lt;/code&gt;, somehow this flag definition is missing in AOSP's
+     &lt;code&gt;fcntl.h&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;The second part of &lt;code&gt;CFLAGS&lt;/code&gt; is copied from the original &lt;code&gt;Makefile&lt;/code&gt;'s
+     &lt;code&gt;linux-arm&lt;/code&gt; target.&lt;/li&gt;
+&lt;li&gt;Add user space kernel headers to include path.&lt;/li&gt;
+&lt;li&gt;Add &lt;code&gt;libc&lt;/code&gt; and &lt;code&gt;libpthread&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Then we need to modify the source code a little bit to cope of AOSP's header files.&lt;/p&gt;
+&lt;p&gt;Changes for &lt;code&gt;iozone.c&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="gh"&gt;diff --git a/iozone.c b/iozone.c&lt;/span&gt;
+&lt;span class="gh"&gt;index 85fdea0..36de106 100644&lt;/span&gt;
+&lt;span class="gd"&gt;--- a/iozone.c&lt;/span&gt;
+&lt;span class="gi"&gt;+++ b/iozone.c&lt;/span&gt;
+&lt;span class="gu"&gt;@@ -403,8 +403,12 @@ typedef long long off64_t;&lt;/span&gt;
+ #include &amp;lt;sys/time.h&amp;gt;
+
+ #ifdef SHARED_MEM
+&lt;span class="gi"&gt;+#ifdef ANDROID&lt;/span&gt;
+&lt;span class="gi"&gt;+#include &amp;lt;linux/shm.h&amp;gt;&lt;/span&gt;
+&lt;span class="gi"&gt;+#else&lt;/span&gt;
+ #include &amp;lt;sys/shm.h&amp;gt;
+ #endif
+&lt;span class="gi"&gt;+#endif&lt;/span&gt;
+
+ #if defined(bsd4_2) &amp;amp;&amp;amp; !defined(MS_SYNC)
+ #define MS_SYNC 0
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Changes for &lt;code&gt;libbif.c&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="gh"&gt;diff --git a/libbif.c b/libbif.c&lt;/span&gt;
+&lt;span class="gh"&gt;index 890e226..f997e74 100644&lt;/span&gt;
+&lt;span class="gd"&gt;--- a/libbif.c&lt;/span&gt;
+&lt;span class="gi"&gt;+++ b/libbif.c&lt;/span&gt;
+&lt;span class="gu"&gt;@@ -17,7 +17,7 @@&lt;/span&gt;
+ #include &amp;lt;sys/types.h&amp;gt;
+ #include &amp;lt;stdio.h&amp;gt;
+ #include &amp;lt;sys/file.h&amp;gt;
+&lt;span class="gd"&gt;-#if defined(__AIX__) || defined(__FreeBSD__) || defined(__DragonFly__)&lt;/span&gt;
+&lt;span class="gi"&gt;+#if defined(__AIX__) || defined(__FreeBSD__) || defined(__DragonFly__) || defined(ANDROID)&lt;/span&gt;
+ #include &amp;lt;fcntl.h&amp;gt;
+ #else
+ #include &amp;lt;sys/fcntl.h&amp;gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Finally, add &lt;code&gt;iozone&lt;/code&gt; to your &lt;code&gt;PRODUCT_PACKAGES&lt;/code&gt; so that it gets built when you
+do &lt;code&gt;make&lt;/code&gt; in AOSP root directory.&lt;/p&gt;
+&lt;h3&gt;Benchmark Results&lt;/h3&gt;
+&lt;p&gt;IOZone has a bunch of options. You can find the full document &lt;a href="http://www.iozone.org/docs/IOzone_msword_98.pdf"&gt;here&lt;/a&gt;. The
+options I used in this benchmark are:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;-a&lt;/code&gt;: auto mode.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-z&lt;/code&gt;: test all record size. In particular, for larger files, test with small
+     record sizes (4K, 8K, etc.)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-n 4k&lt;/code&gt;: specify minimum file size to test.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-g 512m&lt;/code&gt;: specify maximum file size to test.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-e&lt;/code&gt;: include &lt;code&gt;fsync&lt;/code&gt; and &lt;code&gt;fflush&lt;/code&gt; when calculating time.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-o&lt;/code&gt;: force write synchronously to disk.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-p&lt;/code&gt;: purge cache before each file operation.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-f&lt;/code&gt;: specify test file path. I tested with both &lt;code&gt;/sdcard/test.bin&lt;/code&gt; for flash and
+     &lt;code&gt;/mnt/asec&lt;/code&gt; for Ramdisk (or tmpfs).&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The smartphone I used is Nexus 5 (hammerhead) running Android 4.4.4 KitKat.
+Here are the results:&lt;/p&gt;
+&lt;p&gt;Flash Read:
+&lt;img src="/images/flash_read.png" alt="center" title="center"&gt;&lt;/p&gt;
+&lt;p&gt;Flash Write:
+&lt;img src="/images/flash_write.png" alt="center" title="center"&gt;&lt;/p&gt;
+&lt;p&gt;Ramdisk Read:
+&lt;img src="/images/ramdisk_read.png" alt="center" title="center"&gt;&lt;/p&gt;
+&lt;p&gt;Ramdisk Write:
+&lt;img src="/images/ramdisk_write.png" alt="center" title="center"&gt;&lt;/p&gt;
+&lt;p&gt;We can see that:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;The overall bandwidth with flash fluctuates a lot with different file or record
+     size. While the bandwidths for Ramdisk are quite stable.&lt;/li&gt;
+&lt;li&gt;As expected, the read throughput of flash is much better than write.&lt;/li&gt;
+&lt;li&gt;The bandwidth of Ramdisk can be faster than flash in order of magnitudes.&lt;/li&gt;
+&lt;li&gt;One particularly interesting phenomena is that, for flash read, when the
+     record size is equal to the file size (4k-16M), the bandwidth is ridiculously high
+     (~500MB/s). Not sure about the reason yet.&lt;/li&gt;
+&lt;/ul&gt;</summary><category term="iozone"></category><category term="benchmark"></category><category term="flash"></category><category term="ramdisk"></category></entry><entry><title>Monitor Screen Touch Event in Android</title><link href="http://jhshi.me/2014/11/09/monitor-screen-touch-event-in-android/index.html" rel="alternate"></link><updated>2014-11-09T18:47:24-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-11-09:2014/11/09/monitor-screen-touch-event-in-android/index.html</id><summary type="html">&lt;p&gt;In one of my projects I need to track every screen touch event in background.
+That is, my app needs to be "invisible" while capturing every screen touch. Here
+is how I achieved this.&lt;/p&gt;
+
+
+&lt;p&gt;The idea is to define a dummy UI fragment that is really tiny (say, 1x1 pixel),
+and place it on one of the corners of the screen, and let it listen on all touch
+events outside it. Well, literally, it's not "invisible", in fact it's in
+foreground all the time! But since it's so tiny so hopefully users won't feel a
+difference.&lt;/p&gt;
+&lt;p&gt;First, let's create this dummy view:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;mWindowManager&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;WindowManager&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="n"&gt;mContext&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getSystemService&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Context&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;WINDOW_SERVICE&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;mDummyView&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;LinearLayout&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;mContext&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+
+&lt;span class="n"&gt;LayoutParams&lt;/span&gt; &lt;span class="n"&gt;params&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;LayoutParams&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;LayoutParams&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;MATCH_PARENT&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;mDummyView&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;setLayoutParams&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;params&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;mDummyView&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;setOnTouchListener&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="k"&gt;this&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here we set the width of the dummy view to be 1 pixel, and the height to be
+parent height. And we also set up a touch event listen of this dummy view, which
+we'll implement later.&lt;/p&gt;
+&lt;p&gt;Then let's add this dummy view.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;LayoutParams&lt;/span&gt; &lt;span class="n"&gt;params&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;LayoutParams&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;
+        &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="cm"&gt;/* width */&lt;/span&gt;
+        &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="cm"&gt;/* height */&lt;/span&gt;
+        &lt;span class="n"&gt;LayoutParams&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;TYPE_PHONE&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;LayoutParams&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;FLAG_NOT_FOCUSABLE&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt; 
+        &lt;span class="n"&gt;LayoutParams&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;FLAG_NOT_TOUCH_MODAL&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt;
+        &lt;span class="n"&gt;LayoutParams&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;FLAG_WATCH_OUTSIDE_TOUCH&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;PixelFormat&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;TRANSPARENT&lt;/span&gt;
+        &lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;params&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;gravity&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Gravity&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;LEFT&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="n"&gt;Gravity&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;TOP&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="n"&gt;mWindowManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;addView&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;mDummyView&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;params&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The key here is the &lt;code&gt;FLAG_WATCH_OUTSIDE_TOUCH&lt;/code&gt; flag, it enables the dummy view
+to capture all events on screen, whether or not the event is inside the dummy
+view or not.&lt;/p&gt;
+&lt;p&gt;Finally, let's handle the touch event by implementing &lt;code&gt;View.OnTouchListener&lt;/code&gt;
+listener.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nd"&gt;@Override&lt;/span&gt;
+&lt;span class="kd"&gt;public&lt;/span&gt; &lt;span class="kt"&gt;boolean&lt;/span&gt; &lt;span class="nf"&gt;onTouch&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;View&lt;/span&gt; &lt;span class="n"&gt;v&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;MotionEvent&lt;/span&gt; &lt;span class="n"&gt;event&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;Log&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;d&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;TAG&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;Touch event: &amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;event&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;toString&lt;/span&gt;&lt;span class="o"&gt;());&lt;/span&gt;
+
+    &lt;span class="c1"&gt;// log it&lt;/span&gt;
+
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="kc"&gt;false&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;We need to return &lt;code&gt;false&lt;/code&gt; since we're not really handling the event, so that the
+underlying real UI elements can get those events.&lt;/p&gt;
+&lt;p&gt;A final note is that, to keep our dummy view always listening touch events, we
+need to wrap all these in an &lt;code&gt;Service&lt;/code&gt;: we create the dummy view in &lt;code&gt;onCreate&lt;/code&gt;
+and add it to screen in &lt;code&gt;onStartCommand&lt;/code&gt;. And the service should implement
+&lt;code&gt;View.OnTouchListener&lt;/code&gt; to receive the touch events.&lt;/p&gt;</summary></entry><entry><title>AOSP Release Tools</title><link href="http://jhshi.me/2014/11/09/aosp-release-tools/index.html" rel="alternate"></link><updated>2014-11-09T14:42:39-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-11-09:2014/11/09/aosp-release-tools/index.html</id><summary type="html">&lt;p&gt;AOSP ships with a bunch of tools that are very useful for platform release. I'll
+cover their usage and explain what they do in this post.&lt;/p&gt;
+
+
+&lt;h2&gt;Generate Target Files&lt;/h2&gt;
+&lt;p&gt;Usually when you develop locally, you would use plain &lt;code&gt;make&lt;/code&gt; with no particular
+target to compile AOSP. When you prepare for release, however, you need to do
+this instead:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;make -j16 dist
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;It will first compile the whole source tree, as a plain &lt;code&gt;make&lt;/code&gt; does. Then it
+will generate several zip files in &lt;code&gt;out/dist&lt;/code&gt; that will be used in later stage
+of release. Here are the files for Nexus 5 (hammerhead) of platform version 1.2,
+the names may be slightly different in your case.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;aosp_hammerhead-target-files-1.2.zip&lt;/code&gt; contains all the target files (apk,
+     binaries, libraries, etc.) that will go into the final release package. This
+     is the most important file and will be used extensively later on.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;aosp_hammerhead-apps-1.2.zip&lt;/code&gt; contains all the apks.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;aosp_hammerhead-emulator-1.2.zip&lt;/code&gt; contains images that suitable for boot on
+     a emulator.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;aosp_hammerhead-img-1.2.zip&lt;/code&gt; contains image files for &lt;code&gt;system&lt;/code&gt;, &lt;code&gt;boot&lt;/code&gt;, and
+     &lt;code&gt;recovery&lt;/code&gt;. Suitable for &lt;code&gt;fastboot update&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;aosp_hammerhead-ota-1.2.zip&lt;/code&gt; is an OTA package that can be installed
+     through recovery.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;aosp_hammerhead-symbols-1.2.zip&lt;/code&gt; contains all files in
+     &lt;code&gt;out/target/product/hammerhead/symbols&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Sign Target Files&lt;/h2&gt;
+&lt;p&gt;Each APK in the final release has to be properly signed. In each Java project that
+will finally generate an APK, developers can specify which key should be used to
+sign this apk by defining &lt;code&gt;LOCAL_CERTIFICATE&lt;/code&gt;. For example, in &lt;code&gt;Android.mk&lt;/code&gt; file
+of &lt;code&gt;packages/apps/Settings&lt;/code&gt;, there is this line:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;LOCAL_CERTIFICATE&lt;/span&gt; &lt;span class="o"&gt;:=&lt;/span&gt; platform
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Which indicates that &lt;code&gt;Settings.apk&lt;/code&gt; should be signed using platform key. You can
+also set &lt;code&gt;LOCAL_CERTIFICATE&lt;/code&gt; to be &lt;code&gt;PRESIGNED&lt;/code&gt;, which tells the signing script
+(see below) that this APKs are already signed and should not be signed again.
+This is usually the case when those APKs are provided as vendor blobs.&lt;/p&gt;
+&lt;p&gt;There are four type of keys in AOSP, and the default keys are shipped in
+&lt;code&gt;build/target/product/security&lt;/code&gt;. As you'll find in the &lt;code&gt;README&lt;/code&gt; file, they are:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;testkey -- a generic key for packages that do not otherwise specify a key.&lt;/li&gt;
+&lt;li&gt;platform -- a test key for packages that are part of the core platform.&lt;/li&gt;
+&lt;li&gt;shared -- a test key for things that are shared in the home/contacts process.&lt;/li&gt;
+&lt;li&gt;media -- a test key for packages that are part of the media/download system.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Actually, after first step (&lt;code&gt;make dist&lt;/code&gt;) the target APK files are signed with
+this keys, which we should substitute to our own keys in this step. AOSP
+provides a python script, &lt;code&gt;build/tools/releasetools/sign_target_file_apks&lt;/code&gt;, for
+this purpose.&lt;/p&gt;
+&lt;p&gt;You can take a look at the python doc at the head of that file for complete
+usage. A typical usage will look like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;./build/tools/releasetools/sign_target_file_apks -o -d &lt;span class="nv"&gt;$KEY_DIR&lt;/span&gt; out/dist/aosp_hammerhead-target_files-1.2.zip /tmp/signed.zip
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;In which:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;-o&lt;/code&gt; tells the script to replace ota keys. This will make
+     &lt;code&gt;system/etc/security/otacerts.zip&lt;/code&gt; in the final image contain your platform keys instead of
+     the default one.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-d&lt;/code&gt; indicates that you're using default key mapping.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;$KEY_DIR&lt;/code&gt; should be the directory that contains your private keys.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This script will first unpack the input target files, then sign each APKs using
+proper keys, and repack them in to a new signed target files zip.&lt;/p&gt;
+&lt;h2&gt;Generate Release File&lt;/h2&gt;
+&lt;p&gt;This step depends on what kind of release file you want to generate. You can
+either generate a full image file that suitable for &lt;code&gt;fastboot update&lt;/code&gt;, or you
+can generate an OTA file that can be updated via recovery.&lt;/p&gt;
+&lt;h3&gt;Full System Image&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;./build/tools/releasetools/img_from_target_files /tmp/signed.zip /tmp/final-release.img
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;This script will pack the signed target files into one image file that can be
+flashed via &lt;code&gt;fastboot update&lt;/code&gt;. This is useful when you do your first release.&lt;/p&gt;
+&lt;h3&gt;OTA Package&lt;/h3&gt;
+&lt;p&gt;For OTA, you can choose from a full OTA or an incremental OTA. In
+each case, you can reboot the device into recovery mode, and use &lt;code&gt;adb sideload&lt;/code&gt;
+to flash the update for testing.&lt;/p&gt;
+&lt;p&gt;To generate a full OTA package:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;./build/tools/releasetools/ota_from_target_files -k &lt;span class="nv"&gt;$KEY_DIR&lt;/span&gt;/platform /tmp/signed.zip /tmp/final-full-ota.zip
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;In which &lt;code&gt;-k&lt;/code&gt; option specify the key to sign the OTA package. The package
+contains all the files needed by &lt;code&gt;system&lt;/code&gt;, &lt;code&gt;boot&lt;/code&gt; and &lt;code&gt;recovery&lt;/code&gt; partition.&lt;/p&gt;
+&lt;h3&gt;Incremental OTA&lt;/h3&gt;
+&lt;p&gt;The OTA package generated in last step is quite large (~380MB for KitKat). If the changes
+since last release are not that many, then you may want to generate an
+incremental OTA package, which only contains the different part.&lt;/p&gt;
+&lt;p&gt;To do this, you need the signed target files from last time when you do a
+release. Therefore, I strongly suggest you to check in the signed target files of each release
+in your VCS, just in case in the future you want to do an incremental OTA.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;./build/tools/releasetools/ota_from_target_files -k &lt;span class="nv"&gt;$KEY_DIR&lt;/span&gt;/platform -i /tmp/last-signed.zip /tmp/signed.zip /tmp/final-full-ota.zip
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The difference is that we specify the base target files, &lt;code&gt;/tmp/last-signed.zip&lt;/code&gt;.
+The script will compare current target files with the one from last release, and
+will generate binary diff if they're different.&lt;/p&gt;
+&lt;p&gt;You may also check my previous post about
+&lt;a href="/2013/12/13/how-to-apply-downloaded-ota-package/"&gt;how apply the OTA package programmingly&lt;/a&gt;.&lt;/p&gt;</summary><category term="incremental"></category><category term="ota"></category><category term="aosp"></category><category term="release"></category></entry><entry><title>Regular Expression Support in Android Logcat Tag Filters</title><link href="http://jhshi.me/2014/10/03/regular-expression-support-in-android-logcat-tag-filters/index.html" rel="alternate"></link><updated>2014-10-03T19:10:15-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-10-03:2014/10/03/regular-expression-support-in-android-logcat-tag-filters/index.html</id><summary type="html">&lt;p&gt;For a while I've been using &lt;code&gt;logcat&lt;/code&gt; command line tools to check
+Android logs. Usually, the tags of my app consist of a common prefix and the
+name of different sub-components (I guess that's also what most apps do). And I
+have about a dozen of such tags. &lt;code&gt;logcat&lt;/code&gt;, however, does not support filtering
+tags using regular expressions, which is a pain! After suffering for a long
+time, I finally decide to tackle this.&lt;/p&gt;
+
+
+&lt;h2&gt;Logcat Tag Filters&lt;/h2&gt;
+&lt;p&gt;The basic &lt;code&gt;logcat&lt;/code&gt; options can be found in the &lt;a href="http://developer.android.com/tools/help/logcat.html"&gt;official document&lt;/a&gt;,
+which also contains a brief explanation of &lt;a href="http://developer.android.com/tools/debugging/debugging-log.html#filteringOutput"&gt;&lt;code&gt;logcat&lt;/code&gt; filter format&lt;/a&gt;.
+Basically, you provide a series of &lt;code&gt;logcat&lt;/code&gt; filters, each with the format
+&lt;code&gt;TAG:LEVEL&lt;/code&gt;, where &lt;code&gt;TAG&lt;/code&gt; must be the &lt;em&gt;exact&lt;/em&gt; tags you want to filter, and
+&lt;code&gt;LEVEL&lt;/code&gt; can be one of the characters listed in the document. So if you have a
+bunch of similar tags, such as &lt;code&gt;MyApp-task1&lt;/code&gt;, &lt;code&gt;MyApp-Task2&lt;/code&gt;, etc., you'll have
+to specify them all in full name. Although you can save a few key strokes by setting
+the &lt;code&gt;ANDROID_LOG_TAGS&lt;/code&gt; environment variable, it still only solves part of the
+pain.&lt;/p&gt;
+&lt;p&gt;Note that the order of the filters matters. In short, &lt;code&gt;logcat&lt;/code&gt; will look at the
+filters from left to right, and use the first one that matches the tag of
+log line. For example, if you use &lt;code&gt;MyApp:V *:S&lt;/code&gt;, then only the log lines with
+tag &lt;code&gt;MyApp&lt;/code&gt; will be printed, other log lines will be suppressed by the &lt;code&gt;*:S&lt;/code&gt;
+filter. However, if you use &lt;code&gt;*:S MyApp:V&lt;/code&gt;, then no log lines will be printed,
+because the first filter, &lt;code&gt;*:S&lt;/code&gt; matches all log line tags thus all log lines are
+suppressed by this filter. For details, please refer to the
+&lt;code&gt;android_log_shouldPrintLine&lt;/code&gt; function in &lt;a href="https://android.googlesource.com/platform/system/core/+/master/liblog/logprint.c"&gt;this file&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;My Logcat Wrapper&lt;/h2&gt;
+&lt;p&gt;We can make &lt;code&gt;logcat&lt;/code&gt; support regular expression tag filters by two approaches.
+One is modifying &lt;code&gt;logcat&lt;/code&gt; source code in AOSP tree and build a new &lt;code&gt;logcat&lt;/code&gt;
+binary that support RE. Another approach is to filter the tags "offline" in the
+host PCs where you run &lt;code&gt;adb logcat&lt;/code&gt; command, i.e., a &lt;code&gt;logcat&lt;/code&gt; wrapper.&lt;/p&gt;
+&lt;p&gt;I adopted the second approach, since the first one has a few drawbacks:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;You'll have to match RE in cpp, which I assume is not quite enjoyable.&lt;/li&gt;
+&lt;li&gt;You'll have to cross-compile the &lt;code&gt;logcat&lt;/code&gt; binary, which requires you to setup
+   the whole AOSP develop environment.&lt;/li&gt;
+&lt;li&gt;For each device that you want to run &lt;code&gt;logcat&lt;/code&gt; on, you'll have to replace the
+   &lt;code&gt;logcat&lt;/code&gt; binary.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;So here is my wrapper works. It calls &lt;code&gt;adb logcat&lt;/code&gt; command without any filters,
+to get all the log lines. Then it parses the output log lines, and only prints
+the lines whose tag matches the regular expression provided. It supports basic
+&lt;code&gt;logcat&lt;/code&gt; options, such as &lt;code&gt;-b&lt;/code&gt;, &lt;code&gt;-c&lt;/code&gt;, &lt;code&gt;-g&lt;/code&gt;, etc. by just piping those options to
+the real &lt;code&gt;logcat&lt;/code&gt;. It processes the log filters in the same order as &lt;code&gt;logcat&lt;/code&gt;
+does to be as close as the original &lt;code&gt;logcat&lt;/code&gt; semantics.&lt;/p&gt;
+&lt;p&gt;The idea is that you just run the wrapper in the save way you would as &lt;code&gt;logcat&lt;/code&gt;,
+and it just does the magic RE tag filtering for you. You can find this tool on
+&lt;a href="https://github.com/jhshi/tools.logcat"&gt;my github repo&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;View Logs&lt;/h2&gt;
+&lt;p&gt;You can directly print those log lines to console. I personally prefer to
+redirect them to a temporary file and use vim to view it, which give me features
+like incremental highlight search, etc. There is a &lt;a href="http://vim.wikia.com/wiki/Have_Vim_check_automatically_if_the_file_has_changed_externally"&gt;sweet recipe&lt;/a&gt; which
+tells vim to automatically refresh the buffer when it's modified outside. This
+is a perfect fit in viewing log files.&lt;/p&gt;</summary><category term="logcat"></category><category term="python"></category><category term="regular expression"></category><category term="tag"></category></entry><entry><title>Get Packet Signal Strength of RTL8187 Dongle</title><link href="http://jhshi.me/2014/09/21/get-packet-signal-strength-of-rtl8187-dongle/index.html" rel="alternate"></link><updated>2014-09-21T15:35:39-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-09-21:2014/09/21/get-packet-signal-strength-of-rtl8187-dongle/index.html</id><summary type="html">&lt;p&gt;In one of my research projects, I used &lt;a href="https://www.kismetwireless.net/android-pcap/"&gt;Android PCAP Capture&lt;/a&gt; with
+&lt;a href="http://www.amazon.com/Alfa-Network-Wireless-802-11g-AWUS036H/dp/B000WXSO76"&gt;ALFA RTL8187L&lt;/a&gt; dongles to capture Wi-Fi packets on Android phones. One
+problem I encountered was that per packet RSSI is missing. After poking around
+the source code for couple of days, I finally figured out how to get this
+information. In short, the per packet RSSI information IS indeed reported by the
+hardware, yet the current Android PCAP app doesn't collect it.&lt;/p&gt;
+
+
+&lt;h3&gt;RTL8187 Rx Descriptor&lt;/h3&gt;
+&lt;p&gt;Normally, the Wi-Fi chipset will report certain PHY layer information (RSSI,
+AGC, etc.) along with the true 802.11 packet in the form of a vendor "header".
+In the case of RTL8187L, it's a bit confusing because the "header" is actually
+at the &lt;em&gt;end&lt;/em&gt; of the delivered packet. This is the detailed format of RTL8187 Rx
+descriptor (p.25 of the &lt;a href="http://www.pc817.cn/File/DataSheet/RTL8187L-101213110313eae9fcbc-018b-4c1c-8b66-2e80392311df.pdf"&gt;datasheet&lt;/a&gt;).&lt;/p&gt;
+&lt;p&gt;&lt;img src="/images/rtl8187_rx_desc.png"&gt;&lt;/p&gt;
+&lt;p&gt;The most interesting part related to signal strength is AGC and RSSI. They all,
+in a way, reflect the signal quality of the received packet. However, as per
+the &lt;a href="https://github.com/torvalds/linux/blob/master/drivers/net/wireless/rtl818x/rtl8187/dev.c"&gt;Linux kernel rtl8187 driver&lt;/a&gt;, "none of these quantities show
+qualitative agreement with AP signal strength, except for the AGC". We'll worry
+about this later. For now, we focus on how to extract these values from the
+packet.&lt;/p&gt;
+&lt;h3&gt;Get the Values&lt;/h3&gt;
+&lt;p&gt;In PCAP capture source code (&lt;a href="http://kismetwireless.net/gitweb/?p=android-pcap.git;a=blob;f=src/net/kismetwireless/android/pcapcapture/Rtl8187Card.java;h=b8e1a44bb3a32376876ae1ff169634d1355ad568;hb=HEAD"&gt;RTL8187Card.java&lt;/a&gt;), there is a &lt;code&gt;usbThread&lt;/code&gt;
+which keep pulling data from the dongle. When got a packet, the last 16 or 20
+bytes are trimmed depending on if it's RTL8187L or RTL8187B. That 16 or 20 bytes
+are the Rx descriptor. So instead of truncating them, we'll save them in a
+separate array.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="gh"&gt;diff --git a/src/net/kismetwireless/android/pcapcapture/Rtl8187Card.java b/src/net/kismetwireless/android/pcapcapture/Rtl8187Card.java&lt;/span&gt;
+&lt;span class="gh"&gt;index b8e1a44..7628446 100644&lt;/span&gt;
+&lt;span class="gd"&gt;--- a/src/net/kismetwireless/android/pcapcapture/Rtl8187Card.java&lt;/span&gt;
+&lt;span class="gi"&gt;+++ b/src/net/kismetwireless/android/pcapcapture/Rtl8187Card.java&lt;/span&gt;
+&lt;span class="gu"&gt;@@ -1868,13 +1868,16 @@ public class Rtl8187Card extends UsbSource {&lt;/span&gt;
+                // int sz = mBulkEndpoint.getMaxPacketSize();
+                int sz = 2500;
+                        byte[] buffer = new byte[sz];
+&lt;span class="gi"&gt;+            byte[] header;&lt;/span&gt;
+
+                        while (!stopped) {
+                                int l = mConnection.bulkTransfer(mBulkEndpoint, buffer, sz, 1000);
+                                int fcsofft = 0;
+&lt;span class="gi"&gt;+                header = null;&lt;/span&gt;
+
+                                if (l &amp;gt; 0) {
+                                        if (is_rtl8187b == 0 &amp;amp;&amp;amp; l &amp;gt; 16)
+&lt;span class="gi"&gt;+                        header = Arrays.copyOfRange(buffer, l-16, l);&lt;/span&gt;
+                                                l = l - 16;
+                                        else if (l &amp;gt; 20)
+                                                l = l - 20;
+&lt;span class="gu"&gt;@@ -1889,6 +1892,11 @@ public class Rtl8187Card extends UsbSource {&lt;/span&gt;
+                                        if (mPacketHandler != null) {
+                                                Packet p = new Packet(Arrays.copyOfRange(buffer, 0, l));
+                                                p.setDlt(PcapLogger.DLT_IEEE80211);
+&lt;span class="gi"&gt;+                        if (header != null) {&lt;/span&gt;
+&lt;span class="gi"&gt;+                            int noise = header[4];&lt;/span&gt;
+&lt;span class="gi"&gt;+                            int rssi = header[5] &amp;amp; 0x7f;&lt;/span&gt;
+&lt;span class="gi"&gt;+                            int agc = header[6];&lt;/span&gt;
+&lt;span class="gi"&gt;+                        }&lt;/span&gt;
+
+                                                /*
+                                                if (fcs)
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here, we save the RTL8187L header in a separate byte array, and get the relevant
+fields from it.&lt;/p&gt;
+&lt;h3&gt;Meaningful RSSI&lt;/h3&gt;
+&lt;p&gt;Although the Linux kernel driver shed some light on how to get a meaningful RSSI
+out of the RTL8187L header, in my experiment, I found that &lt;code&gt;RSSI-100&lt;/code&gt; is a fair
+enough approximation of the real RSSI in &lt;code&gt;dBm&lt;/code&gt;. For example, if the RSSI field
+value is 15, then the actual RSSI is 15-100=-75dBm. Sometimes this approach will
+give you some strange RSSI values (e.g., positive), yet most of the time the
+calculated values are quite meaningful, and the RSSI of beacon frames calculated
+this way are consistent with what you'll get from Android scan results.&lt;/p&gt;</summary><category term="rtl8187"></category><category term="rssi"></category><category term="pcapcapture"></category><category term="kismet"></category></entry><entry><title>Signing Issues related to OTA Update</title><link href="http://jhshi.me/2014/08/28/sign-issues-related-to-ota-update/index.html" rel="alternate"></link><updated>2014-08-28T15:37:50-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-08-28:2014/08/28/sign-issues-related-to-ota-update/index.html</id><summary type="html">&lt;p&gt;In my previous posts, I explained 
+&lt;a href="/2013/12/02/how-to-create-and-sign-ota-package/"&gt;how to create a properly signed OTA package&lt;/a&gt; that will pass recovery's
+signature check,
+and &lt;a href="/2013/12/13/how-to-apply-downloaded-ota-package/"&gt;how to verify the signed OTA package before apply it&lt;/a&gt;. Here, we'll
+discuss, &lt;em&gt;when building an production AOSP platform&lt;/em&gt;, how to sign the platform and
+recovery image properly to match those signature checks.&lt;/p&gt;
+
+
+&lt;p&gt;In following discussions, we assume you have a key pairs: &lt;code&gt;platform.x509.pem&lt;/code&gt;
+and &lt;code&gt;platform.pk&lt;/code&gt;, which you'll use to sign the OTA package. Suppose the keys
+are stored in a directory with path &lt;code&gt;$KEYS&lt;/code&gt;. I'm using Nexus 5 (hammerhead) as
+an example below but the practice should be easy to apply to other devices.&lt;/p&gt;
+&lt;h3&gt;Platform OTA Certificates&lt;/h3&gt;
+&lt;p&gt;When verify a OTA package's signature using Android's
+&lt;code&gt;RecoverySystem.verifyPackage&lt;/code&gt; utility, that function actually checks against the
+certificates stored in &lt;code&gt;/system/etc/security/otacerts.zip&lt;/code&gt;. So if you want to
+push OTA updates later, you'll have to generate the proper certificates when building
+the platform.&lt;/p&gt;
+&lt;p&gt;You can accomplish this by specifying &lt;code&gt;PRODUCT_OTA_PUBLIC_KEYS&lt;/code&gt; in your device's
+Makefile (&lt;code&gt;device/lge/hammerhead/full_hammerhead.mk&lt;/code&gt; in my case).&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="x"&gt;PRODUCT_OTA_PUBLIC_KEYS := &lt;/span&gt;&lt;span class="p"&gt;$&lt;/span&gt;&lt;span class="nv"&gt;KEYS&lt;/span&gt;&lt;span class="x"&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then the building process will store this location in &lt;code&gt;META/otakeys.txt&lt;/code&gt; in
+unsigned zip file. When you sign the target files using &lt;code&gt;sign_target_files_apks&lt;/code&gt;
+tool, it will generate the proper ota certificates based on the otakeys
+provided. If &lt;code&gt;PRODUCT_OTA_PUBLIC_KEYS&lt;/code&gt; is not defined, it will just use the
+release key, which is probably not what you used to sign the OTA packages.&lt;/p&gt;
+&lt;h3&gt;Recovery Signature Verification&lt;/h3&gt;
+&lt;p&gt;When you programmingly apply a OTA package using &lt;code&gt;RecoverySystem.installPackage&lt;/code&gt;
+function, it will boot the device into recovery mode and let the recovery do the
+update. The recovery will first check the signature of the OTA package. So when
+building the platform, you'll also need to specify the extra recovery keys by
+defining &lt;code&gt;PRODUCT_EXTRA_RECOVERY_KEYS&lt;/code&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="x"&gt;PRODUCT_EXTRA_RECOVERY_KEYS := &lt;/span&gt;&lt;span class="p"&gt;$&lt;/span&gt;&lt;span class="nv"&gt;KEYS&lt;/span&gt;&lt;span class="x"&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;After setting &lt;code&gt;PRODUCT_OTA_PUBLIC_KEYS&lt;/code&gt; and &lt;code&gt;PRODUCT_EXTRA_RECOVERY_KEYS&lt;/code&gt;, you
+should be able to pass all signature verifications and successfully apply the
+OTA update.&lt;/p&gt;</summary><category term="aosp"></category><category term="ota"></category><category term="sign"></category><category term="keys"></category></entry><entry><title>Fix ADB Permissions</title><link href="http://jhshi.me/2014/07/02/fix-adb-permissions/index.html" rel="alternate"></link><updated>2014-07-02T14:17:47-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-07-02:2014/07/02/fix-adb-permissions/index.html</id><summary type="html">&lt;p&gt;I've been bothered by this message for a while when the device is in recovery
+mode.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;adb devices
+List of devices attached
+????????????    no permissions
+&lt;/pre&gt;&lt;/div&gt;
+
+
+
+
+&lt;p&gt;The thing is, I've set up my udev rules according to 
+&lt;a href="https://source.android.com/source/initializing.html#configuring-usb-access"&gt;official AOSP building guide&lt;/a&gt;, and it works fine in normal mode. Yet the
+above message shows up when the device is put in recovery mode. There are some
+solutions online saying that restarting ADB as root, which I don't think is a
+very good idea.&lt;/p&gt;
+&lt;p&gt;Then I figured if it has to do with my udev rules, maybe it didn't contain the
+device I used (Nexus 5 from LG). A &lt;code&gt;lsusb&lt;/code&gt; with device in recovery mode gives me this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;lsusb
+Bus &lt;span class="m"&gt;002&lt;/span&gt; Device 010: ID 18d1:d001 Google Inc.
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The first part of the ID (18d1) is supposed to be the vendor ID, and second part
+(d001) is product ID. However, from &lt;a href="http://developer.android.com/tools/device.html#VendorIds"&gt;Google's vendor list&lt;/a&gt;, LG's vendor
+ID should be 1004, where as Google's vendor ID is 18d1.&lt;/p&gt;
+&lt;p&gt;What the hell, just add them to the udev rules:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;# adb protocol on recovery for Nexus 5
+SUBSYSTEM==&amp;quot;usb&amp;quot;, ATTR{idVendor}==&amp;quot;18d1&amp;quot;, ATTR{idProduct}==&amp;quot;d001&amp;quot;, MODE=&amp;quot;0600&amp;quot;, OWNER=&amp;quot;&amp;lt;YOUR_USER_NAME&amp;gt;&amp;quot;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;After that, unplug the device and plug it in again. It should be
+recognized, like so:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;adb devices
+List of devices attached
+060fb526f0eca244        recovery
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;And this approach can be extended to any cases where either adb or fastboot has
+permission issues. Just do a &lt;code&gt;lsusb&lt;/code&gt; and find out the actual vendor and product
+ID, and add them to your udev rules.&lt;/p&gt;</summary><category term="adb"></category><category term="permission"></category><category term="udev"></category></entry><entry><title>Stop Android Logcat from Truncating Log Line</title><link href="http://jhshi.me/2014/06/30/stop-android-logcat-from-truncating-log-line/index.html" rel="alternate"></link><updated>2014-06-30T18:17:29-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-06-30:2014/06/30/stop-android-logcat-from-truncating-log-line/index.html</id><summary type="html">&lt;p&gt;When analyzing the logcat data from Android devices, I found that sometimes the
+log line get truncated, especially when it's quite long. This causes trouble
+because the logged information are in JSON format, which gets broken after (even
+one character) truncated. In this post, I'll explain how did the truncation
+happen, and how to fix it.&lt;/p&gt;
+
+
+&lt;h3&gt;Android Logging&lt;/h3&gt;
+&lt;p&gt;&lt;a href="http://elinux.org/Android_Logging_System"&gt;This page&lt;/a&gt; gives an detailed explanation of Android logging system. In
+short, three parts are working together to make Android logcat work.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;logger&lt;/code&gt; device driver in kernel (&lt;code&gt;kernel/drivers/stagging/android&lt;/code&gt;). Which serves read/write request from user
+   space and also buffer the log content.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;android.util.Log&lt;/code&gt; class (&lt;code&gt;framework/base/core/java/android/util/Log.java&lt;/code&gt;), a Java wrapper to write to &lt;code&gt;logger&lt;/code&gt; device.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;logcat&lt;/code&gt; (&lt;code&gt;system/core/log&lt;/code&gt;), a native tool to read logs from &lt;code&gt;logger&lt;/code&gt; device.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Truncating&lt;/h3&gt;
+&lt;p&gt;Let's follow the flow when &lt;code&gt;Log.v&lt;/code&gt; is called with a log message, and find out
+who truncated the log message (if it's too long).&lt;/p&gt;
+&lt;p&gt;In &lt;code&gt;framework/base/core/java/android/util/Log.java&lt;/code&gt;, when &lt;code&gt;Log.v&lt;/code&gt; is called, it
+just call the native method called &lt;code&gt;println_native&lt;/code&gt; with to extra arguments,
+&lt;code&gt;LOG_ID_MAIN&lt;/code&gt; and &lt;code&gt;VERBOSE&lt;/code&gt;. The first specify the log device to write to, and
+the second tells the log level.&lt;/p&gt;
+&lt;p&gt;In &lt;code&gt;println_native&lt;/code&gt;, defined in &lt;code&gt;framework/base/core/jni/android_util_Log.cpp&lt;/code&gt;,
+it just calls the function named &lt;code&gt;__android_log_buf_write&lt;/code&gt;. So far, nobody
+changed the log message yet.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;__android_log_buf_write&lt;/code&gt; is defined in &lt;code&gt;system/core/liblog/logd_write.c&lt;/code&gt;, it
+first detect a few special tags to redirect them to &lt;code&gt;radio&lt;/code&gt; log device, and then
+it packs the log message in to &lt;code&gt;struct iovec&lt;/code&gt; data structures and passes them on
+to &lt;code&gt;write_to_log&lt;/code&gt;, which is initialized as &lt;code&gt;_write_to_log_kernel&lt;/code&gt;. Eventually,
+these &lt;code&gt;iovec&lt;/code&gt; go to &lt;code&gt;writev&lt;/code&gt; in &lt;code&gt;system/core/liblog/uio.c&lt;/code&gt;, which call syscall
+&lt;code&gt;write&lt;/code&gt; on the log device.&lt;/p&gt;
+&lt;p&gt;Thus, log line content is still sane before entering kernel space.&lt;/p&gt;
+&lt;p&gt;Next, the write request will be directed to &lt;code&gt;logger_aio_write&lt;/code&gt; function defined
+in &lt;code&gt;kernel/drivers/staging/android/logger.c&lt;/code&gt;. One line (462) raised my
+attention:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;header&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;len&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;min_t&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;size_t&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;iocb&lt;/span&gt;&lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;&lt;span class="n"&gt;ki_left&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;LOGGER_ENTRY_MAX_PAYLOAD&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;This is where the truncating happens! &lt;/p&gt;
+&lt;h3&gt;How to Fix&lt;/h3&gt;
+&lt;p&gt;&lt;code&gt;LOGGER_ENTRY_MAX_PAYLOAD&lt;/code&gt; is defined in
+&lt;code&gt;kernel/drivers/stagging/android/logger.h&lt;/code&gt; as &lt;code&gt;4076&lt;/code&gt;, which I guess is
+(4096-20), where 20 is the log header structure size.&lt;/p&gt;
+&lt;p&gt;We can not actually eliminate truncating completely, the buffer size is limited
+after all. But we can enlarge the payload limit a bit to prevent some
+unnecessary truncating. I changed it to 65516 (65536-20), which should be large
+enough.&lt;/p&gt;
+&lt;p&gt;Also, &lt;code&gt;logger&lt;/code&gt; device maintains a ring buffer for each log device, which are
+defined in &lt;code&gt;kernel/drivers/stagging/android/logger.c&lt;/code&gt;. The default buffer size
+is 256K. I changed the buffer size for &lt;code&gt;main&lt;/code&gt; device to 4MB, while leave
+others unchanged. (I also tried 32MB, yet apparently it's far too large and the
+kernel refused to boot up.)&lt;/p&gt;
+&lt;h2&gt;UPDATE&lt;/h2&gt;
+&lt;p&gt;To make Android logcat tool working properly, we'll also need to modify
+&lt;code&gt;system/core/include/log/logger.h&lt;/code&gt; in AOSP source tree, which is a mirror to the
+&lt;code&gt;logger.h&lt;/code&gt; in kernel. &lt;code&gt;LOGGER_ENTRY_MAX_PAYLOAD&lt;/code&gt; needs to be the same with the
+one in kernel, and &lt;code&gt;LOGGER_ENTRY_MAX_LEN&lt;/code&gt; needs to be a bit larger than
+&lt;code&gt;LOGGER_ENTRY_MAX_PAYLOAD&lt;/code&gt;. In my case, I set the former to 65516 and latter to
+&lt;code&gt;(64*1024)&lt;/code&gt;.&lt;/p&gt;</summary><category term="logcat"></category><category term="truncate"></category></entry><entry><title>Build Kernel In Tree with AOSP for Nexus 5 Hammerhead</title><link href="http://jhshi.me/2014/06/30/build-kernel-in-tree-with-aosp-for-nexus-5-hammerhead/index.html" rel="alternate"></link><updated>2014-06-30T17:22:29-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-06-30:2014/06/30/build-kernel-in-tree-with-aosp-for-nexus-5-hammerhead/index.html</id><summary type="html">&lt;p&gt;Google has a fair document for &lt;a href="https://source.android.com/source/building-kernels.html"&gt;building kernel for Android&lt;/a&gt;. Yet it
+didn't cover how to integrate the kernel with AOSP source tree so that kernel
+gets built along with whole platform, which I'll explain in this post. Here I'll
+mainly focus on &lt;code&gt;android-4.4.4_r1&lt;/code&gt; (Kitkat) for Nexus 5 (&lt;code&gt;hammerhead&lt;/code&gt;).
+The instructions should be easy to adapt to other models or AOSP releases.&lt;/p&gt;
+
+
+&lt;h3&gt;Determine Kernel Version&lt;/h3&gt;
+&lt;p&gt;The best and safest way to determine the right kernel version you need is to
+examine the pre-included kernel image. For hammerhead, it's in
+&lt;code&gt;device/lge/hammerhead-kernel/&lt;/code&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;bzgrep -a &lt;span class="s1"&gt;&amp;#39;Linux version&amp;#39;&lt;/span&gt; device/lge/hammerhead-kernel/vmlinux.bz2
+Linux version 3.4.0-gd59db4e &lt;span class="o"&gt;(&lt;/span&gt;android-build@vpbs1.mtv.corp.google.com&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;gcc version 4.7 &lt;span class="o"&gt;(&lt;/span&gt;GCC&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="c"&gt;#1 SMP PREEMPT Mon Mar 17 15:16:36 PDT 2014&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;As per &lt;a href="http://stackoverflow.com/questions/21574066/unable-to-checkout-msm-source-code-for-android-hammerhead-kernel"&gt;this stackoverflow thread&lt;/a&gt;, the commit hash you want is &lt;code&gt;d59db4e&lt;/code&gt;
+part from the version name, without leading &lt;code&gt;g&lt;/code&gt;.&lt;/p&gt;
+&lt;h3&gt;Download the Sources&lt;/h3&gt;
+&lt;p&gt;For hammerhead, the kernel sources lie in &lt;code&gt;msm&lt;/code&gt; tree. After cloning it into
+&lt;code&gt;kernel&lt;/code&gt; directory, checkout the commit hash you found in above step.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;git clone https://android.googlesource.com/kernel/msm.git kernel
+&lt;span class="nv"&gt;$ &lt;/span&gt;&lt;span class="nb"&gt;cd &lt;/span&gt;kernel
+&lt;span class="nv"&gt;$ &lt;/span&gt;git checkout d59db4e
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;Adapt kernel/AndroidKernel.mk&lt;/h3&gt;
+&lt;p&gt;Two changes need to be made for kernel to be successfully built in-tree.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Use &lt;code&gt;zImage-dtb&lt;/code&gt; instead of &lt;code&gt;zImage&lt;/code&gt; as target. &lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;First, change &lt;code&gt;TARGET_PREBUILT_INT_KERNEL&lt;/code&gt; (~line 8).&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="gd"&gt;-TARGET_PREBUILT_INT_KERNEL := $(KERNEL_OUT)/arch/arm/boot/zImage&lt;/span&gt;
+&lt;span class="gi"&gt;+TARGET_PREBUILT_INT_KERNEL := $(KERNEL_OUT)/arch/arm/boot/zImage-dtb&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then change corresponding make rule (~line 47).&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;$(TARGET_PREBUILT_INT_KERNEL): $(KERNEL_OUT) $(KERNEL_CONFIG) $(KERNEL_HEADERS_INSTALL)
+&lt;span class="gd"&gt;-       $(MAKE) -C kernel O=../$(KERNEL_OUT) ARCH=arm CROSS_COMPILE=arm-eabi-&lt;/span&gt;
+&lt;span class="gi"&gt;+       $(MAKE) -C kernel O=../$(KERNEL_OUT) ARCH=arm CROSS_COMPILE=arm-eabi- zImage-dtb&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ul&gt;
+&lt;li&gt;Do not build modules (~line 48-51).&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="gd"&gt;-       $(MAKE) -C kernel O=../$(KERNEL_OUT) ARCH=arm CROSS_COMPILE=arm-eabi- modules&lt;/span&gt;
+&lt;span class="gd"&gt;-       $(MAKE) -C kernel O=../$(KERNEL_OUT) INSTALL_MOD_PATH=../../$(KERNEL_MODULES_INSTALL) INSTALL_MOD_STRIP=1 ARCH=arm CROSS_COMPILE=arm-eabi- modules_install&lt;/span&gt;
+&lt;span class="gd"&gt;-       $(mv-modules)&lt;/span&gt;
+&lt;span class="gd"&gt;-       $(clean-module-folder)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;Adapt device/lge/hammerhead Project&lt;/h3&gt;
+&lt;p&gt;Next we need to tell the device to build kernel, instead of copying the
+pre-built one. &lt;a href="https://github.com/jamesonwilliams/device_lge_hammerhead/commit/fe714801e33b38af4a81ddc3f40c3fdc53583f66"&gt;This patch&lt;/a&gt; should do the trick. Basically, a new
+&lt;code&gt;AndroidBoard.mk&lt;/code&gt; file is added to include the rules to build and copy kernel.
+And some lines in &lt;code&gt;device.mk&lt;/code&gt; related to kernel are removed, since it's already
+taken care of in &lt;code&gt;AndroidBoard.mk&lt;/code&gt;.&lt;/p&gt;
+&lt;h3&gt;Build It!&lt;/h3&gt;
+&lt;p&gt;After all above changes, &lt;strong&gt;do a &lt;code&gt;make clobber&lt;/code&gt; to make sure we have a clean
+slate&lt;/strong&gt;, otherwise, some strange errors may strike you.  Then just build AOSP in
+normal way and kernel should get built on the fly.&lt;/p&gt;
+&lt;p&gt;Here is a snapshot of the kernel version I built. The version name is no longer
+&lt;code&gt;d59db4e&lt;/code&gt; because I made some changes.&lt;/p&gt;
+&lt;p&gt;&lt;img src="/images/kernel.png" class="center"&gt;&lt;/p&gt;
+&lt;h3&gt;Credits&lt;/h3&gt;
+&lt;p&gt;Thanks to &lt;a href="http://nosemaj.org/howto-build-android-kitkat-nexus-5"&gt;this blog from Jameson&lt;/a&gt; for describing most of it.&lt;/p&gt;
+&lt;h2&gt;UPDATE&lt;/h2&gt;
+&lt;p&gt;The above setup works fine as long as you didn't
+&lt;a href="https://source.android.com/source/initializing.html#using-a-separate-output-directory"&gt;specify a separate output directory&lt;/a&gt;, since we assume the kernel output
+directory is &lt;code&gt;../$(KERNEL_OUT)&lt;/code&gt; in &lt;code&gt;make&lt;/code&gt; options. Apparently, it will fail if the
+&lt;code&gt;out&lt;/code&gt; directory is not the default one.&lt;/p&gt;
+&lt;p&gt;The kernel &lt;a href="https://android.googlesource.com/kernel/msm/+/android-msm-hammerhead-3.4-kitkat-mr1/Makefile"&gt;Makefile&lt;/a&gt; support two ways of specify output directory
+(see comments starting from line 79). One is to use &lt;code&gt;O=&lt;/code&gt; command line option,
+another is to set the &lt;code&gt;KBUILD_OUTPUT&lt;/code&gt; environment variable.&lt;/p&gt;
+&lt;p&gt;Since we use &lt;code&gt;-C&lt;/code&gt; option to first switch working directory, &lt;code&gt;O=&lt;/code&gt; options is a
+bit tricky to use, so we leverage the &lt;code&gt;KBUILD_OUT&lt;/code&gt; variable.&lt;/p&gt;
+&lt;p&gt;We first figure out the absolute path of the &lt;code&gt;KERNEL_OUT&lt;/code&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;FULL_KERNEL_OUT&lt;/span&gt; &lt;span class="o"&gt;:=&lt;/span&gt; &lt;span class="k"&gt;$(&lt;/span&gt;shell readlink -e &lt;span class="k"&gt;$(&lt;/span&gt;KERNEL_OUT&lt;span class="k"&gt;))&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then we set &lt;code&gt;KBUILD_OUT&lt;/code&gt; before calling &lt;code&gt;make&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nf"&gt;$(KERNEL_CONFIG)&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="k"&gt;$(&lt;/span&gt;&lt;span class="nv"&gt;KERNEL_OUT&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;
+    env &lt;span class="nv"&gt;KBUILD_OUTPUT&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="k"&gt;$(&lt;/span&gt;FULL_KERNEL_OUT&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="se"&gt;\&lt;/span&gt;
+    &lt;span class="k"&gt;$(&lt;/span&gt;MAKE&lt;span class="k"&gt;)&lt;/span&gt; -C kernel &lt;span class="nv"&gt;ARCH&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;arm &lt;span class="nv"&gt;CROSS_COMPILE&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;arm-eabi- &lt;span class="k"&gt;$(&lt;/span&gt;KERNEL_DEFCONFIG&lt;span class="k"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;This way will work no matter where the actual AOSP output directory is.&lt;/p&gt;
+&lt;h2&gt;UPDATE (09/03/2015)&lt;/h2&gt;
+&lt;p&gt;As &lt;a href="https://github.com/jhshi/blog_source/issues/3"&gt;Ryan pointed out&lt;/a&gt;, for Mac users, you may need to install GNU
+&lt;code&gt;readlink&lt;/code&gt;, instead of the built-in one.&lt;/p&gt;</summary><category term="kernel"></category><category term="hammerhead"></category><category term="aosp"></category></entry><entry><title>Fix Data Connection for Nexus 5 Hammerhead on Android 4.4.4 Kitkat</title><link href="http://jhshi.me/2014/06/27/fix-data-connection-for-nexus-5-hammerhead-on-android-4-dot-4-4-kitkat/index.html" rel="alternate"></link><updated>2014-06-27T16:57:15-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-06-27:2014/06/27/fix-data-connection-for-nexus-5-hammerhead-on-android-4-dot-4-4-kitkat/index.html</id><summary type="html">&lt;p&gt;Recently, I need to build a working ROM for Nexus 5 from LG (hammerhead,
+here-forth). There are variety of tutorials and guide all over the web on the
+general steps needed to compile AOSP from scratch, which I do not intend to
+repeat here. Instead, I'll mostly focus on how to make the data connection
+(3G/LTE) working on Sprint phones.&lt;/p&gt;
+
+
+&lt;p&gt;I choose the latest AOSP release as of writing this post, &lt;code&gt;android-4.4.4_r1&lt;/code&gt; as
+per the &lt;a href="https://source.android.com/source/build-numbers.html"&gt;official Android build numbers page&lt;/a&gt;, and followed the 
+&lt;a href="https://source.android.com/source/building.html"&gt;official build instructions from Android&lt;/a&gt;. Everything went smoothly, except that
+after flashing to device, I found there was no data connection (3G/LTE). Of
+course Google apps were also missing but it should be easy to fix.&lt;/p&gt;
+&lt;p&gt;After banging my head for a while, I came across &lt;a href="http://nosemaj.org/howto-build-android-kitkat-nexus-5"&gt;this post from Jameson&lt;/a&gt;
+and &lt;a href="https://groups.google.com/forum/?fromgroups#!topic/android-building/SjdAhFHYj-Q"&gt;this thread&lt;/a&gt;, which shed some light on what's happening.
+Apparently, the vendor binaries from &lt;a href="https://developers.google.com/android/nexus/drivers#hammerheadktu84p"&gt;Google's driver page&lt;/a&gt; do not work
+properly out of the box. Some was missing, such as &lt;code&gt;OmaDmclient.apk&lt;/code&gt;, and others
+were different from those in factory image. So based on Jameson's vendor binary
+repos (&lt;a href="https://github.com/jamesonwilliams/vendor_lge_hammerhead"&gt;lge&lt;/a&gt;, &lt;a href="https://github.com/jamesonwilliams/vendor_qcom_hammerhead"&gt;qcom&lt;/a&gt;), I updated them with the binaries from 
+&lt;a href="https://developers.google.com/android/nexus/images#hammerheadktu84p"&gt;factory image&lt;/a&gt; of Android 4.4.4 (KTU84P). Yet still no luck.&lt;/p&gt;
+&lt;p&gt;Finally, one of the comments in that post led me to this &lt;a href="http://forum.xda-developers.com/google-nexus-5/general/fix-sprint-data-to-custom-roms-t2541924"&gt;xda thread&lt;/a&gt;
+talking about APN fixes for Sprint users, which seems to be just I missed. So I
+used the &lt;code&gt;apns-conf.xml&lt;/code&gt; file from there and va-la, LTE is working! One tiny
+glitch though, on first boot, activating data connection took far longer than it
+should be, so once you saw the LTE icon, it's safe to hit skip.&lt;/p&gt;
+&lt;p&gt;&lt;img width="180" height="320" class="center" src="/images/data-activate.png"&gt;
+&lt;img width="180" height="320" class="center" src="/images/about-phone.png"&gt;&lt;/p&gt;
+&lt;h2&gt;UPDATE (Jun 28, 2014)&lt;/h2&gt;
+&lt;p&gt;To be able to sign the added vendor apks properly, I've added corresponding
+&lt;code&gt;Android.mk&lt;/code&gt; in each proprietary directory. Also, &lt;code&gt;TimeService.apk&lt;/code&gt; from qcom
+should override the one from gapps.&lt;/p&gt;
+&lt;h2&gt;UPDATE (Oct 3, 2015)&lt;/h2&gt;
+&lt;p&gt;To extract the files from factory image:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Download the factory image, uncompress it.&lt;/li&gt;
+&lt;li&gt;Unzip the image files (&lt;code&gt;images-hammerhead-xxxxxx.zip&lt;/code&gt;) inside it.&lt;/li&gt;
+&lt;li&gt;Uncompress the &lt;code&gt;system.img&lt;/code&gt; file:
+     &lt;code&gt;$ simg2img system.img system.img.raw&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Mount the system image (assuming you already have a mount point).
+     &lt;code&gt;$ mount -t ext4 -o loop system.img.raw /mnt/system.img/&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;More instructions can be found &lt;a href="http://omappedia.org/wiki/Android_eMMC_Booting#Modifying_.IMG_Files"&gt;here&lt;/a&gt;.&lt;/p&gt;</summary><category term="aosp"></category><category term="hammerhead"></category><category term="sprint"></category><category term="data"></category><category term="apn"></category></entry><entry><title>Get Package Usage Statistics in Android</title><link href="http://jhshi.me/2014/04/02/get-package-usage-statistics-in-android/index.html" rel="alternate"></link><updated>2014-04-02T13:00:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-04-02:2014/04/02/get-package-usage-statistics-in-android/index.html</id><summary type="html">&lt;p&gt;In developing PhoneLab Conductor, I need to get various statistics about a
+installed package to determine if a app is actively used by participant. For
+example, for interactive apps, I'd like to know how many times the user launches
+the app, and how long user actively interact with the app. For background apps
+(e.g., data collection), I'd like to know how long the background service has
+been running.&lt;/p&gt;
+
+
+&lt;p&gt;There is this &lt;a href="http://source.android.com/devices/tech/input/dumpsys.html"&gt;dumpsys&lt;/a&gt; tool in Android which will provide various
+information about the status of the system, including package statistics.&lt;/p&gt;
+&lt;p&gt;Here is the sample output.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;root@android:/ &lt;span class="c"&gt;# dumpsys usagestats&lt;/span&gt;
+Date: 20140402
+  com.android.launcher: &lt;span class="m"&gt;2&lt;/span&gt; &lt;span class="nb"&gt;times&lt;/span&gt;, &lt;span class="m"&gt;43748&lt;/span&gt; ms
+    com.android.launcher2.Launcher: &lt;span class="m"&gt;2&lt;/span&gt; starts
+  com.tencent.mm: &lt;span class="m"&gt;1&lt;/span&gt; &lt;span class="nb"&gt;times&lt;/span&gt;, &lt;span class="m"&gt;167750&lt;/span&gt; ms
+    com.tencent.mm.ui.chatting.ChattingUI: &lt;span class="m"&gt;4&lt;/span&gt; starts, 1000-1500ms&lt;span class="o"&gt;=&lt;/span&gt;2, 4000-5000ms&lt;span class="o"&gt;=&lt;/span&gt;1
+    com.tencent.mm.ui.tools.ImageGalleryUI: &lt;span class="m"&gt;1&lt;/span&gt; starts, 250-500ms&lt;span class="o"&gt;=&lt;/span&gt;1
+    com.tencent.mm.ui.LauncherUI: &lt;span class="m"&gt;4&lt;/span&gt; starts, 2000-3000ms&lt;span class="o"&gt;=&lt;/span&gt;1
+    com.tencent.mm.ui.friend.FMessageConversationUI: &lt;span class="m"&gt;1&lt;/span&gt; starts, 250-500ms&lt;span class="o"&gt;=&lt;/span&gt;1
+  com.android.settings: &lt;span class="m"&gt;2&lt;/span&gt; &lt;span class="nb"&gt;times&lt;/span&gt;, &lt;span class="m"&gt;93065&lt;/span&gt; ms
+    com.android.settings.Settings: &lt;span class="m"&gt;2&lt;/span&gt; starts
+    com.android.settings.SubSettings: &lt;span class="m"&gt;2&lt;/span&gt; starts, 250-500ms&lt;span class="o"&gt;=&lt;/span&gt;1, 500-750ms&lt;span class="o"&gt;=&lt;/span&gt;2
+  com.google.android.gm: &lt;span class="m"&gt;1&lt;/span&gt; &lt;span class="nb"&gt;times&lt;/span&gt;, &lt;span class="m"&gt;11396&lt;/span&gt; ms
+    com.google.android.gm.ConversationListActivityGmail: &lt;span class="m"&gt;1&lt;/span&gt; starts, 500-750ms&lt;span class="o"&gt;=&lt;/span&gt;1
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;At first glance, this is a perfect fit for my purpose. But there're two
+problems.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;This command needs to be run in shell. How can I get these information
+   programatically using Java code? I definitely don't want to execute this
+   shell command and then parse its output.&lt;/li&gt;
+&lt;li&gt;Only interactive apps' statistics are included. What about background apps
+   which may don't have an activity?&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;IUsageStats Service&lt;/h3&gt;
+&lt;p&gt;After poking around Android Settings app's source code, I found there is one
+internal interface called &lt;code&gt;IUsageStats&lt;/code&gt;. It's defined in
+&lt;code&gt;framework/base/core/java/com/android/internal/app/IUsageStats.aidl&lt;/code&gt; inside AOSP
+tree. You can find it &lt;a href="https://android.googlesource.com/platform/frameworks/base.git/+/android-4.3_r2.1/core/java/com/android/internal/app/IUsageStats.aidl"&gt;here&lt;/a&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kn"&gt;package&lt;/span&gt; &lt;span class="nn"&gt;com.android.internal.app&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;android.content.ComponentName&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;com.android.internal.os.PkgUsageStats&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+
+&lt;span class="kd"&gt;interface&lt;/span&gt; &lt;span class="nc"&gt;IUsageStats&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;noteResumeComponent&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;in&lt;/span&gt; &lt;span class="n"&gt;ComponentName&lt;/span&gt; &lt;span class="n"&gt;componentName&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+    &lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;notePauseComponent&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;in&lt;/span&gt; &lt;span class="n"&gt;ComponentName&lt;/span&gt; &lt;span class="n"&gt;componentName&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+    &lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;noteLaunchTime&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;in&lt;/span&gt; &lt;span class="n"&gt;ComponentName&lt;/span&gt; &lt;span class="n"&gt;componentName&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;millis&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;PkgUsageStats&lt;/span&gt; &lt;span class="nf"&gt;getPkgUsageStats&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;in&lt;/span&gt; &lt;span class="n"&gt;ComponentName&lt;/span&gt; &lt;span class="n"&gt;componentName&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;PkgUsageStats&lt;/span&gt;&lt;span class="o"&gt;[]&lt;/span&gt; &lt;span class="nf"&gt;getAllPkgUsageStats&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Where &lt;code&gt;PkgUsageStats&lt;/code&gt; class is defined in 
+&lt;code&gt;framework/base/core/java/com/android/internal/os/PkgUsageStats.java&lt;/code&gt;
+&lt;a href="https://android.googlesource.com/platform/frameworks/base.git/+/android-4.2.2_r1/core/java/com/android/internal/os/PkgUsageStats.java"&gt;link&lt;/a&gt;. &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kd"&gt;public&lt;/span&gt; &lt;span class="kd"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;PkgUsageStats&lt;/span&gt; &lt;span class="kd"&gt;implements&lt;/span&gt; &lt;span class="n"&gt;Parcelable&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="kd"&gt;public&lt;/span&gt; &lt;span class="n"&gt;String&lt;/span&gt; &lt;span class="n"&gt;packageName&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+    &lt;span class="kd"&gt;public&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;launchCount&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+    &lt;span class="kd"&gt;public&lt;/span&gt; &lt;span class="kt"&gt;long&lt;/span&gt; &lt;span class="n"&gt;usageTime&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+    &lt;span class="kd"&gt;public&lt;/span&gt; &lt;span class="n"&gt;Map&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;String&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;Long&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;componentResumeTimes&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+
+    &lt;span class="c1"&gt;// other stuff...&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;It contains all the information I need about foreground apps!&lt;/p&gt;
+&lt;p&gt;Now is the problem of how to access the internal class and interface of Android.
+There's plenty way to do this. Since I have aosp source tree at hand, I just
+copy those two files into my project. For &lt;code&gt;PkgUsageStats&lt;/code&gt;, I also need to copy
+the aidl file
+(&lt;code&gt;framework/base/core/java/com/android/internal/os/PkgUsageStats.aidl&lt;/code&gt;).&lt;/p&gt;
+&lt;p&gt;Here is the final directory structure of my &lt;code&gt;src&lt;/code&gt; folder.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;src/
+|-- com
+|   `-- android
+|       `-- internal
+|           |-- app
+|           |   `-- IUsageStats.aidl
+|           `-- os
+|               |-- PkgUsageStats.aidl
+|               `-- PkgUsageStats.java
+`-- other stuff
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here is the code snippet that get the &lt;code&gt;IUsageStats&lt;/code&gt; service.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kd"&gt;private&lt;/span&gt; &lt;span class="kd"&gt;static&lt;/span&gt; &lt;span class="kd"&gt;final&lt;/span&gt; &lt;span class="n"&gt;String&lt;/span&gt; &lt;span class="n"&gt;SERVICE_MANAGER_CLASS&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;android.os.ServiceManager&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+
+&lt;span class="k"&gt;try&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;Class&lt;/span&gt; &lt;span class="n"&gt;serviceManager&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Class&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;forName&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;SERVICE_MANAGER_CLASS&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;Method&lt;/span&gt; &lt;span class="n"&gt;getService&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;serviceManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getDeclaredMethod&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;getService&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;Class&lt;/span&gt;&lt;span class="o"&gt;[]{&lt;/span&gt;&lt;span class="n"&gt;String&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;class&lt;/span&gt;&lt;span class="o"&gt;});&lt;/span&gt;
+    &lt;span class="n"&gt;mUsageStatsService&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;IUsageStats&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;Stub&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;asInterface&lt;/span&gt;&lt;span class="o"&gt;((&lt;/span&gt;&lt;span class="n"&gt;IBinder&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;&lt;span class="n"&gt;getService&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;invoke&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="kc"&gt;null&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;usagestats&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;));&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;span class="k"&gt;catch&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Exception&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;Log&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;e&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;TAG&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;Failed to get service manager class: &amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;mUsageStatsService&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="kc"&gt;null&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here I use Java reflection to get the class of &lt;code&gt;android.os.ServiceManager&lt;/code&gt;,
+which is also internal interface.&lt;/p&gt;
+&lt;p&gt;After that, you just get all the package statistics like so:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;HashMap&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;String&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;PkgUsageStats&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;stats&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;HashMap&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;String&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;PkgUsageStats&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;();&lt;/span&gt;
+&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;mUsageStatsService&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="kc"&gt;null&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="k"&gt;try&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+        &lt;span class="n"&gt;PkgUsageStats&lt;/span&gt;&lt;span class="o"&gt;[]&lt;/span&gt; &lt;span class="n"&gt;pkgUsageStats&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;mUsageStatsService&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getAllPkgUsageStats&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+        &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;PkgUsageStats&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;pkgUsageStats&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+            &lt;span class="n"&gt;stats&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;put&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;packageName&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+        &lt;span class="o"&gt;}&lt;/span&gt;
+    &lt;span class="o"&gt;}&lt;/span&gt;
+    &lt;span class="k"&gt;catch&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Exception&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+        &lt;span class="n"&gt;Log&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;e&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;TAG&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;Failed to get package usage stats: &amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+    &lt;span class="o"&gt;}&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;Background Service Running Time&lt;/h3&gt;
+&lt;p&gt;It seems that Settings-&amp;gt;Apps-&amp;gt;Running Apps are already showing the information
+that how long a process or service has been running.&lt;/p&gt;
+&lt;p&gt;&lt;img src="/images/running.png" class="center"&gt;&lt;/p&gt;
+&lt;p&gt;After inspecting the source code of Settings app, I found that information is
+coming from &lt;code&gt;ActivityManager.RunningServiceInfo&lt;/code&gt;. There is a field named
+&lt;code&gt;activeSince&lt;/code&gt;, which is the time when the service was first made active.&lt;/p&gt;
+&lt;h2&gt;=== UPDATE ===&lt;/h2&gt;
+&lt;p&gt;It seems the reflection need system permission (I haven't tested yet). Since we
+build our own platform, it's not a problem--we just sign our apk with the platform
+key and declare our app's user as system in &lt;code&gt;AndroidManifest.xml&lt;/code&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;android:sharedUserId=&amp;quot;android.uid.system&amp;quot;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;But if you don't have the platform key, then this approach probably won't work.
+The other way I can think of is you run the &lt;code&gt;dumpsys&lt;/code&gt; command and parse the
+output, but it still requites root permission.&lt;/p&gt;</summary><category term="dumpsys"></category><category term="usagestats"></category></entry><entry><title>Tap Notification To Send Email</title><link href="http://jhshi.me/2014/01/06/tap-notification-to-send-email/index.html" rel="alternate"></link><updated>2014-01-06T13:14:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-01-06:2014/01/06/tap-notification-to-send-email/index.html</id><summary type="html">&lt;p&gt;In developing &lt;a href="https://play.google.com/store/apps/details?id=edu.buffalo.cse.phonelab.conductor"&gt;PhoneLab Conductor&lt;/a&gt; app, I need to provide user a way
+to give us feedback after applying OTA update. Although this feature was
+disabled in release, I thought it's worthwhile to record how to implement that
+functionality anyway.&lt;/p&gt;
+
+
+&lt;h3&gt;The Scenario&lt;/h3&gt;
+&lt;p&gt;After the phone received and OTA update and rebooted to apply it, the conductor
+app will pop up an notification, saying something like "You've updated your
+platform, if there's any question, please tap to email for help.". So when user
+tap the notification, a selection alert should pop up to let user select which
+email client to use. Then open that email client with proper recipient, subject,
+and email body (e.g., some extra debug information).&lt;/p&gt;
+&lt;h3&gt;The Overall Flow&lt;/h3&gt;
+&lt;p&gt;When we post an notification using &lt;a href="http://developer.android.com/reference/android/app/Notification.Builder.html"&gt;Notification.Builder&lt;/a&gt;, we can optionally
+set an &lt;a href="http://developer.android.com/reference/android/app/PendingIntent.html"&gt;PendingIntent&lt;/a&gt; about what action to take when user tap that
+notification. This is done via the &lt;code&gt;setContentIntent&lt;/code&gt; function. &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;builder&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;setContentIntent&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;reportProblemPendingIntent&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;notificationManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;notify&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;PLATFORM_UPDATE_NOTIFICATION_ID&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;builder&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;build&lt;/span&gt;&lt;span class="o"&gt;());&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;And that
+&lt;code&gt;PendingIntent&lt;/code&gt; will broadcast an custom intent so our &lt;code&gt;BoradcastReceiver&lt;/code&gt; will
+be called and handle that tap event.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kd"&gt;private&lt;/span&gt; &lt;span class="n"&gt;String&lt;/span&gt; &lt;span class="n"&gt;reportProblemIntentName&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;this&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getClass&lt;/span&gt;&lt;span class="o"&gt;().&lt;/span&gt;&lt;span class="na"&gt;getName&lt;/span&gt;&lt;span class="o"&gt;()&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;.ReportProblem&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="kd"&gt;private&lt;/span&gt; &lt;span class="n"&gt;IntentFilter&lt;/span&gt; &lt;span class="n"&gt;reportProblemIntentFilter&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;IntentFilter&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;reportProblemIntentName&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="kd"&gt;private&lt;/span&gt; &lt;span class="n"&gt;PendingIntent&lt;/span&gt; &lt;span class="n"&gt;reportProblemPendingIntent&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="kd"&gt;private&lt;/span&gt; &lt;span class="n"&gt;BroadcastReceiver&lt;/span&gt; &lt;span class="n"&gt;reportProblemReceiver&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;BroadcastReceiver&lt;/span&gt;&lt;span class="o"&gt;()&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="nd"&gt;@Override&lt;/span&gt;
+    &lt;span class="kd"&gt;public&lt;/span&gt; &lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;onReceive&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Context&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;Intent&lt;/span&gt; &lt;span class="n"&gt;intent&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+        &lt;span class="c1"&gt;// to be filled&lt;/span&gt;
+    &lt;span class="o"&gt;}&lt;/span&gt;
+&lt;span class="o"&gt;};&lt;/span&gt;
+
+&lt;span class="c1"&gt;// in initilization function&lt;/span&gt;
+&lt;span class="n"&gt;reportProblemPendingIntent&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;PendingIntent&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getBroadcast&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; 
+    &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;Intent&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;reportProblemIntentName&lt;/span&gt;&lt;span class="o"&gt;),&lt;/span&gt; &lt;span class="n"&gt;PendingIntent&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;FLAG_UPDATE_CURRENT&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;registerReceiver&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;reportProblemReceiver&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;reportProblemIntentFilter&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;Launch Email App&lt;/h3&gt;
+&lt;p&gt;Now when user tap the notification, the &lt;code&gt;onReceive&lt;/code&gt; handler will be called.&lt;/p&gt;
+&lt;p&gt;First, we need to cancel the notification.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;NotificationManager&lt;/span&gt; &lt;span class="n"&gt;notificationManager&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;NotificationManager&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getSystemService&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Context&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;NOTIFICATION_SERVICE&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;notificationManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;cancel&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;PLATFORM_UPDATE_NOTIFICATION_ID&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then we prepare the intent for launch email app.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;Intent&lt;/span&gt; &lt;span class="n"&gt;emailIntent&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;Intent&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Intent&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;ACTION_SENDTO&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;emailIntent&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;setType&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;text/plain&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;String&lt;/span&gt; &lt;span class="n"&gt;messageBody&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+    &lt;span class="s"&gt;&amp;quot;========================\n&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt;
+    &lt;span class="s"&gt;&amp;quot;  Optional debug info   \n&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt;
+    &lt;span class="s"&gt;&amp;quot;========================\n&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt;
+    &lt;span class="s"&gt;&amp;quot;Please describe your problems here.\n\n&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="n"&gt;String&lt;/span&gt; &lt;span class="n"&gt;uriText&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;mailto:&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;Uri&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;encode&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;PHONELAB_HELP_EMAIL&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;?subject=&amp;quot;&lt;/span&gt;
+    &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;Uri&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;encode&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;OTA Update Problem&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;&amp;amp;body=&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;Uri&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;encode&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;messageBody&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;emailIntent&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;setData&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Uri&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;parse&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;uriText&lt;/span&gt;&lt;span class="o"&gt;));&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Note that in order to actually launch the email chooser, we need another intent.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;Intent&lt;/span&gt; &lt;span class="n"&gt;actualIntent&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Intent&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;createChooser&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;emailIntent&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;Send email to PhoneLab&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;actualIntent&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;addFlags&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Intent&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;FLAG_ACTIVITY_NEW_TASK&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;startActivity&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;actualIntent&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="notification"></category><category term="email"></category><category term="intent"></category></entry><entry><title>How to Apply Downloaded OTA Package</title><link href="http://jhshi.me/2013/12/13/how-to-apply-downloaded-ota-package/index.html" rel="alternate"></link><updated>2013-12-13T12:24:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-12-13:2013/12/13/how-to-apply-downloaded-ota-package/index.html</id><summary type="html">&lt;p&gt;Suppose you've 
+&lt;a href="/2013/12/02/how-to-use-downloadmanager/"&gt;downloaded the OTA package using Android's &lt;code&gt;DownloadManager&lt;/code&gt;&lt;/a&gt;, this post
+discusses how to verify it, and how to apply it at client's side.&lt;/p&gt;
+
+
+&lt;h3&gt;Copy the Package to Internal Storage&lt;/h3&gt;
+&lt;p&gt;By default, &lt;code&gt;DownloadManager&lt;/code&gt; will save the downloaded file in external storage,
+say, &lt;code&gt;/sdcard&lt;/code&gt;. To make sure that this package is still accessible after the
+phone reboots into recovery, we need to copy the package into internal storage.
+In this case, we will use the &lt;code&gt;/cache&lt;/code&gt; partition.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;File&lt;/span&gt; &lt;span class="n"&gt;packageFile&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;File&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Environment&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getDownloadCacheDirectory&lt;/span&gt;&lt;span class="o"&gt;()&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;/update.zip&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;packageFile&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;exists&lt;/span&gt;&lt;span class="o"&gt;())&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;packageFile&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;delete&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+
+&lt;span class="n"&gt;FileChannel&lt;/span&gt; &lt;span class="n"&gt;source&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="kc"&gt;null&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="n"&gt;FileChannel&lt;/span&gt; &lt;span class="n"&gt;dest&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="kc"&gt;null&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+
+&lt;span class="k"&gt;try&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;source&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;FileInputStream&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;downloadedFile&lt;/span&gt;&lt;span class="o"&gt;)).&lt;/span&gt;&lt;span class="na"&gt;getChannel&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+    &lt;span class="n"&gt;dest&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;FileOutputStream&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;packageFile&lt;/span&gt;&lt;span class="o"&gt;)).&lt;/span&gt;&lt;span class="na"&gt;getChannel&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+
+    &lt;span class="kt"&gt;long&lt;/span&gt; &lt;span class="n"&gt;count&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+    &lt;span class="kt"&gt;long&lt;/span&gt; &lt;span class="n"&gt;size&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;source&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;size&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+
+    &lt;span class="k"&gt;do&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+        &lt;span class="n"&gt;count&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="n"&gt;dest&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;transferFrom&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;source&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;count&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;size&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;count&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+    &lt;span class="o"&gt;}&lt;/span&gt; &lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;count&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="n"&gt;size&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;span class="k"&gt;catch&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Exception&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;Log&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;e&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;TAG&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;Failed to copy update file into internal storage: &amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="kc"&gt;false&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;span class="k"&gt;finally&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="k"&gt;try&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+        &lt;span class="n"&gt;source&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;close&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+        &lt;span class="n"&gt;dest&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;close&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+    &lt;span class="o"&gt;}&lt;/span&gt;
+    &lt;span class="k"&gt;catch&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Exception&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+        &lt;span class="n"&gt;Log&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;e&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;TAG&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;Failed to close file channels: &amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+    &lt;span class="o"&gt;}&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here we use &lt;code&gt;FileChannel&lt;/code&gt; from &lt;code&gt;java.nio&lt;/code&gt; instead of the native
+&lt;code&gt;FileOutputStream&lt;/code&gt;, for some performance boost. You can find more discussions
+about &lt;code&gt;java.nio&lt;/code&gt; vs. &lt;code&gt;java.io&lt;/code&gt; in this &lt;a href="http://stackoverflow.com/questions/1605332/java-nio-filechannel-versus-fileoutputstream-performance-usefulness"&gt;stackoverflow thread&lt;/a&gt;.&lt;/p&gt;
+&lt;h4&gt;UPDATE 2015-11-03&lt;/h4&gt;
+&lt;p&gt;Another way to copy the package is to use &lt;code&gt;IOUtils.copy&lt;/code&gt; function from &lt;a href="https://commons.apache.org/proper/commons-io/"&gt;Apache
+Common library&lt;/a&gt;. Put the downloaded &lt;code&gt;commons-io-x.y.jar&lt;/code&gt; in your
+project's &lt;code&gt;lib&lt;/code&gt; directory, then:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;org.apache.commons.io.IOUtils&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+
+&lt;span class="n"&gt;IOUtils&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;copy&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;FileInputStream&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;packageFile&lt;/span&gt;&lt;span class="o"&gt;),&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;FileOutputStream&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;File&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;/cache/update.zip&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;)));&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;Verify the Signature&lt;/h3&gt;
+&lt;p&gt;For security concern, we need to verify that the downloaded OTA package was
+signed properly with the platform key. You can refer to &lt;a href="/2013/12/02/how-to-create-and-sign-ota-package/"&gt;this post&lt;/a&gt; on how
+to sign the OTA package.&lt;/p&gt;
+&lt;p&gt;We can use the &lt;code&gt;verifyPackage&lt;/code&gt; call provided by &lt;a href="http://developer.android.com/reference/android/os/RecoverySystem.html"&gt;&lt;code&gt;RecoverySystem&lt;/code&gt; class&lt;/a&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;try&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;File&lt;/span&gt; &lt;span class="n"&gt;packageFile&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;File&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;URI&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;otaPackageUriString&lt;/span&gt;&lt;span class="o"&gt;));&lt;/span&gt;
+    &lt;span class="n"&gt;RecoverySystem&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;verifyPackage&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;packageFile&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="kc"&gt;null&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="kc"&gt;null&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+    &lt;span class="c1"&gt;// Log.v(TAG, &amp;quot;Successfuly verified ota package.&amp;quot;);&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="kc"&gt;true&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;span class="k"&gt;catch&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Exception&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;Log&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;e&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;TAG&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;Corrupted package: &amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="kc"&gt;false&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;This will verify the package against the platform key stored in
+&lt;code&gt;/system/etc/security/otacerts.zip&lt;/code&gt;. You can also provide your own certs file,
+of course. But in this case, the default platform key will do.&lt;/p&gt;
+&lt;h3&gt;Reboot into Recovery and Apply the Package&lt;/h3&gt;
+&lt;p&gt;OK, now we're pretty confident that the downloaded package is in sanity. Let's
+reboot the phone into recovery and apply it. This is done by the
+&lt;code&gt;installPackage&lt;/code&gt; call.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;try&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;File&lt;/span&gt; &lt;span class="n"&gt;packageFile&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;File&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;URI&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;otaPackageUriString&lt;/span&gt;&lt;span class="o"&gt;));&lt;/span&gt;
+    &lt;span class="n"&gt;RecoverySystem&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;installPackage&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;packageFile&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;span class="k"&gt;catch&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Exception&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;Log&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;e&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;TAG&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;Error while install OTA package: &amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;Log&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;e&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;TAG&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;Will retry download&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;startDownload&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;If everything is OK, the &lt;code&gt;installPackage&lt;/code&gt; call won't return, and the phone will
+be rebooted into recovery.&lt;/p&gt;</summary><category term="DownloadManager"></category><category term="RecoverySystem"></category><category term="FileChannel"></category></entry><entry><title>How to Use Android DownloadManager</title><link href="http://jhshi.me/2013/12/02/how-to-use-downloadmanager/index.html" rel="alternate"></link><updated>2013-12-02T20:42:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-12-02:2013/12/02/how-to-use-downloadmanager/index.html</id><summary type="html">&lt;p&gt;&lt;tt class="docutils literal"&gt;DownloadManager&lt;/tt&gt; is a service provided by Android that can conduct
+long-running HTTP downloads, typically for large files. So we do not need to
+worry about connection loss connection, system reboots, etc.&lt;/p&gt;
+
+&lt;div class="section" id="listen-for-download-complete-event"&gt;
+&lt;h2&gt;Listen for Download Complete Event&lt;/h2&gt;
+&lt;p&gt;Before we start downloading, make sure we already listen for the
+broadcast of &lt;tt class="docutils literal"&gt;Downloadmanager&lt;/tt&gt;, so that we won't miss anything.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kd"&gt;private&lt;/span&gt; &lt;span class="n"&gt;String&lt;/span&gt; &lt;span class="n"&gt;downloadCompleteIntentName&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;DownloadManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;ACTION_DOWNLOAD_COMPLETE&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="kd"&gt;private&lt;/span&gt; &lt;span class="n"&gt;IntentFilter&lt;/span&gt; &lt;span class="n"&gt;downloadCompleteIntentFilter&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;IntentFilter&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;downloadCompleteIntentName&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="kd"&gt;private&lt;/span&gt; &lt;span class="n"&gt;BroadcastReceiver&lt;/span&gt; &lt;span class="n"&gt;downloadCompleteReceiver&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;BroadcastReceiver&lt;/span&gt;&lt;span class="o"&gt;()&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="nd"&gt;@Override&lt;/span&gt;
+    &lt;span class="kd"&gt;public&lt;/span&gt; &lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;onReceive&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Context&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;Intent&lt;/span&gt; &lt;span class="n"&gt;intent&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+        &lt;span class="c1"&gt;// TO BE FILLED&lt;/span&gt;
+    &lt;span class="o"&gt;}&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+
+
+&lt;span class="c1"&gt;// when initialize&lt;/span&gt;
+&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;registerReceiver&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;downloadCompleteReceiver&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;downloadCompleteIntentFilter&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;div class="section" id="request-download"&gt;
+&lt;h2&gt;Request Download&lt;/h2&gt;
+&lt;p&gt;We an get an instance of &lt;tt class="docutils literal"&gt;DownloadManager&lt;/tt&gt; using this call.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;DownloadManager&lt;/span&gt; &lt;span class="n"&gt;downloadManager&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;DownloadManager&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getSystemService&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Context&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;DOWNLOAD_SERVICE&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;&lt;tt class="docutils literal"&gt;DownloadManager&lt;/tt&gt; has a subclass called &lt;tt class="docutils literal"&gt;Request&lt;/tt&gt;, which we will use
+to request for an download action. Here is the code snippet that
+initiate a download.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;String&lt;/span&gt; &lt;span class="n"&gt;url&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;http://example.com/large.zip&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="n"&gt;DownloadManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;Request&lt;/span&gt; &lt;span class="n"&gt;request&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;DownloadManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;Request&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Uri&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;parse&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;url&lt;/span&gt;&lt;span class="o"&gt;));&lt;/span&gt;
+
+&lt;span class="c1"&gt;// only download via WIFI&lt;/span&gt;
+&lt;span class="n"&gt;request&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;setAllowedNetworkTypes&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;DownloadManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;Request&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;NETWORK_WIFI&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;request&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;setTitle&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;Example&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;request&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;setDescription&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;Downloading a very large zip&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+
+&lt;span class="c1"&gt;// we just want to download silently&lt;/span&gt;
+&lt;span class="n"&gt;request&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;setVisibleInDownloadsUi&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="kc"&gt;false&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;request&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;setNotificationVisibility&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;DownloadManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;Request&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;VISIBILITY_HIDDEN&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;request&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;setDestinationInExternalFilesDir&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="kc"&gt;null&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;large.zip&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+
+&lt;span class="c1"&gt;// enqueue this request&lt;/span&gt;
+&lt;span class="n"&gt;DownloadManager&lt;/span&gt; &lt;span class="n"&gt;downloadManager&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;DownloadManager&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getSystemService&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Context&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;DOWNLOAD_SERVICE&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;downloadID&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;downloadManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;enqueue&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;request&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Please refer to &lt;a class="reference external" href="http://developer.android.com/reference/android/app/DownloadManager.Request.html"&gt;the
+doc&lt;/a&gt;
+on more configurations of the request object. So now we have an
+&lt;tt class="docutils literal"&gt;downloadID&lt;/tt&gt;, which we'll use to query the state of downloading.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="download-complete-handler"&gt;
+&lt;h2&gt;Download Complete Handler&lt;/h2&gt;
+&lt;p&gt;Now we already started downloading, in the above
+&lt;tt class="docutils literal"&gt;downloadCompleteReceiver&lt;/tt&gt;, what we need to do?&lt;/p&gt;
+&lt;p&gt;First, we need to check if it's for our download, since it's an
+broadcast event.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3
+4
+5&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;long&lt;/span&gt; &lt;span class="n"&gt;id&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;intent&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getLongExtra&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;DownloadManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;EXTRA_DOWNLOAD_ID&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;0L&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;downloadID&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;Log&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;v&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;TAG&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;Ingnoring unrelated download &amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Then we need to query the state of downloading. This is done via the
+&lt;tt class="docutils literal"&gt;Query&lt;/tt&gt; subclass of &lt;tt class="docutils literal"&gt;DownloadManager&lt;/tt&gt;.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;DownloadManager&lt;/span&gt; &lt;span class="n"&gt;downloadManager&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;DownloadManager&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getSystemService&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Context&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;DOWNLOAD_SERVICE&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;DownloadManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;Query&lt;/span&gt; &lt;span class="n"&gt;query&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;DownloadManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;Query&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+&lt;span class="n"&gt;query&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;setFilterById&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;Cursor&lt;/span&gt; &lt;span class="n"&gt;cursor&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;downloadManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;query&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;query&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+
+&lt;span class="c1"&gt;// it shouldn&amp;#39;t be empty, but just in case&lt;/span&gt;
+&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="o"&gt;(!&lt;/span&gt;&lt;span class="n"&gt;cursor&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;moveToFirst&lt;/span&gt;&lt;span class="o"&gt;())&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;Log&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;e&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;TAG&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;Empty row&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Then we can get the state and also the downloaded file information like
+this.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3
+4
+5
+6
+7
+8&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;statusIndex&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;cursor&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getColumnIndex&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;DownloadManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;COLUMN_STATUS&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;DownloadManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;STATUS_SUCCESSFUL&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;cursor&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getInt&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;statusIndex&lt;/span&gt;&lt;span class="o"&gt;))&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;Log&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;w&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;TAG&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;Download Failed&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;uriIndex&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;cursor&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getColumnIndex&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;DownloadManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;COLUMN_LOCAL_URI&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;String&lt;/span&gt; &lt;span class="n"&gt;downloadedPackageUriString&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;cursor&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getString&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;uriIndex&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;So now we get the downloaded file's URI, we can than either copy it to
+somewhere else, or go ahead and process it.&lt;/p&gt;
+&lt;p&gt;There are more information to query when the download failed, e.g.,
+reason, how much as been downloaded, etc. Please refer to the
+&lt;a class="reference external" href="http://developer.android.com/reference/android/app/DownloadManager.html"&gt;documentation of
+DownloadManager&lt;/a&gt;
+for complete list of column names.&lt;/p&gt;
+&lt;/div&gt;
+</summary><category term="DownloadManager"></category></entry><entry><title>How to Create and Sign OTA Package</title><link href="http://jhshi.me/2013/12/02/how-to-create-and-sign-ota-package/index.html" rel="alternate"></link><updated>2013-12-02T15:07:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-12-02:2013/12/02/how-to-create-and-sign-ota-package/index.html</id><summary type="html">&lt;p&gt;I'm currently maintaining the &lt;a href="https://play.google.com/store/apps/details?id=edu.buffalo.cse.phonelab.conductor"&gt;Conductor App&lt;/a&gt; for 
+&lt;a href="http://www.phone-lab.org"&gt;PhoneLab testbed&lt;/a&gt;. One of the core tasks performed by conductor is to perform
+system OTA update, so that we can push platform changes to our participants,
+either to fix bugs, or to do system level experiments (libc, Dalvik VM, etc.).&lt;/p&gt;
+&lt;p&gt;So the first step is, how to create an OTA package?&lt;/p&gt;
+
+
+&lt;h3&gt;Directory Structure&lt;/h3&gt;
+&lt;p&gt;Suppose we have a patched version of &lt;code&gt;libc&lt;/code&gt; and we want to overwrite the
+previous one already in participants' phone, we need first to figure out where
+that file is in the file system. In this case, it's &lt;code&gt;/system/lib/libc.so&lt;/code&gt;. Then
+our OTA package's directory structure must looks like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;myupdate
+&lt;span class="p"&gt;|&lt;/span&gt;-- META-INF
+&lt;span class="p"&gt;|&lt;/span&gt;   &lt;span class="sb"&gt;`&lt;/span&gt;-- com
+&lt;span class="p"&gt;|&lt;/span&gt;       &lt;span class="sb"&gt;`&lt;/span&gt;-- google
+&lt;span class="p"&gt;|&lt;/span&gt;           &lt;span class="sb"&gt;`&lt;/span&gt;-- android
+&lt;span class="p"&gt;|&lt;/span&gt;               &lt;span class="p"&gt;|&lt;/span&gt;-- update-binary
+&lt;span class="p"&gt;|&lt;/span&gt;               &lt;span class="sb"&gt;`&lt;/span&gt;-- updater-script
+&lt;span class="sb"&gt;`&lt;/span&gt;-- system
+    &lt;span class="sb"&gt;`&lt;/span&gt;-- lib
+        &lt;span class="sb"&gt;`&lt;/span&gt;-- libc.so
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The &lt;code&gt;update-binary&lt;/code&gt; and &lt;code&gt;updater-script&lt;/code&gt; are used to actually perform the 
+update, I'll explain them later.&lt;/p&gt;
+&lt;p&gt;Note that the structure of the &lt;code&gt;system&lt;/code&gt; needs to be exactly the same with what's
+in Android's setup, so that we can copy that directory directly to target
+system, and overwrite the files with the updated version.&lt;/p&gt;
+&lt;h3&gt;The updater-script&lt;/h3&gt;
+&lt;p&gt;The &lt;code&gt;update-binary&lt;/code&gt;, as its name indicates, is a binary file that will parse the
+&lt;code&gt;updater-script&lt;/code&gt; we write. It's quite standard and nothing special. You can obtain 
+a copy of this file &lt;a href="https://github.com/koush/AnyKernel/tree/master/META-INF/com/google/android"&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;The &lt;code&gt;updater-scipts&lt;/code&gt; contains the operations we want to perform. Its written
+using &lt;a href="http://wiki.cyanogenmod.org/w/Doc:_About_Edify"&gt;Edify&lt;/a&gt; scripting language, which has quite simple and intuitive
+syntax. You can find more details in this &lt;a href="http://forum.xda-developers.com/showthread.php?t=1187313"&gt;xda thread&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;In this case, what we need to do is quite simple: mount the &lt;code&gt;/system&lt;/code&gt; partition
+and copy the files in the OTA package to target file system. So the
+&lt;code&gt;updater-script&lt;/code&gt; may looks like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;mount(&amp;quot;ext4&amp;quot;, &amp;quot;EMMC&amp;quot;, &amp;quot;/dev/block/platform/omap/omap_hsmmc.0/by-name/system&amp;quot;, &amp;quot;/system&amp;quot;);
+package_extract_dir(&amp;quot;system&amp;quot;, &amp;quot;/system&amp;quot;);                                        
+unmount(&amp;quot;/system&amp;quot;);       
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;First, we mount the target file system's &lt;code&gt;system&lt;/code&gt; partition using the &lt;code&gt;mount&lt;/code&gt;
+command, the arguments are:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;FSTYPE&lt;/code&gt;: File system type. In this case, it's "ext4"&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;TYPE&lt;/code&gt;: Storage type. &lt;a href="http://www.datalight.com/solutions/technologies/emmc/what-is-emmc"&gt;"EMMC"&lt;/a&gt; means internal solid state storage device on MMC
+   bus, which is actually NAND flash.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;DEV&lt;/code&gt;: The device to mount. &lt;/li&gt;
+&lt;li&gt;&lt;code&gt;PATH&lt;/code&gt;: Mount point.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;You can find all the mounted devices in Android by &lt;code&gt;adb shell&lt;/code&gt; then &lt;code&gt;mount&lt;/code&gt;.
+Here is one sample output:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;shell@android:/ $ mount
+rootfs / rootfs ro,relatime 0 0
+tmpfs /dev tmpfs rw,nosuid,relatime,mode=755 0 0
+devpts /dev/pts devpts rw,relatime,mode=600 0 0
+proc /proc proc rw,relatime 0 0
+sysfs /sys sysfs rw,relatime 0 0
+none /acct cgroup rw,relatime,cpuacct 0 0
+tmpfs /mnt/secure tmpfs rw,relatime,mode=700 0 0
+tmpfs /mnt/asec tmpfs rw,relatime,mode=755,gid=1000 0 0
+tmpfs /mnt/obb tmpfs rw,relatime,mode=755,gid=1000 0 0
+none /dev/cpuctl cgroup rw,relatime,cpu 0 0
+/dev/block/platform/omap/omap_hsmmc.0/by-name/system /system ext4 ro,relatime,barrier=1,data=ordered 0 0
+/dev/block/platform/omap/omap_hsmmc.0/by-name/efs /factory ext4 ro,relatime,barrier=1,data=ordered 0 0
+/dev/block/platform/omap/omap_hsmmc.0/by-name/cache /cache ext4 rw,nosuid,nodev,noatime,errors=panic,barrier=1,nomblk_io_submit,data=ordered 0 0
+/dev/block/platform/omap/omap_hsmmc.0/by-name/userdata /data ext4 rw,nosuid,nodev,noatime,errors=panic,barrier=1,nomblk_io_submit,data=ordered 0 0
+/sys/kernel/debug /sys/kernel/debug debugfs rw,relatime 0 0
+/dev/fuse /mnt/shell/emulated fuse rw,nosuid,nodev,relatime,user_id=1023,group_id=1023,default_permissions,allow_other 0 0
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then we do the actual copy using &lt;code&gt;package_extract_dir&lt;/code&gt; command. This will copy 
+the updated &lt;code&gt;libc.so&lt;/code&gt; file.&lt;/p&gt;
+&lt;p&gt;And finally we unmount the &lt;code&gt;/system&lt;/code&gt; partition.&lt;/p&gt;
+&lt;h3&gt;Pack It Up&lt;/h3&gt;
+&lt;p&gt;&lt;em&gt;Inside &lt;code&gt;myupdate&lt;/code&gt; directory&lt;/em&gt;, use this command to create the zip file.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;zip -r9 ../myupdate.zip *
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Note that the command is executed &lt;em&gt;inside&lt;/em&gt; the &lt;code&gt;myupdate&lt;/code&gt; directory, and the
+zip file is created in parent directory. This is because the &lt;code&gt;META-INF&lt;/code&gt; and
+&lt;code&gt;system&lt;/code&gt; directory must be in the root directory of the final zip file.&lt;/p&gt;
+&lt;h3&gt;Sign the OTA Package&lt;/h3&gt;
+&lt;p&gt;Up to this point, the OTA package we just created should be able to applied
+successfully on custom recoveries like CWM, in which the signature
+verification is turned off by default.&lt;/p&gt;
+&lt;p&gt;However, to automate the OTA process, we're using the 
+&lt;a href="http://developer.android.com/reference/android/os/RecoverySystem.html"&gt;Android RecoverySystem&lt;/a&gt; to reboot the phone and apply the update, in that
+case, the signature verification is turned on. So we need to sign the package
+with proper keys, which are &lt;em&gt;platform&lt;/em&gt; keys.&lt;/p&gt;
+&lt;p&gt;Suppose you've get the platform keys named &lt;code&gt;platform.x509.pem&lt;/code&gt; and
+&lt;code&gt;platform.pk8&lt;/code&gt;, we can use the &lt;a href="http://www.adbtoolkit.com/kitchen/tools/linux/signapk.jar"&gt;signapk.jar&lt;/a&gt; tool.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;java -jar signapk.jar -w platform.x509.pem platform.pk8 myupdate.zip myupdate-signed.zip
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Note that:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;We need the &lt;code&gt;-w&lt;/code&gt; flag to sign the whole zip file.&lt;/li&gt;
+&lt;li&gt;The sequence of the two key files: pem file goes first, then the pk8 file.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This will generate the final OTA package, &lt;code&gt;myupdate-signed.zip&lt;/code&gt;, which WILL pass
+the signature verification of the recovery system.&lt;/p&gt;</summary><category term="ota"></category><category term="signapk"></category><category term="zip"></category></entry><entry><title>Pop Up AlertDialog in System Service</title><link href="http://jhshi.me/2013/11/03/pop-up-alertdialog-in-system-service/index.html" rel="alternate"></link><updated>2013-11-03T23:28:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-11-03:2013/11/03/pop-up-alertdialog-in-system-service/index.html</id><summary type="html">&lt;p&gt;I've been working on OTA support for &lt;a href="http://www.phone-lab.org"&gt;PhoneLab testbed&lt;/a&gt;. And one
+problem I encountered is that, when I tried to pop out an
+&lt;a href="http://developer.android.com/reference/android/app/AlertDialog.html"&gt;AlertDialog&lt;/a&gt; to let user confirm update, I get this error that
+saied something like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="x"&gt;android.view.WindowManager&lt;/span&gt;&lt;span class="p"&gt;$&lt;/span&gt;&lt;span class="nv"&gt;BadTokenException&lt;/span&gt;&lt;span class="x"&gt;: Unable to add window -- token null&lt;/span&gt;
+&lt;span class="x"&gt;is not for an application&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+
+
+&lt;p&gt;Apparently, the &lt;code&gt;context&lt;/code&gt; I used to create the dialog, which is the service
+context,  is not valid in the sense
+that it has not windows attached. Yet create an &lt;code&gt;Activity&lt;/code&gt; just to pop out a
+alert dialog is a bit of overdone, since my app is basically a background
+service.&lt;/p&gt;
+&lt;p&gt;Here is how I solved this problem.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Add &lt;code&gt;android.permission.SYSTEM_ALERT_WINDOW&lt;/code&gt; permission to &lt;code&gt;AndroidManifest.xml&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nt"&gt;&amp;lt;uses-permission&lt;/span&gt; &lt;span class="na"&gt;android:name=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;android.permission.SYSTEM_ALERT_WINDOW&amp;quot;&lt;/span&gt; &lt;span class="nt"&gt;/&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ul&gt;
+&lt;li&gt;After creating the dialog, before show it, set its window type to system
+   alert.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c1"&gt;// builder set up code here&lt;/span&gt;
+&lt;span class="c1"&gt;// ...&lt;/span&gt;
+
+&lt;span class="n"&gt;AlertDialog&lt;/span&gt; &lt;span class="n"&gt;dialog&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;builder&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;create&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+&lt;span class="n"&gt;dialog&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getWindow&lt;/span&gt;&lt;span class="o"&gt;().&lt;/span&gt;&lt;span class="na"&gt;setType&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;WindowManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;LayoutParams&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;TYPE_SYSTEM_ALERT&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;dialog&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;show&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Ref: &lt;a href="http://stackoverflow.com/questions/4344523/popup-window-in-any-app"&gt;stackoverflow thread&lt;/a&gt;, &lt;a href="http://tofu0913.blogspot.com/2013/07/popup-alertdialog-in-android-service.html"&gt;another similar post&lt;/a&gt;&lt;/p&gt;</summary><category term="AlertDialog"></category><category term="service"></category></entry><entry><title>Use Ant Exec task for Linux Shell Commands</title><link href="http://jhshi.me/2013/02/27/use-ant-exec-task-for-linux-shell-commands/index.html" rel="alternate"></link><updated>2013-02-27T03:59:02-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-02-27:2013/02/27/use-ant-exec-task-for-linux-shell-commands/index.html</id><summary type="html">&lt;p&gt;Suppose we use cscope and/or ctags for indexing source code of our Java project
+and we want to update the meta data files (e.g. cscope.out, tags) each time
+after we compile. We can use the &lt;code&gt;--post-comile&lt;/code&gt; target to accomplish this.
+Create a &lt;code&gt;custom_rules.xml&lt;/code&gt; in your project root directory with the following
+content. This file will be included to your main build.xml file.&lt;/p&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;UTF-8&amp;quot;?&amp;gt;&lt;/span&gt; 
+&lt;span class="nt"&gt;&amp;lt;project&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;target&lt;/span&gt; &lt;span class="na"&gt;name=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;-post-compile&amp;quot;&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt; 
+        &lt;span class="nt"&gt;&amp;lt;exec&lt;/span&gt; &lt;span class="na"&gt;executable=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;find&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;failonerror=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;true&amp;quot;&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt; 
+            &lt;span class="nt"&gt;&amp;lt;arg&lt;/span&gt; &lt;span class="na"&gt;line=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot; . -name *.java&amp;quot;&lt;/span&gt;&lt;span class="nt"&gt;/&amp;gt;&lt;/span&gt; 
+            &lt;span class="nt"&gt;&amp;lt;redirector&lt;/span&gt; &lt;span class="na"&gt;output=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;cscope.files&amp;quot;&lt;/span&gt; &lt;span class="nt"&gt;/&amp;gt;&lt;/span&gt; 
+        &lt;span class="nt"&gt;&amp;lt;/exec&amp;gt;&lt;/span&gt; 
+        &lt;span class="nt"&gt;&amp;lt;exec&lt;/span&gt; &lt;span class="na"&gt;executable=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;cscope&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;failonerror=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;true&amp;quot;&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt; 
+            &lt;span class="nt"&gt;&amp;lt;arg&lt;/span&gt; &lt;span class="na"&gt;line=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;-RUbq&amp;quot;&lt;/span&gt; &lt;span class="nt"&gt;/&amp;gt;&lt;/span&gt; 
+        &lt;span class="nt"&gt;&amp;lt;/exec&amp;gt;&lt;/span&gt; 
+        &lt;span class="nt"&gt;&amp;lt;exec&lt;/span&gt; &lt;span class="na"&gt;executable=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;ctags&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;failonerror=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;true&amp;quot;&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt; 
+            &lt;span class="nt"&gt;&amp;lt;arg&lt;/span&gt; &lt;span class="na"&gt;line=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;-R .&amp;quot;&lt;/span&gt; &lt;span class="nt"&gt;/&amp;gt;&lt;/span&gt; 
+        &lt;span class="nt"&gt;&amp;lt;/exec&amp;gt;&lt;/span&gt; 
+    &lt;span class="nt"&gt;&amp;lt;/target&amp;gt;&lt;/span&gt;
+&lt;span class="nt"&gt;&amp;lt;/project&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here we create one task, namely &lt;code&gt;exec&lt;/code&gt; task, to execute our commands. Pay
+special attention to our first command, &lt;code&gt;find&lt;/code&gt;. More specifically, how we
+redirect the output here. The normal bash redirect symbol &lt;code&gt;&amp;gt;&lt;/code&gt; doesn't not work
+here.&lt;/p&gt;
+&lt;p&gt;Reference:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://ant.apache.org/manual/using.html"&gt;http://ant.apache.org/manual/using.html&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://ant.apache.org/manual/Tasks/exec.html"&gt;http://ant.apache.org/manual/Tasks/exec.html&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://ant.apache.org/manual/Types/redirector.html"&gt;http://ant.apache.org/manual/Types/redirector.html&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</summary><category term="ant"></category><category term="exec"></category></entry></feed>

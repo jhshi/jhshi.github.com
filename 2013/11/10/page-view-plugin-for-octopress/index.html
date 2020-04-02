@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns# fb: https://www.facebook.com/2008/fbml">
+<head>
+    <title>Page View Plugin for Octopress - Pearls in Life</title>
+    <!-- Using the latest rendering mode for IE -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <link href="http://jhshi.me/images/favicon.ico" rel="icon">
+
+<link rel="canonical" href="http://jhshi.me/2013/11/10/page-view-plugin-for-octopress/index.html">
+
+        <meta name="author" content="Jinghao Shi" />
+        <meta name="keywords" content="plugin,jekyll,octopress,ruby" />
+        <meta name="description" content="It&#39;s always nice to display some blog stats, such as page view count, to give readers an sense how popular some site/posts are. Unfortunately, there is (or should I say &#39;was&#39;?) no such plugin that does this job nicely for Octopress, so I decided to write one myself. And here comes the plugin called octopress-page-view." />
+
+            <meta property="fb:app_id" content="156751911645324"/>
+        <meta property="og:site_name" content="Pearls in Life" />
+        <meta property="og:type" content="article"/>
+        <meta property="og:title" content="Page View Plugin for Octopress"/>
+        <meta property="og:url" content="http://jhshi.me/2013/11/10/page-view-plugin-for-octopress/index.html"/>
+        <meta property="og:description" content="It&#39;s always nice to display some blog stats, such as page view count, to give readers an sense how popular some site/posts are. Unfortunately, there is (or should I say &#39;was&#39;?) no such plugin that does this job nicely for Octopress, so I decided to write one myself. And here comes the plugin called octopress-page-view."/>
+        <meta property="article:published_time" content="2013-11-10" />
+            <meta property="article:section" content="octopress" />
+            <meta property="article:tag" content="plugin" />
+            <meta property="article:tag" content="jekyll" />
+            <meta property="article:tag" content="octopress" />
+            <meta property="article:tag" content="ruby" />
+            <meta property="article:author" content="Jinghao Shi" />
+
+
+    <!-- Bootstrap -->
+        <link rel="stylesheet" href="http://jhshi.me/theme/css/bootstrap.readable.min.css" type="text/css"/>
+    <link href="http://jhshi.me/theme/css/font-awesome.min.css" rel="stylesheet">
+
+    <link href="http://jhshi.me/theme/css/pygments/friendly.css" rel="stylesheet">
+    <link href="http://jhshi.me/theme/tipuesearch/tipuesearch.css" rel="stylesheet">
+    <link rel="stylesheet" href="http://jhshi.me/theme/css/style.css" type="text/css"/>
+
+        <link href="http://jhshi.me/feeds/all.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life ATOM Feed"/>
+
+
+
+        <link href="http://jhshi.me/feeds/octopress.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life octopress ATOM Feed"/>
+
+</head>
+<body>
+
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({
+            appId      : "156751911645324",
+          xfbml      : true,
+          version    : 'v2.11'
+        });
+        FB.AppEvents.logPageView();
+      };
+
+      (function(d, s, id){
+         var js, fjs = d.getElementsByTagName(s)[0];
+         if (d.getElementById(id)) {return;}
+         js = d.createElement(s); js.id = id;
+         js.src = "https://connect.facebook.net/en_US/sdk.js";
+         fjs.parentNode.insertBefore(js, fjs);
+       }(document, 'script', 'facebook-jssdk'));
+    </script>
+
+<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+	<div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a href="http://jhshi.me/" class="navbar-brand">
+Pearls in Life            </a>
+        </div>
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav">
+                    <li><a href="/home">Home</a></li>
+                    <li><a href="/">Blog</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+              <li><span>
+                <form class="navbar-search" action="/search.html">
+                  <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input" required>
+                </form></span>
+              </li>
+              <li><a href="http://jhshi.me/blog/archives/index.html"><i class="fa fa-th-list"></i><span class="icon-label">Archives</span></a></li>
+            </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+</div> <!-- /.navbar -->
+<!-- Banner -->
+<!-- End Banner -->
+<div class="container">
+    <div class="row">
+        <div class="col-sm-9">
+    <section id="content">
+        <article>
+            <header class="page-header">
+                <h1>
+                    <a href="http://jhshi.me/2013/11/10/page-view-plugin-for-octopress/index.html"
+                       rel="bookmark"
+                       title="Permalink to Page View Plugin for Octopress">
+                        Page View Plugin for Octopress
+                    </a>
+                </h1>
+            </header>
+            <div class="entry-content">
+                <div class="panel">
+                    <div class="panel-body">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2013-11-10T18:21:00-05:00"> Sun 10 November 2013</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/octopress/index.html">octopress</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/plugin/index.html">plugin</a>
+        /
+	<a href="http://jhshi.me/blog/tag/jekyll/index.html">jekyll</a>
+        /
+	<a href="http://jhshi.me/blog/tag/octopress/index.html">octopress</a>
+        /
+	<a href="http://jhshi.me/blog/tag/ruby/index.html">ruby</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                </div>
+                <p>It's always nice to display some blog stats, such as page view count, to give
+readers an sense how <em>popular</em> some site/posts are. Unfortunately, there is (or
+should I say 'was'?) no such plugin that does this job nicely for 
+<a href="http://octopress.org/">Octopress</a>, so I decided to write one myself. And here comes the
+plugin called <a href="https://github.com/jhshi/octopress-page-view">octopress-page-view</a>.</p>
+
+
+<p>I use <a href="http://www.google.com/analytics/">Google Analytics</a> to track my blog. And there is an Octopress 
+plugin called <a href="https://github.com/developmentseed/jekyll-ga">jekyll-ga</a>, which can sort blog posts by certain metrics of 
+Google Analytics. For me, chronological order works just fine. So I just grab
+the part that fetch data from Google Analytics.</p>
+<p>I haven't done any decent ruby coding before, so bear with me if I wrote some
+silly ruby code. But it works.</p>
+<h2>How To Use</h2>
+<h3>Get the plugin</h3>
+<ul>
+<li>Install required gems</li>
+</ul>
+<div class="highlight"><pre>sudo gem install chronic google-api-client
+</pre></div>
+
+
+<ul>
+<li>Clone the repository</li>
+</ul>
+<div class="highlight"><pre><span class="nb">cd</span> /tmp
+git clone https://github.com/jhshi/octopress-page-view.git
+<span class="nb">cd </span>octopress-page-view
+</pre></div>
+
+
+<p>The structure of the directory will look like this</p>
+<div class="highlight"><pre>octopress-page-view/
+<span class="p">|</span>-- _config.yml
+<span class="p">|</span>-- plugins
+<span class="p">|</span>   <span class="sb">`</span>-- page_view.rb
+<span class="p">|</span>-- README.md
+<span class="sb">`</span>-- <span class="nb">source</span>
+    <span class="sb">`</span>-- _include
+        <span class="sb">`</span>-- custom
+            <span class="sb">`</span>-- asides
+                <span class="sb">`</span>-- pageview.html
+</pre></div>
+
+
+<ul>
+<li>
+<p>Copy <code>plugins/page_view.rb</code> to your <code>plugins</code> directory, and copy
+   <code>source/_include/custom/asides/pageview.html</code> to your custom asides
+   directory.</p>
+</li>
+<li>
+<p>In your <code>_config.yml</code>, add <code>pageview.html</code> to your asides array.</p>
+</li>
+</ul>
+<h3>Setup and Configuration</h3>
+<p>The README file of the <a href="https://github.com/developmentseed/jekyll-ga">jekyll-ga</a> project gives an very detailed
+description about <a href="https://github.com/developmentseed/jekyll-ga#set-up-a-service-account-for-the-google-data-api">how to set up a service account for Google data API</a>,
+which I'm not going to repeat here.</p>
+<p>After you've set up the service account, you'll need to add some configurations
+to your <code>_config.yml</code> file. Here is a sample configuration.</p>
+<div class="highlight"><pre><span class="c1"># octopress-page-view</span>
+<span class="l-Scalar-Plain">page-view</span><span class="p-Indicator">:</span>
+  <span class="l-Scalar-Plain">service_account_email</span><span class="p-Indicator">:</span>    <span class="c1"># XXXXXX@developer.gserviceaccount.com</span>
+  <span class="l-Scalar-Plain">key_file</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">privatekey.p12</span>  <span class="c1"># service account private key file</span>
+  <span class="l-Scalar-Plain">key_secret</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">notasecret</span>    <span class="c1"># service account private key&#39;s password</span>
+  <span class="l-Scalar-Plain">profileID</span><span class="p-Indicator">:</span>                <span class="c1"># ga:XXXXXXXX</span>
+  <span class="l-Scalar-Plain">start</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">3 years ago</span>        <span class="c1"># Beginning of report</span>
+  <span class="l-Scalar-Plain">end</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">now</span>                  <span class="c1"># End of report</span>
+  <span class="l-Scalar-Plain">metric</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">ga:pageviews</span>      <span class="c1"># Metric code</span>
+  <span class="l-Scalar-Plain">segment</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">gaid::-1</span>         <span class="c1"># All visits</span>
+  <span class="l-Scalar-Plain">filters</span><span class="p-Indicator">:</span>                  <span class="c1"># optional</span>
+</pre></div>
+
+
+<h2>How It Works</h2>
+<p>This plugin provides an Jekyll <a href="http://jekyllrb.com/docs/plugins/">Generator</a>, called <code>GoogleAnalytics</code>,
+to fetech data from Google, and a Jekyll <a href="http://jekyllrb.com/docs/plugins/">Liquid Tag</a> to actually generate
+the formated page view count.</p>
+<h3>Fetch Analytics Data</h3>
+<p>This part is adapted from <a href="https://github.com/developmentseed/jekyll-ga">jekyll-ga</a>. Basically, we will create an Google
+API client, and after proper authorization, making request to Google.</p>
+<div class="highlight"><pre><span class="n">pv</span> <span class="o">=</span> <span class="n">site</span><span class="o">.</span><span class="n">config</span><span class="o">[</span><span class="s1">&#39;page-view&#39;</span><span class="o">]</span>
+
+<span class="c1"># need to provide application_name and application_version, otherwise, APIClient</span>
+<span class="c1"># will warn ...</span>
+<span class="n">client</span> <span class="o">=</span> <span class="no">Google</span><span class="o">::</span><span class="no">APIClient</span><span class="o">.</span><span class="n">new</span><span class="p">(</span>
+        <span class="ss">:application_name</span> <span class="o">=&gt;</span> <span class="s1">&#39;octopress-page-view&#39;</span><span class="p">,</span>
+        <span class="ss">:application_version</span> <span class="o">=&gt;</span> <span class="s1">&#39;1.0&#39;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<span class="c1"># Load our credentials for the service account</span>
+<span class="n">key</span> <span class="o">=</span> <span class="no">Google</span><span class="o">::</span><span class="no">APIClient</span><span class="o">::</span><span class="no">KeyUtils</span><span class="o">.</span><span class="n">load_from_pkcs12</span><span class="p">(</span><span class="n">pv</span><span class="o">[</span><span class="s1">&#39;key_file&#39;</span><span class="o">]</span><span class="p">,</span> <span class="n">pv</span><span class="o">[</span><span class="s1">&#39;key_secret&#39;</span><span class="o">]</span><span class="p">)</span>
+<span class="n">client</span><span class="o">.</span><span class="n">authorization</span> <span class="o">=</span> <span class="no">Signet</span><span class="o">::</span><span class="no">OAuth2</span><span class="o">::</span><span class="no">Client</span><span class="o">.</span><span class="n">new</span><span class="p">(</span>
+        <span class="ss">:token_credential_uri</span> <span class="o">=&gt;</span> <span class="s1">&#39;https://accounts.google.com/o/oauth2/token&#39;</span><span class="p">,</span>
+        <span class="ss">:audience</span> <span class="o">=&gt;</span> <span class="s1">&#39;https://accounts.google.com/o/oauth2/token&#39;</span><span class="p">,</span>
+        <span class="ss">:scope</span> <span class="o">=&gt;</span> <span class="s1">&#39;https://www.googleapis.com/auth/analytics.readonly&#39;</span><span class="p">,</span>
+        <span class="ss">:issuer</span> <span class="o">=&gt;</span> <span class="n">pv</span><span class="o">[</span><span class="s1">&#39;service_account_email&#39;</span><span class="o">]</span><span class="p">,</span>
+        <span class="ss">:signing_key</span> <span class="o">=&gt;</span> <span class="n">key</span><span class="p">)</span>
+
+<span class="c1"># Request a token for our service account</span>
+<span class="n">client</span><span class="o">.</span><span class="n">authorization</span><span class="o">.</span><span class="n">fetch_access_token!</span>
+<span class="n">analytics</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">discovered_api</span><span class="p">(</span><span class="s1">&#39;analytics&#39;</span><span class="p">,</span><span class="s1">&#39;v3&#39;</span><span class="p">)</span>
+
+<span class="c1"># prepare parameters</span>
+<span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;ids&#39;</span> <span class="o">=&gt;</span> <span class="n">pv</span><span class="o">[</span><span class="s1">&#39;profileID&#39;</span><span class="o">]</span><span class="p">,</span>
+    <span class="s1">&#39;start-date&#39;</span> <span class="o">=&gt;</span> <span class="no">Chronic</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">pv</span><span class="o">[</span><span class="s1">&#39;start&#39;</span><span class="o">]</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-%d&quot;</span><span class="p">),</span>
+    <span class="s1">&#39;end-date&#39;</span> <span class="o">=&gt;</span> <span class="no">Chronic</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">pv</span><span class="o">[</span><span class="s1">&#39;end&#39;</span><span class="o">]</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-%d&quot;</span><span class="p">),</span>
+    <span class="s1">&#39;dimensions&#39;</span> <span class="o">=&gt;</span> <span class="s2">&quot;ga:pagePath&quot;</span><span class="p">,</span>
+    <span class="s1">&#39;metrics&#39;</span> <span class="o">=&gt;</span> <span class="n">pv</span><span class="o">[</span><span class="s1">&#39;metric&#39;</span><span class="o">]</span><span class="p">,</span>
+    <span class="s1">&#39;max-results&#39;</span> <span class="o">=&gt;</span> <span class="mi">100000</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="k">if</span> <span class="n">pv</span><span class="o">[</span><span class="s1">&#39;segment&#39;</span><span class="o">]</span>
+    <span class="n">params</span><span class="o">[</span><span class="s1">&#39;segment&#39;</span><span class="o">]</span> <span class="o">=</span> <span class="n">pv</span><span class="o">[</span><span class="s1">&#39;segment&#39;</span><span class="o">]</span>
+<span class="k">end</span>
+<span class="k">if</span> <span class="n">pv</span><span class="o">[</span><span class="s1">&#39;filters&#39;</span><span class="o">]</span>
+    <span class="n">params</span><span class="o">[</span><span class="s1">&#39;filters&#39;</span><span class="o">]</span> <span class="o">=</span> <span class="n">pv</span><span class="o">[</span><span class="s1">&#39;filters&#39;</span><span class="o">]</span>
+<span class="k">end</span>
+
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="ss">:api_method</span> <span class="o">=&gt;</span> <span class="n">analytics</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">ga</span><span class="o">.</span><span class="n">get</span><span class="p">,</span> <span class="ss">:parameters</span> <span class="o">=&gt;</span> <span class="n">params</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="no">Hash</span><span class="o">[</span><span class="n">response</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">rows</span><span class="o">]</span>
+</pre></div>
+
+
+<p>So now we have a hash about query results.</p>
+<h3>Calculate Page View</h3>
+<p>For each blog post, we want to display just the page view of that blog. However,
+in blog index pages, we want to display the total page view of this site. So we
+process <code>post</code> and <code>page</code> slightly differently.</p>
+<p>Also, we'll set our generator's priority to <code>high</code>, in case other plugins also
+want to use the <code>_pv</code> information.</p>
+<div class="highlight"><pre><span class="c1"># total page view of this site</span>
+<span class="n">tot</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="c1"># display per post page view</span>
+<span class="n">site</span><span class="o">.</span><span class="n">posts</span><span class="o">.</span><span class="n">each</span> <span class="p">{</span> <span class="o">|</span><span class="n">post</span><span class="o">|</span>
+    <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="n">site</span><span class="o">.</span><span class="n">config</span><span class="o">[</span><span class="s1">&#39;baseurl&#39;</span><span class="o">]</span> <span class="o">||</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">post</span><span class="o">.</span><span class="n">url</span> <span class="o">+</span> <span class="s1">&#39;index.html&#39;</span>
+    <span class="n">hits</span> <span class="o">=</span> <span class="p">(</span><span class="n">results</span><span class="o">[</span><span class="n">url</span><span class="o">]</span><span class="p">)?</span> <span class="n">results</span><span class="o">[</span><span class="n">url</span><span class="o">].</span><span class="n">to_i</span> <span class="p">:</span> <span class="mi">0</span>
+    <span class="n">post</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">merge!</span><span class="p">(</span><span class="s2">&quot;_pv&quot;</span> <span class="o">=&gt;</span> <span class="n">hits</span><span class="p">)</span>
+    <span class="n">tot</span> <span class="o">+=</span> <span class="n">hits</span>
+<span class="p">}</span>
+
+<span class="c1"># calculate total page view</span>
+<span class="n">site</span><span class="o">.</span><span class="n">pages</span><span class="o">.</span><span class="n">each</span> <span class="p">{</span> <span class="o">|</span><span class="n">page</span><span class="o">|</span>
+    <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="n">site</span><span class="o">.</span><span class="n">config</span><span class="o">[</span><span class="s1">&#39;baseurl&#39;</span><span class="o">]</span> <span class="o">||</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">page</span><span class="o">.</span><span class="n">url</span>
+    <span class="n">hits</span> <span class="o">=</span> <span class="p">(</span><span class="n">results</span><span class="o">[</span><span class="n">url</span><span class="o">]</span><span class="p">)?</span> <span class="n">results</span><span class="o">[</span><span class="n">url</span><span class="o">].</span><span class="n">to_i</span> <span class="p">:</span> <span class="mi">0</span>
+    <span class="n">tot</span> <span class="o">+=</span> <span class="n">hits</span>
+<span class="p">}</span>
+
+<span class="c1"># display total page view in page</span>
+<span class="n">site</span><span class="o">.</span><span class="n">pages</span><span class="o">.</span><span class="n">each</span> <span class="p">{</span> <span class="o">|</span><span class="n">page</span><span class="o">|</span>
+    <span class="n">page</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">merge!</span><span class="p">(</span><span class="s2">&quot;_pv&quot;</span> <span class="o">=&gt;</span> <span class="n">tot</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>So now each <code>post</code> or <code>page</code> contains one ore field, called <code>_pv</code>, which is the
+page view count of that <code>post</code>, or total PV for <code>page</code>.</p>
+<h3>Display Page View</h3>
+<p>This is done using a Liquid Tag called <code>PageViewTag</code>. In the <code>render</code> method, we
+just output an nicely formatted page view count.</p>
+<div class="highlight"><pre><span class="n">site</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">environments</span><span class="o">.</span><span class="n">first</span><span class="o">[</span><span class="s1">&#39;site&#39;</span><span class="o">]</span>
+<span class="k">if</span> <span class="o">!</span><span class="n">site</span><span class="o">[</span><span class="s1">&#39;page-view&#39;</span><span class="o">]</span>
+    <span class="k">return</span> <span class="s1">&#39;&#39;</span>
+<span class="k">end</span>
+
+<span class="n">post</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">environments</span><span class="o">.</span><span class="n">first</span><span class="o">[</span><span class="s1">&#39;post&#39;</span><span class="o">]</span>
+<span class="k">if</span> <span class="n">post</span> <span class="o">==</span> <span class="kp">nil</span>
+    <span class="n">post</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">environments</span><span class="o">.</span><span class="n">first</span><span class="o">[</span><span class="s1">&#39;page&#39;</span><span class="o">]</span>
+    <span class="k">if</span> <span class="n">post</span> <span class="o">==</span> <span class="kp">nil</span>
+        <span class="k">return</span> <span class="s1">&#39;&#39;</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+
+<span class="n">pv</span> <span class="o">=</span> <span class="n">post</span><span class="o">[</span><span class="s1">&#39;_pv&#39;</span><span class="o">]</span>
+<span class="k">if</span> <span class="n">pv</span> <span class="o">==</span> <span class="kp">nil</span>
+    <span class="k">return</span> <span class="s1">&#39;&#39;</span>
+<span class="k">end</span>
+
+<span class="n">html</span> <span class="o">=</span> <span class="n">pv</span><span class="o">.</span><span class="n">to_s</span><span class="o">.</span><span class="n">reverse</span><span class="o">.</span><span class="n">gsub</span><span class="p">(</span><span class="sr">/...(?=.)/</span><span class="p">,</span><span class="s1">&#39;\&amp;,&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">reverse</span> <span class="o">+</span> <span class="s1">&#39; hits&#39;</span>
+<span class="k">return</span> <span class="n">html</span>
+</pre></div>
+            </div>
+            <!-- /.entry-content -->
+<section class="well" id="related-posts">
+    <h4>Related Posts:</h4>
+    <ul>
+        <li><a href="http://jhshi.me/2013/11/10/popular-posts-plugin-for-octopress/index.html">Popular Posts Plugin for Octopress</a></li>
+        <li><a href="http://jhshi.me/2013/11/17/post-revision-plugin-for-octopress/index.html">Post Revision Plugin For Octopress</a></li>
+        <li><a href="http://jhshi.me/2014/11/08/replicate-gem-installation/index.html">Replicate Gem Installation</a></li>
+        <li><a href="http://jhshi.me/2015/10/13/post-revision-plugin-for-pelican/index.html">Post Revision Plugin for Pelican</a></li>
+    </ul>
+</section>
+<section class="well" id="related-posts">
+      <h4><a href=https://github.com/jhshi/blog_source/commits/master/content/2013-11-10-page-view-plugin-for-octopress.markdown>Post History:</a></h4>
+
+      <b>Saturday 07:19 PM, October 10 2015</b><br/><p>fix category</p>
+      <b>Saturday 06:06 PM, October 10 2015</b><br/><p>working</p>
+</section>
+<div class="fb-like" 
+     data-href="http://jhshi.me/2013/11/10/page-view-plugin-for-octopress/index.html"
+     data-layout="standard" 
+     data-action="like" 
+     data-show-faces="true">
+</div>
+
+
+<div class="fb-comments"
+     data-href="http://jhshi.me/2013/11/10/page-view-plugin-for-octopress/index.html"
+     data-numposts="5"
+     data-order-by="reverse_time"
+     data-width="100%"
+    ></div>
+        </article>
+    </section>
+
+        </div>
+        <div class="col-sm-3" id="sidebar">
+            <aside>
+
+<section class="well well-sm">
+    <ul class="list-group list-group-flush">
+        <li class="list-group-item"><h4><i class="fa fa-eye"></i><span class="icon-label">0 Hits</span></h4>
+    <li class="list-group-item"><h4><i class="fa fa-fire fa-lg"></i><span class="icon-label">Popular Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Recent Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/categories/index.html"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Categories</span></h4></a>
+        <ul class="list-group" id="categories">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/os161/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> os161 [27]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/linux/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> linux [24]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/android/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> android [20]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/errors/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> errors [14]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/network/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> network [11]
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/tags/index.html"><h4><i class="fa fa-tags fa-lg"></i><span class="icon-label">Tags</span></h4></a>
+        <ul class="list-group list-inline tagcloud" id="tags">
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/aosp/index.html">
+                    AOSP
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/backup/index.html">
+                    backup
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/beamer/index.html">
+                    beamer
+                </a>
+            </li>
+            <li class="list-group-item tag-7">
+                <a href="http://jhshi.me/blog/tag/blog/index.html">
+                    blog
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/c/index.html">
+                    c
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/gdb/index.html">
+                    gdb
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/hammerhead/index.html">
+                    hammerhead
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/jekyll/index.html">
+                    jekyll
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/mac/index.html">
+                    mac
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ns2/index.html">
+                    ns2
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ota/index.html">
+                    OTA
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/plugin/index.html">
+                    plugin
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/python/index.html">
+                    python
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ruby/index.html">
+                    ruby
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ssh/index.html">
+                    ssh
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/synchronization/index.html">
+                    synchronization
+                </a>
+            </li>
+            <li class="list-group-item tag-1">
+                <a href="http://jhshi.me/blog/tag/syscall/index.html">
+                    syscall
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/travis/index.html">
+                    travis
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ubuntu/index.html">
+                    ubuntu
+                </a>
+            </li>
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/vm/index.html">
+                    vm
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Social</span></h4>
+      <ul class="list-group" id="social">
+        <li class="list-group-item"><a href="https://github.com/jhshi"><i class="fa fa-github-square fa-lg"></i> github</a></li>
+        <li class="list-group-item"><a href="http://stackoverflow.com/users/963538/jinghao-shi"><i class="fa fa-stack-overflow fa-lg"></i> stack-overflow</a></li>
+      </ul>
+    </li>
+
+    <li class="list-group-item"><h4><i class="fa fa-github fa-lg"></i><span class="icon-label">GitHub Repos</span></h4>
+        <div id="gh_repos">
+            <p class="list-group-item">Status updating...</p>
+        </div>
+            <a href="https://github.com/jhshi">@jhshi</a> on GitHub
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-external-link-square fa-lg"></i><span class="icon-label">Links</span></h4>
+      <ul class="list-group" id="links">
+        <li class="list-group-item">
+            <a href="http://blue.cse.buffalo.edu" target="_blank">
+                blue Systems Group
+            </a>
+        </li>
+        <li class="list-group-item">
+            <a href="http://www.buffalo.edu" target="_blank">
+                University at Buffalo
+            </a>
+        </li>
+      </ul>
+    </li>
+    </ul>
+</section>            </aside>
+        </div>
+    </div>
+</div>
+<footer>
+   <div class="container">
+      <hr>
+      <div class="row">
+         <div class="col-xs-10">&copy; 2018 Jinghao Shi
+            &middot;
+            Updated on 2020-04-02
+            &middot; Powered by <a href="https://github.com/jhshi/pelican-bootstrap3" target="_blank">pelican-bootstrap3</a>,
+            <a href="http://docs.getpelican.com/" target="_blank">Pelican</a>,
+            <a href="http://getbootstrap.com" target="_blank">Bootstrap</a>         </div>
+         <div class="col-xs-2"><p class="pull-right"><i class="fa fa-arrow-up"></i> <a href="#">Back to top</a></p></div>
+      </div>
+   </div>
+</footer>
+<script src="http://jhshi.me/theme/js/jquery.min.js"></script>
+
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="http://jhshi.me/theme/js/bootstrap.min.js"></script>
+
+<!-- Enable responsive features in IE8 with Respond.js (https://github.com/scottjehl/Respond) -->
+<script src="http://jhshi.me/theme/js/respond.min.js"></script>
+
+    <!-- GitHub JS -->
+    <script type="text/javascript">
+        $(document).ready(function () {
+            if (!window.jXHR) {
+                var jxhr = document.createElement('script');
+                jxhr.type = 'text/javascript';
+                jxhr.src = 'http://jhshi.me/theme/js/jXHR.js';
+                var s = document.getElementsByTagName('script')[0];
+                s.parentNode.insertBefore(jxhr, s);
+            }
+
+            github.showRepos({
+                user: 'jhshi',
+                count: 5,
+                skip_forks: true,
+                target: '#gh_repos'
+            });
+        });
+    </script>
+    <script src="http://jhshi.me/theme/js/github.js" type="text/javascript"></script>
+    <!-- End GitHub JS Code -->
+    <!-- Google Analytics -->
+    <script type="text/javascript">
+
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-39842003-1']);
+        _gaq.push(['_trackPageview']);
+
+        (function () {
+            var ga = document.createElement('script');
+            ga.type = 'text/javascript';
+            ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+    <!-- End Google Analytics Code -->
+
+        <script type="text/javascript">var addthis_config = {"data_track_addressbar": true};</script>
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5a6b8e0310bbbd35"></script>
+</body>
+</html>

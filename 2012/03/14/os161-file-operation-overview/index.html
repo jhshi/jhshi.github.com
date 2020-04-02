@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns# fb: https://www.facebook.com/2008/fbml">
+<head>
+    <title>OS161 File Operation Overview - Pearls in Life</title>
+    <!-- Using the latest rendering mode for IE -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <link href="http://jhshi.me/images/favicon.ico" rel="icon">
+
+<link rel="canonical" href="http://jhshi.me/2012/03/14/os161-file-operation-overview/index.html">
+
+        <meta name="author" content="Jinghao Shi" />
+        <meta name="keywords" content="file,syscall,fdtable" />
+        <meta name="description" content="In user space, when open a file, user program will get a file descriptor (a integer) that represent that file. User can use this descriptor to perform various operations on this file: read, write, seek, etc. As I see it, this design is quite clean in that: Hide most of the details from user, for both safety and simplicity Enable more high level abstraction: everything (socket, pipe..) is a file The file descriptor is actually an index to kernel space structure that contains all the details of opened files. So at kernel side, we need to do a lot bookkeeping stuff." />
+
+            <meta property="fb:app_id" content="156751911645324"/>
+        <meta property="og:site_name" content="Pearls in Life" />
+        <meta property="og:type" content="article"/>
+        <meta property="og:title" content="OS161 File Operation Overview"/>
+        <meta property="og:url" content="http://jhshi.me/2012/03/14/os161-file-operation-overview/index.html"/>
+        <meta property="og:description" content="In user space, when open a file, user program will get a file descriptor (a integer) that represent that file. User can use this descriptor to perform various operations on this file: read, write, seek, etc. As I see it, this design is quite clean in that: Hide most of the details from user, for both safety and simplicity Enable more high level abstraction: everything (socket, pipe..) is a file The file descriptor is actually an index to kernel space structure that contains all the details of opened files. So at kernel side, we need to do a lot bookkeeping stuff."/>
+        <meta property="article:published_time" content="2012-03-14" />
+            <meta property="article:section" content="os161" />
+            <meta property="article:tag" content="file" />
+            <meta property="article:tag" content="syscall" />
+            <meta property="article:tag" content="fdtable" />
+            <meta property="article:author" content="Jinghao Shi" />
+
+
+    <!-- Bootstrap -->
+        <link rel="stylesheet" href="http://jhshi.me/theme/css/bootstrap.readable.min.css" type="text/css"/>
+    <link href="http://jhshi.me/theme/css/font-awesome.min.css" rel="stylesheet">
+
+    <link href="http://jhshi.me/theme/css/pygments/friendly.css" rel="stylesheet">
+    <link href="http://jhshi.me/theme/tipuesearch/tipuesearch.css" rel="stylesheet">
+    <link rel="stylesheet" href="http://jhshi.me/theme/css/style.css" type="text/css"/>
+
+        <link href="http://jhshi.me/feeds/all.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life ATOM Feed"/>
+
+
+
+        <link href="http://jhshi.me/feeds/os161.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life os161 ATOM Feed"/>
+
+</head>
+<body>
+
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({
+            appId      : "156751911645324",
+          xfbml      : true,
+          version    : 'v2.11'
+        });
+        FB.AppEvents.logPageView();
+      };
+
+      (function(d, s, id){
+         var js, fjs = d.getElementsByTagName(s)[0];
+         if (d.getElementById(id)) {return;}
+         js = d.createElement(s); js.id = id;
+         js.src = "https://connect.facebook.net/en_US/sdk.js";
+         fjs.parentNode.insertBefore(js, fjs);
+       }(document, 'script', 'facebook-jssdk'));
+    </script>
+
+<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+	<div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a href="http://jhshi.me/" class="navbar-brand">
+Pearls in Life            </a>
+        </div>
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav">
+                    <li><a href="/home">Home</a></li>
+                    <li><a href="/">Blog</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+              <li><span>
+                <form class="navbar-search" action="/search.html">
+                  <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input" required>
+                </form></span>
+              </li>
+              <li><a href="http://jhshi.me/blog/archives/index.html"><i class="fa fa-th-list"></i><span class="icon-label">Archives</span></a></li>
+            </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+</div> <!-- /.navbar -->
+<!-- Banner -->
+<!-- End Banner -->
+<div class="container">
+    <div class="row">
+        <div class="col-sm-9">
+    <section id="content">
+        <article>
+            <header class="page-header">
+                <h1>
+                    <a href="http://jhshi.me/2012/03/14/os161-file-operation-overview/index.html"
+                       rel="bookmark"
+                       title="Permalink to OS161 File Operation Overview">
+                        OS161 File Operation Overview
+                    </a>
+                </h1>
+            </header>
+            <div class="entry-content">
+                <div class="panel">
+                    <div class="panel-body">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2012-03-14T20:33:50-04:00"> Wed 14 March 2012</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/os161/index.html">os161</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/file/index.html">file</a>
+        /
+	<a href="http://jhshi.me/blog/tag/syscall/index.html">syscall</a>
+        /
+	<a href="http://jhshi.me/blog/tag/fdtable/index.html">fdtable</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                </div>
+                <p>In user space, when open a file, user program will get a file descriptor (a
+integer) that represent that file. User can use this descriptor to perform various
+operations on this file: read, write, seek, etc. As I see it, this design is
+quite clean in that:</p>
+<ul>
+<li>
+<p>Hide most of the details from user, for both safety and simplicity</p>
+</li>
+<li>
+<p>Enable more high level abstraction: everything (socket, pipe..) is a file</p>
+</li>
+</ul>
+<p>The file descriptor is actually an index to kernel space structure that
+contains all the details of opened files. So at kernel side, we need to do a
+lot bookkeeping stuff.</p>
+
+
+<h3>What information should be kept?</h3>
+<p>It's helpful to take a look at <code>$OS161_SRC/kern/include/vnode.h</code>. In a nutshell, a file
+is represented by a <code>struct vnode</code> in kernel space. And most of the underlying
+interfaces that help us to manage files have already been provided. <strong>All we
+need to do is just bookkeeping.</strong> So basically, we need to record the following
+details about a file:</p>
+<ul>
+<li>
+<p>File name. We don't actually need this, but just in case. For example, we
+may want to print a file's name when debuging.</p>
+</li>
+<li>
+<p>Open flags. We need to keep the flags passed by <code>open</code> so that later on we can check
+permissions on read or write.</p>
+</li>
+<li>
+<p>File offset. We definitely need this.</p>
+</li>
+<li>
+<p>File's reference counter. Mainly for <code>dup2</code> and <code>fork</code> system call</p>
+</li>
+<li>
+<p>A lock to protect the access to this file descriptor. Since it's possible that two
+threads share the same copy of this bookkeeping data structure (e.g., after <code>fork</code>)</p>
+</li>
+<li>
+<p>Actual pointer to the file's <code>struct vnode</code></p>
+</li>
+</ul>
+<p>Why we didn't record the file's fd? Please see next section.</p>
+<h3>File descriptor Allocation</h3>
+<p>There are some common rules about file descriptor:</p>
+<ul>
+<li>
+<p>0, 1 and 2 are special file descriptors. They are stdin, stdout and stderr
+respectively. (Defined in <code>$OS161_SRC/kern/include/kern/unistd.h</code> as
+<code>STDIN_FILENO</code>, <code>STDOUT_FILENO</code> and <code>STDERR_FILENO</code>)</p>
+</li>
+<li>
+<p>The file descriptor returned by open should be the smallest fd available.
+(Not compulsory though)</p>
+</li>
+<li>
+<p><strong>fd space is process specific</strong>, i.e. different process may get the same
+file descriptor that represent different files</p>
+</li>
+</ul>
+<p>So, to maintain each process's opened file information, we add a new field to
+<code>struct thread</code></p>
+<div class="highlight"><pre><span class="cm">/* OPEN_MAX is defined in $OS161_SRC/kern/include/limits.h */</span>
+<span class="k">struct</span> <span class="n">fdesc</span><span class="o">*</span> <span class="n">t_fdtable</span><span class="p">[</span><span class="n">OPEN_MAX</span><span class="p">];</span>
+</pre></div>
+
+
+<p>Now you may figure out why there isn't a fd filed in <code>struct fdesc</code>, since its
+index is the fd! So when we need to allocate a file descriptor, we just need
+to scan the <code>t_fdtable</code> (from <code>STDERR_FILENO+1</code>, of course), find an available 
+slot (<code>NULL</code>) and use it. Also, since it's a <code>struct thread</code> field, it's process 
+specific.</p>
+<p>Does the <code>t_fdtable</code> look familiar to you? Yes, it's very similar to our
+process array, only that the later is system-wise. (Confused? See 
+<a href="/2012/03/11/os161-fork-system-call">my previous post on fork</a>)</p>
+<h3><code>t_fdtable</code> Management and Special Files</h3>
+<p>Whenever you add a new field to <code>struct thread</code>, don't forget to initialize
+them in <code>thread_create</code> and do clean up in <code>thread_exit</code> and/or <code>thread_destroy</code>.
+Since <code>t_fdtable</code> is an fixed size array, work a lot much easier: just zero
+the array when create, and no clean up is needed. Also, <strong><code>t_fdtable</code> are
+supposed to be inheritable: so copy a parent's <code>t_fdtable</code> to child when do
+<code>sys_fork</code>.</strong></p>
+<p>Since parent and child thread are supposed to share the same file table, so
+when copy file tables, remember to increase each file's reference counter.</p>
+<p><strong>Console files (std in/out/err) are supposed to be opened "automatically" when 
+a thread is created</strong>, i.e. user themselves don't need to open them.</p>
+<p>At first glance, <code>thread_create</code> would be a intuitive place to  initialize them.
+Yes, we can do that. But be noted that <em>when the first thread is created, the console 
+is even not bootstrapped yet</em>, so if you open console files in <code>thread_create</code>, it'll
+fail (silently blocking...) at that time.</p>
+<p><strong>Update</strong>: The <em>right</em> way to do this is to initialize console in <code>runprogram</code>,
+because that's where the first user thread is born. And later user threads will
+just inherits the three file handles of console from then on.</p>
+<p>BTW, <strong>how to open console</strong>? The path name should be "con:", flags should
+be: <code>O_RDONLY</code> for stdin, <code>O_WRONLY</code> for stdout and stderr; options should be <code>0664</code>
+(Note the zero prefix, it's a octal number).</p>
+            </div>
+            <!-- /.entry-content -->
+<section class="well" id="related-posts">
+    <h4>Related Posts:</h4>
+    <ul>
+        <li><a href="http://jhshi.me/2013/03/15/console-input-messed-up-in-os161/index.html">Console Input Messed up in OS161</a></li>
+        <li><a href="http://jhshi.me/2012/03/28/os161-arguments-passing-in-system-call/index.html">OS161: Arguments Passing in System Call</a></li>
+        <li><a href="http://jhshi.me/2012/03/21/os161-general-tips-for-system-call/index.html">OS161: General Tips for System Call</a></li>
+        <li><a href="http://jhshi.me/2012/03/21/os161-how-to-add-a-system-call/index.html">OS161: How to Add a System Call</a></li>
+        <li><a href="http://jhshi.me/2012/03/12/os161-exit-and-waitpid-system-call/index.html">OS161 exit and waitpid System Call</a></li>
+    </ul>
+</section>
+<section class="well" id="related-posts">
+      <h4><a href=https://github.com/jhshi/blog_source/commits/master/content/2012-03-14-os161-file-operation-overview.markdown>Post History:</a></h4>
+
+      <b>Tuesday 11:09 PM, January 23 2018</b><br/><p>resume os161</p>
+      <b>Monday 11:20 AM, October 31 2016</b><br/><p>remove os161 related posts</p>
+      <b>Saturday 07:19 PM, October 10 2015</b><br/><p>fix category</p>
+      <b>Saturday 07:05 PM, October 10 2015</b><br/><p>Revert "os161 category"</p>
+      <b>Saturday 06:46 PM, October 10 2015</b><br/><p>os161 category</p>
+</section>
+<div class="fb-like" 
+     data-href="http://jhshi.me/2012/03/14/os161-file-operation-overview/index.html"
+     data-layout="standard" 
+     data-action="like" 
+     data-show-faces="true">
+</div>
+
+
+<div class="fb-comments"
+     data-href="http://jhshi.me/2012/03/14/os161-file-operation-overview/index.html"
+     data-numposts="5"
+     data-order-by="reverse_time"
+     data-width="100%"
+    ></div>
+        </article>
+    </section>
+
+        </div>
+        <div class="col-sm-3" id="sidebar">
+            <aside>
+
+<section class="well well-sm">
+    <ul class="list-group list-group-flush">
+        <li class="list-group-item"><h4><i class="fa fa-eye"></i><span class="icon-label">0 Hits</span></h4>
+    <li class="list-group-item"><h4><i class="fa fa-fire fa-lg"></i><span class="icon-label">Popular Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Recent Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/categories/index.html"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Categories</span></h4></a>
+        <ul class="list-group" id="categories">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/os161/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> os161 [27]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/linux/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> linux [24]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/android/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> android [20]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/errors/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> errors [14]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/network/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> network [11]
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/tags/index.html"><h4><i class="fa fa-tags fa-lg"></i><span class="icon-label">Tags</span></h4></a>
+        <ul class="list-group list-inline tagcloud" id="tags">
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/aosp/index.html">
+                    AOSP
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/backup/index.html">
+                    backup
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/beamer/index.html">
+                    beamer
+                </a>
+            </li>
+            <li class="list-group-item tag-7">
+                <a href="http://jhshi.me/blog/tag/blog/index.html">
+                    blog
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/c/index.html">
+                    c
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/gdb/index.html">
+                    gdb
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/hammerhead/index.html">
+                    hammerhead
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/jekyll/index.html">
+                    jekyll
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/mac/index.html">
+                    mac
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ns2/index.html">
+                    ns2
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ota/index.html">
+                    OTA
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/plugin/index.html">
+                    plugin
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/python/index.html">
+                    python
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ruby/index.html">
+                    ruby
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ssh/index.html">
+                    ssh
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/synchronization/index.html">
+                    synchronization
+                </a>
+            </li>
+            <li class="list-group-item tag-1">
+                <a href="http://jhshi.me/blog/tag/syscall/index.html">
+                    syscall
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/travis/index.html">
+                    travis
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ubuntu/index.html">
+                    ubuntu
+                </a>
+            </li>
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/vm/index.html">
+                    vm
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Social</span></h4>
+      <ul class="list-group" id="social">
+        <li class="list-group-item"><a href="https://github.com/jhshi"><i class="fa fa-github-square fa-lg"></i> github</a></li>
+        <li class="list-group-item"><a href="http://stackoverflow.com/users/963538/jinghao-shi"><i class="fa fa-stack-overflow fa-lg"></i> stack-overflow</a></li>
+      </ul>
+    </li>
+
+    <li class="list-group-item"><h4><i class="fa fa-github fa-lg"></i><span class="icon-label">GitHub Repos</span></h4>
+        <div id="gh_repos">
+            <p class="list-group-item">Status updating...</p>
+        </div>
+            <a href="https://github.com/jhshi">@jhshi</a> on GitHub
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-external-link-square fa-lg"></i><span class="icon-label">Links</span></h4>
+      <ul class="list-group" id="links">
+        <li class="list-group-item">
+            <a href="http://blue.cse.buffalo.edu" target="_blank">
+                blue Systems Group
+            </a>
+        </li>
+        <li class="list-group-item">
+            <a href="http://www.buffalo.edu" target="_blank">
+                University at Buffalo
+            </a>
+        </li>
+      </ul>
+    </li>
+    </ul>
+</section>            </aside>
+        </div>
+    </div>
+</div>
+<footer>
+   <div class="container">
+      <hr>
+      <div class="row">
+         <div class="col-xs-10">&copy; 2018 Jinghao Shi
+            &middot;
+            Updated on 2020-04-02
+            &middot; Powered by <a href="https://github.com/jhshi/pelican-bootstrap3" target="_blank">pelican-bootstrap3</a>,
+            <a href="http://docs.getpelican.com/" target="_blank">Pelican</a>,
+            <a href="http://getbootstrap.com" target="_blank">Bootstrap</a>         </div>
+         <div class="col-xs-2"><p class="pull-right"><i class="fa fa-arrow-up"></i> <a href="#">Back to top</a></p></div>
+      </div>
+   </div>
+</footer>
+<script src="http://jhshi.me/theme/js/jquery.min.js"></script>
+
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="http://jhshi.me/theme/js/bootstrap.min.js"></script>
+
+<!-- Enable responsive features in IE8 with Respond.js (https://github.com/scottjehl/Respond) -->
+<script src="http://jhshi.me/theme/js/respond.min.js"></script>
+
+    <!-- GitHub JS -->
+    <script type="text/javascript">
+        $(document).ready(function () {
+            if (!window.jXHR) {
+                var jxhr = document.createElement('script');
+                jxhr.type = 'text/javascript';
+                jxhr.src = 'http://jhshi.me/theme/js/jXHR.js';
+                var s = document.getElementsByTagName('script')[0];
+                s.parentNode.insertBefore(jxhr, s);
+            }
+
+            github.showRepos({
+                user: 'jhshi',
+                count: 5,
+                skip_forks: true,
+                target: '#gh_repos'
+            });
+        });
+    </script>
+    <script src="http://jhshi.me/theme/js/github.js" type="text/javascript"></script>
+    <!-- End GitHub JS Code -->
+    <!-- Google Analytics -->
+    <script type="text/javascript">
+
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-39842003-1']);
+        _gaq.push(['_trackPageview']);
+
+        (function () {
+            var ga = document.createElement('script');
+            ga.type = 'text/javascript';
+            ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+    <!-- End Google Analytics Code -->
+
+        <script type="text/javascript">var addthis_config = {"data_track_addressbar": true};</script>
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5a6b8e0310bbbd35"></script>
+</body>
+</html>

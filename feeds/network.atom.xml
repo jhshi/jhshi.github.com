@@ -1,0 +1,1128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Pearls in Life</title><link href="http://jhshi.me/" rel="alternate"></link><link href="http://jhshi.me/feeds/network.atom.xml" rel="self"></link><id>http://jhshi.me/</id><updated>2016-10-24T21:03:07-04:00</updated><entry><title>Chromecast Wireless Protocols Part-II: Cast</title><link href="http://jhshi.me/2016/10/24/chromecast-wireless-protocols-part-ii-cast/index.html" rel="alternate"></link><updated>2016-10-24T21:03:07-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-10-24:2016/10/24/chromecast-wireless-protocols-part-ii-cast/index.html</id><summary type="html">&lt;p&gt;In my &lt;a class="reference external" href="/2016/10/24/chromecast-wireless-protocols-part-i-setup/"&gt;previous post&lt;/a&gt;, I explored how the
+cast device find and configure the Chromecast dongle. In this post, I'll dig
+into the actual cast process.&lt;/p&gt;
+
+&lt;div class="section" id="cast-screen"&gt;
+&lt;h2&gt;Cast Screen&lt;/h2&gt;
+&lt;p&gt;When casting screen, the cast device (Nexus 6P in my case) basically need to
+send a serious of screen shots (probably 30 or 60 FPS) to the chromecast, which
+incurs high throughput demand (double the actualy throughput required) to the
+Wifi network if this traffic is routed by the AP, i.e., cast device -&amp;gt; AP -&amp;gt;
+Chromecast.&lt;/p&gt;
+&lt;p&gt;Standards such as &lt;a class="reference external" href="https://en.wikipedia.org/wiki/Miracast"&gt;Miracast&lt;/a&gt; exits for
+such purpose (HDMI over Wifi), but it requires a direct ad-hoc network between
+the two devices. While in the case of Chromecast, both the Nexus 6p and the
+Chromecast (at least the Nexus 6P) are still associated with the AP from my
+experience. So how does Chromecast do it?&lt;/p&gt;
+&lt;p&gt;I captured a packet trace while setting up a screen cast session, and find one
+interesting packet type that I was not aware of: &lt;a class="reference external" href="https://en.wikipedia.org/wiki/TDLS"&gt;TDLS&lt;/a&gt;, which is short for &lt;em&gt;Tunneled Direct Link
+Setup&lt;/em&gt; protocol.&lt;/p&gt;
+&lt;p&gt;The setup packets are shown in the following screen shot.&lt;/p&gt;
+&lt;img alt="Chromecast TDLS setup" src="/images/chromecast_tdls_setup.png" /&gt;
+&lt;p&gt;The &lt;tt class="docutils literal"&gt;80:13&lt;/tt&gt; device is my Nexus 6P, the &lt;tt class="docutils literal"&gt;e8:de&lt;/tt&gt; device is the Wifi AP and the
+&lt;tt class="docutils literal"&gt;6c:ad&lt;/tt&gt; device is the Chromecast dongle. We can see that the Nexus 6P first negociate
+the TDLS parameters via the TDLS Discovery process, then a TDLS link is setup
+between the Nexus 6P and the Chromecast. It is confirmed that a direct traffic
+between the Nexus 6P and the Chromecast happened afterwards.&lt;/p&gt;
+&lt;p&gt;The same mechinism applies for casting a Chromium tab as well.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="cast-youtube"&gt;
+&lt;h2&gt;Cast YouTube&lt;/h2&gt;
+&lt;p&gt;In another cast scenario, where the content is not originated from the cast
+device, but from some web server, as in YouTube, Netflix, etc. I did not observe
+a TDLS setup process, which makes sense since the content is not on the cast
+device, and the lightweight signaling packets (content URL, pause, volume)
+between the cast device and the Chromecast does not justify the overhead of
+setting up a TDLS link.&lt;/p&gt;
+&lt;/div&gt;
+</summary><category term="chromcast"></category><category term="802.11"></category><category term="TDLS"></category></entry><entry><title>Chromecast Wireless Protocols Part-I: Setup</title><link href="http://jhshi.me/2016/10/24/chromecast-wireless-protocols-part-i-setup/index.html" rel="alternate"></link><updated>2016-10-24T14:04:01-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-10-24:2016/10/24/chromecast-wireless-protocols-part-i-setup/index.html</id><summary type="html">&lt;p&gt;There are plenty resources online that explains how Chromecast works. But most
+of them focus on up-layer protocols, such as mDNS, DIAL/HTTP. I am more
+interested in the 802.11 MAC layer. In particular, I was curious in questions
+such as:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;What happens when you &lt;em&gt;set up&lt;/em&gt; a Chromecast?&lt;/li&gt;
+&lt;li&gt;How the cast device (such as an Android phone) and Chromecast communicate (in
+802.11 layer)?&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Some of the questions were obvious, others are not. In this post, I will
+document the process about the Chromecast setup process. This will be the first
+of the series of posts on this topic.&lt;/p&gt;
+
+&lt;div class="section" id="hardware-and-tools"&gt;
+&lt;h2&gt;Hardware and Tools&lt;/h2&gt;
+&lt;p&gt;Hardwares:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;Chromecast (first gen, model: &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;H2G2-42&lt;/span&gt;&lt;/tt&gt;): test device&lt;/li&gt;
+&lt;li&gt;TP-LINK WDR3500: AP&lt;/li&gt;
+&lt;li&gt;TP-LINK WDR3500: Wifi sniffer, capture packets for analysis&lt;/li&gt;
+&lt;li&gt;Nexus 6P: cast device&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Software Tools:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;a class="reference external" href="https://openwrt.org/"&gt;OpenWRT&lt;/a&gt;: running on both the AP and the sniffer.
+Makes AP configuration and trace collection easy.&lt;/li&gt;
+&lt;li&gt;&lt;tt class="docutils literal"&gt;tcpdump&lt;/tt&gt;: used to collect trace&lt;/li&gt;
+&lt;li&gt;Wireshark (v2.0.2): used to view trace&lt;/li&gt;
+&lt;li&gt;&lt;a class="reference external" href="https://play.google.com/store/apps/details?id=com.google.android.apps.chromecast.app&amp;amp;hl=en"&gt;Google Cast&lt;/a&gt;
+app on Android: used to setup Chromecast.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class="section" id="chromecast-setup"&gt;
+&lt;h2&gt;Chromecast Setup&lt;/h2&gt;
+&lt;p&gt;The cast device and the chromecast dongle have to connect to the same Wifi
+Access Point (AP) before the cast can happen. Because the Chromecast does not
+have a GUI where you can configure it to connect to your Wifi network, this step
+is done in-directly on the cast device.&lt;/p&gt;
+&lt;p&gt;The basic flow is this:&lt;/p&gt;
+&lt;ol class="arabic simple"&gt;
+&lt;li&gt;The Chromecast dongle creates a Wifi network with the default SSID
+&lt;tt class="docutils literal"&gt;ChromcastXXXX&lt;/tt&gt;, where &lt;tt class="docutils literal"&gt;XXXX&lt;/tt&gt; are 4 digit number identifying the device.&lt;/li&gt;
+&lt;li&gt;The Google Cast app searching for such networks and associates with it once
+found.&lt;/li&gt;
+&lt;li&gt;You select which AP the Chromecast device should connect to, and enter
+credentials accordingly.&lt;/li&gt;
+&lt;li&gt;The Chromecast device tries to connect the AP using the credentials provided
+in last step.&lt;/li&gt;
+&lt;li&gt;Once the Chromecast is connected to the AP, it sets the &lt;tt class="docutils literal"&gt;SSID&lt;/tt&gt; field of the
+beacon frames to &lt;tt class="docutils literal"&gt;NULL&lt;/tt&gt; (0 in length) such that the &lt;tt class="docutils literal"&gt;ChromecaseXXXX&lt;/tt&gt; SSID
+disappears in your phone's scan result,&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;
+&lt;div class="section" id="the-beacon"&gt;
+&lt;h2&gt;The Beacon&lt;/h2&gt;
+&lt;p&gt;Here is a snapshot of the beacon frame sent by the Chromecast device BEFORE it
+is configured.&lt;/p&gt;
+&lt;img alt="Beacon frame of Chromecast" src="/images/chromecast_mac.png" /&gt;
+&lt;p&gt;There are couple of interesting facts I found.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;p class="first"&gt;The &lt;a class="reference external" href="https://en.wikipedia.org/wiki/Organizationally_unique_identifier"&gt;OUI&lt;/a&gt;
+of the Chromecast device (&lt;tt class="docutils literal"&gt;fa:8f:ca&lt;/tt&gt;) is actually not registered. I can not
+find it anywhere (&lt;a class="reference external" href="https://www.wireshark.org/tools/oui-lookup.html"&gt;Wireshark OUI lookup&lt;/a&gt;, &lt;a class="reference external" href="http://standards-oui.ieee.org/oui.txt"&gt;IEEE OUI database&lt;/a&gt;). I don't know how to interpret
+this...&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p class="first"&gt;I tried to fool the Google Cast app by creating a fake Wifi AP with the SSID
+&lt;tt class="docutils literal"&gt;Chromecase5089&lt;/tt&gt;, and see if it will be list as a Chromecast in the app. The
+answer is: NO. Then I realized of course not, since you can name the
+Chromecast device whatever you want after setting it up, so SSID is not a good
+classifier of whether an AP is a potential Chromecast device.&lt;/p&gt;
+&lt;p&gt;My second try is to fake the BSSID, especially the OUI. I set the BSSID of my
+test router to some value similar with the true Chromecast.  It works this
+time. Like I guessed earlier, the SSID does not matter at all. As show in the
+following screenshot. The first is the true Chromecast device, while the
+second one is a fake.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;img alt="Fake Chromecast device" class="align-center" src="/images/chromecast_ssid.png" /&gt;
+&lt;/div&gt;
+&lt;div class="section" id="link-setup"&gt;
+&lt;h2&gt;Link Setup&lt;/h2&gt;
+&lt;p&gt;After the cast device connects to the mini Wifi network created by the
+Chromecast dongle, we can instruct the Chromecast to connect to the actual AP.&lt;/p&gt;
+&lt;p&gt;After filling in the AP to connect to, I observed an association request from a
+device with a different MAC address (OUI &lt;tt class="docutils literal"&gt;6c:ad:f8&lt;/tt&gt;) than the Beacon SSID in
+previous step. OUI lookup result show this OUI belongs to &amp;quot;AzureWave Technology
+Inc.&amp;quot;, which matches its &lt;a class="reference external" href="https://en.wikipedia.org/wiki/Chromecast#First_generation"&gt;hardware spec&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;After Chromecast connects to the AP, the SSID field in the beacon frame was set
+to NULL.&lt;/p&gt;
+&lt;img alt="Chromecast beacon frame after configuration." class="align-center" src="/images/chromecast_beacon_after.png" /&gt;
+&lt;p&gt;Given the OUI difference and the Chromecast simultaneously broadcasts beacon and
+associates with the AP, I suspect it actually contains two Wifi chips inside:
+which does not make much sense given its small form factor and low price. Or
+maybe the AzureWave chip supports both mode simultaneously?&lt;/p&gt;
+&lt;/div&gt;
+</summary><category term="chromecast"></category><category term="wireless"></category><category term="802.11"></category><category term="beacon"></category></entry><entry><title>Calculating CRC for HT-SIG in 802.11n Preamble</title><link href="http://jhshi.me/2016/10/18/calculating-crc-for-ht-sig-in-80211n-preamble/index.html" rel="alternate"></link><updated>2016-10-18T11:31:33-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-10-18:2016/10/18/calculating-crc-for-ht-sig-in-80211n-preamble/index.html</id><summary type="html">&lt;p&gt;The HT-SIG field of 802.11n PLCP preamble contains a 8-bit CRC for the receiver
+to validate the sanity of the header. Here is how to calculate it.&lt;/p&gt;
+
+&lt;img alt="HT-SIG CRC calculation" src="/images/ht_sig.png" /&gt;
+&lt;p&gt;HT-SIG contains 48 bits and spans in 2 OFDM symbols (BPSK modulated, 1/2 rate).
+This diagram from the 802.11-2012 standard describes the logic to calculate the
+CRC for the first 34 bits of the field.&lt;/p&gt;
+&lt;p&gt;Here is a Python version of the implementation.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;calc_crc&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;bits&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;c&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="mi"&gt;8&lt;/span&gt;
+
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;bits&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;next_c&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="mi"&gt;8&lt;/span&gt;
+        &lt;span class="n"&gt;next_c&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt; &lt;span class="o"&gt;^&lt;/span&gt; &lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;7&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="n"&gt;next_c&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt; &lt;span class="o"&gt;^&lt;/span&gt; &lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;7&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;^&lt;/span&gt; &lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="n"&gt;next_c&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt; &lt;span class="o"&gt;^&lt;/span&gt; &lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;7&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;^&lt;/span&gt; &lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="n"&gt;next_c&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="n"&gt;next_c&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;4&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="n"&gt;next_c&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;4&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="n"&gt;next_c&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;6&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="n"&gt;next_c&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;7&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;6&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="n"&gt;c&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;next_c&lt;/span&gt;
+
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;b&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="p"&gt;[::&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;&lt;tt class="docutils literal"&gt;c&lt;/tt&gt; is the 8-bit shift register. For each incoming bits, we calculate the next
+value of each bit in the register and store them in &lt;tt class="docutils literal"&gt;next_c&lt;/tt&gt;.&lt;/p&gt;
+&lt;p&gt;Finally, we perform two operations: reverse and two's complement. Note that
+&lt;tt class="docutils literal"&gt;c[7]&lt;/tt&gt; is the first output bit.&lt;/p&gt;
+&lt;p&gt;The standard also provides a test case.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3
+4&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;1 1 1 1 0 0 0 1 0 0 1 0 0 1 1 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0&amp;#39;&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;bits&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nb"&gt;int&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;b&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;()]&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;calc_crc&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;bits&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Translating the logic into HDLs such as Verilog is quite straightforward.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;module&lt;/span&gt; &lt;span class="n"&gt;ht_sig_crc&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+    &lt;span class="k"&gt;input&lt;/span&gt; &lt;span class="n"&gt;clock&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="k"&gt;input&lt;/span&gt; &lt;span class="n"&gt;enable&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="k"&gt;input&lt;/span&gt; &lt;span class="n"&gt;reset&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+
+    &lt;span class="k"&gt;input&lt;/span&gt; &lt;span class="kt"&gt;bit&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="k"&gt;input&lt;/span&gt; &lt;span class="n"&gt;input_strobe&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+
+    &lt;span class="k"&gt;output&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mh"&gt;7&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="mh"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="n"&gt;crc&lt;/span&gt;
+&lt;span class="p"&gt;);&lt;/span&gt;
+
+&lt;span class="kt"&gt;reg&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mh"&gt;7&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="mh"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="no"&gt;C&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="k"&gt;genvar&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+&lt;span class="k"&gt;generate&lt;/span&gt;
+&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mh"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="mh"&gt;8&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="mh"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;begin&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;reverse&lt;/span&gt;
+    &lt;span class="k"&gt;assign&lt;/span&gt; &lt;span class="n"&gt;crc&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="no"&gt;C&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mh"&gt;7&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+&lt;span class="k"&gt;end&lt;/span&gt;
+&lt;span class="k"&gt;endgenerate&lt;/span&gt;
+
+
+&lt;span class="k"&gt;always&lt;/span&gt; &lt;span class="p"&gt;@(&lt;/span&gt;&lt;span class="k"&gt;posedge&lt;/span&gt; &lt;span class="n"&gt;clock&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;begin&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;reset&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;begin&lt;/span&gt;
+        &lt;span class="no"&gt;C&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;=&lt;/span&gt; &lt;span class="mh"&gt;8&amp;#39;hff&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="k"&gt;end&lt;/span&gt; &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;enable&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;begin&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;input_strobe&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;begin&lt;/span&gt;
+            &lt;span class="no"&gt;C&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mh"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;=&lt;/span&gt; &lt;span class="kt"&gt;bit&lt;/span&gt; &lt;span class="o"&gt;^&lt;/span&gt; &lt;span class="no"&gt;C&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mh"&gt;7&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+            &lt;span class="no"&gt;C&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mh"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;=&lt;/span&gt; &lt;span class="kt"&gt;bit&lt;/span&gt; &lt;span class="o"&gt;^&lt;/span&gt; &lt;span class="no"&gt;C&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mh"&gt;7&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;^&lt;/span&gt; &lt;span class="no"&gt;C&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mh"&gt;0&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+            &lt;span class="no"&gt;C&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mh"&gt;2&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;=&lt;/span&gt; &lt;span class="kt"&gt;bit&lt;/span&gt; &lt;span class="o"&gt;^&lt;/span&gt; &lt;span class="no"&gt;C&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mh"&gt;7&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;^&lt;/span&gt; &lt;span class="no"&gt;C&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mh"&gt;1&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+            &lt;span class="no"&gt;C&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mh"&gt;7&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="mh"&gt;3&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;=&lt;/span&gt; &lt;span class="no"&gt;C&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mh"&gt;6&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="mh"&gt;2&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+        &lt;span class="k"&gt;end&lt;/span&gt;
+    &lt;span class="k"&gt;end&lt;/span&gt;
+&lt;span class="k"&gt;end&lt;/span&gt;
+
+&lt;span class="k"&gt;endmodule&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Here we use the &lt;tt class="docutils literal"&gt;generate&lt;/tt&gt; block to do the bit-reverse and negation.&lt;/p&gt;
+</summary><category term="802.11n"></category><category term="preamble"></category><category term="CRC"></category><category term="SIGNAL"></category></entry><entry><title>Simulate Random MAC Protocol in NS2 (Part IV)</title><link href="http://jhshi.me/2013/12/15/simulate-random-mac-protocol-in-ns2-part-iv/index.html" rel="alternate"></link><updated>2013-12-15T13:01:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-12-15:2013/12/15/simulate-random-mac-protocol-in-ns2-part-iv/index.html</id><summary type="html">&lt;p&gt;Now we have &lt;a href="/2013/12/13/simulate-random-mac-protocol-in-ns2-part-i/"&gt;designed the simulator&lt;/a&gt;, &lt;a href="/2013/12/15/simulate-random-mac-protocol-in-ns2-part-ii/"&gt;add a new MAC protocol to NS2&lt;/a&gt;,
+and &lt;a href="/2013/12/15/simulate-random-mac-protocol-in-ns2-part-iii/"&gt;implement the Random Resend MAC protocol&lt;/a&gt;, the final part will be
+analyze the trace file to measure the performance of our new protocol.&lt;/p&gt;
+
+
+&lt;h3&gt;Format of the Trance Entry&lt;/h3&gt;
+&lt;p&gt;One line in the trace file may look like this.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;s 0.010830867 _70_ MAC  --- 27 cbr 148 [0 46000000 8 0] ------- [70:0 0:0 32 0] [0] 0 0
+|      |        |   |        |  |   |
+|      |        |   |        |  |   +----- Packet Size
+|      |        |   |        |  +--------- Traffic Type
+|      |        |   |        +------------ Packet UID
+|      |        |   +--------------------- Layer
+|      |        +------------------------- Node ID
+|      +---------------------------------- Time
++----------------------------------------- Event Type
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;You can find more details about the trace format &lt;a href="http://nsnam.isi.edu/nsnam/index.php/NS-2_Trace_Formats"&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;h3&gt;Trace Filtering&lt;/h3&gt;
+&lt;p&gt;In this project, we're only interested the traces that&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;From MAC layer, and&lt;/li&gt;
+&lt;li&gt;With CBR traffic type&lt;/li&gt;
+&lt;li&gt;With Event Type in "Send"(s), "Receive"(r) and "Drop"(D)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;So we first filter those not-so-interesting traces out.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;filter&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;trace_file&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt;
+  &lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="nb"&gt;open&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;trace_file&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;r&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;raw_lines&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;read&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+  &lt;span class="k"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&lt;/span&gt;&lt;span class="si"&gt;%s&lt;/span&gt;&lt;span class="s"&gt; raw traces found.&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;%&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;raw_lines&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
+
+  &lt;span class="n"&gt;traces&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt;
+  &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;raw_lines&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;fields&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39; &amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;fields&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;s&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;r&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;D&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt;
+      &lt;span class="k"&gt;continue&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fields&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;MAC&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt;
+      &lt;span class="k"&gt;continue&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fields&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;7&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;cbr&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt;
+      &lt;span class="k"&gt;continue&lt;/span&gt;
+
+    &lt;span class="n"&gt;traces&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;({&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;action&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;fields&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;node&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;fields&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;pid&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;int&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fields&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;6&lt;/span&gt;&lt;span class="p"&gt;])})&lt;/span&gt;
+
+
+  &lt;span class="k"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&lt;/span&gt;&lt;span class="si"&gt;%s&lt;/span&gt;&lt;span class="s"&gt; filtered traces found.&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;%&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;traces&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
+  &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;traces&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;Delivery Probability&lt;/h3&gt;
+&lt;p&gt;To calculate the delivery probability, we need to know&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;How many unique packets are sent out by all source nodes?&lt;/li&gt;
+&lt;li&gt;How many unique packets received by the sink node?&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;These two metrics can be easily obtained as following:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;nodes&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;set&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;t&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;node&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;t&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;traces&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&lt;/span&gt;&lt;span class="si"&gt;%s&lt;/span&gt;&lt;span class="s"&gt; nodes found.&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;%&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;nodes&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
+
+&lt;span class="n"&gt;sent&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;set&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;t&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;pid&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;t&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;traces&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;span class="n"&gt;recv&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;set&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;t&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;pid&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;t&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;traces&lt;/span&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;t&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;node&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;SINK_NODE&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;t&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;action&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;r&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+
+&lt;span class="k"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;sent: &lt;/span&gt;&lt;span class="si"&gt;%d&lt;/span&gt;&lt;span class="s"&gt;, recv: &lt;/span&gt;&lt;span class="si"&gt;%d&lt;/span&gt;&lt;span class="s"&gt;, P: &lt;/span&gt;&lt;span class="si"&gt;%.2f%%&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;%&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;sent&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;recv&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;float&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;recv&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;sent&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="mi"&gt;100&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Remember that we use &lt;code&gt;LossMonitor&lt;/code&gt; as sink? Now is the time to cross-reference
+the results here with the ones from the stats file. The total received packets
+number should match.&lt;/p&gt;
+&lt;p&gt;The final delivery probability w.s.t the repeat count &lt;code&gt;X&lt;/code&gt; is somehow like this
+in my case (packet size is 16 bytes).&lt;/p&gt;
+&lt;p&gt;&lt;img src="/images/prob.png"&gt;&lt;/p&gt;
+&lt;p&gt;Note that somehow this is not the ideal probability distribution. Please refer
+to this paper for theoretical analysis and also simulation results.&lt;/p&gt;
+&lt;p&gt;&lt;a href="http://ieeexplore.ieee.org/xpl/login.jsp?tp=&amp;amp;arnumber=4300816&amp;amp;url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D4300816"&gt;QoMOR: A QoS-aware MAC protocol using Optimal Retransmission for Wireless
+Intra-Vehicular Sensor Networks&lt;/a&gt;&lt;/p&gt;</summary><category term="ns2"></category><category term="mac"></category><category term="trace"></category><category term="python"></category></entry><entry><title>Simulate Random MAC Protocol in NS2 (Part III)</title><link href="http://jhshi.me/2013/12/15/simulate-random-mac-protocol-in-ns2-part-iii/index.html" rel="alternate"></link><updated>2013-12-15T12:11:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-12-15:2013/12/15/simulate-random-mac-protocol-in-ns2-part-iii/index.html</id><summary type="html">&lt;p&gt;Now we have the &lt;a href="/2013/12/13/simulate-random-mac-protocol-in-ns2-part-i/"&gt;simulation script&lt;/a&gt;, and also
+&lt;a href="/2013/12/15/simulate-random-mac-protocol-in-ns2-part-ii/"&gt;added our protocol to the NS2 simulator&lt;/a&gt;, which is still a placeholder.
+Now we're going the actually implement our own random MAC protocol.&lt;/p&gt;
+
+
+&lt;h3&gt;Protocol Description&lt;/h3&gt;
+&lt;p&gt;According to the project specification, when sending out an packet, our protocol
+is supposed to send out &lt;code&gt;X&lt;/code&gt; copies of the packet at random time before sending
+out next packet. As long as the receiver receive at least one of the &lt;code&gt;X&lt;/code&gt;
+duplicates, we say this packet was successfully delivered.&lt;/p&gt;
+&lt;h3&gt;Protocol Parameters&lt;/h3&gt;
+&lt;p&gt;From the protocol description, it's obvious that we need to know:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;How many copies to send for one packet? I.e., the &lt;code&gt;X&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;The interval of sending packet from up layer, so that we can schedule
+   resending before up layer pass down the next packet.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;So we add two class variables in &lt;code&gt;mac/rmac.h&lt;/code&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;repeatTx_&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="kt"&gt;double&lt;/span&gt; &lt;span class="n"&gt;interval_&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;And in the constructor function of &lt;code&gt;RMAC&lt;/code&gt; class, we need to bind the variables
+through TCL so that we can pass values in TCL script.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;bind&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;repeatTx_&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;repeatTx_&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;bind&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;interval_&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;interval_&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;TCL Object Binding&lt;/h3&gt;
+&lt;p&gt;We also need to let TCL runtime to &lt;em&gt;know&lt;/em&gt; our protocol. That is, when we
+write this in TCL script.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;set&lt;/span&gt; val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;mac&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; Mac&lt;span class="o"&gt;/&lt;/span&gt;RMAC
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;TCL runtime would have to know the corresponding class of the &lt;code&gt;Mac/RMAC&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Since we copied code from &lt;code&gt;mac-simple.cc&lt;/code&gt; and also made the changes, this part
+has been done, but let's just review the code snippet that does the binding.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;static&lt;/span&gt; &lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;RMACClass&lt;/span&gt; &lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="k"&gt;public&lt;/span&gt; &lt;span class="n"&gt;TclClass&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="k"&gt;public&lt;/span&gt; &lt;span class="o"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;RMACClass&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;TclClass&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;Mac/RMAC&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
+        &lt;span class="n"&gt;TclObject&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;create&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="k"&gt;const&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="k"&gt;const&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+            &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;RMAC&lt;/span&gt;&lt;span class="p"&gt;());&lt;/span&gt;
+        &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="n"&gt;class_rmac&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here the &lt;code&gt;Mac/RMAC&lt;/code&gt; string will be our protocol name.&lt;/p&gt;
+&lt;h3&gt;Interaction with Adjacent Layer&lt;/h3&gt;
+&lt;p&gt;The most important function in any NS2 MAC protocol is the &lt;code&gt;recv&lt;/code&gt; function. It's
+the interface to upper (Network Layer) and also lower (Physical Layer) layers.&lt;/p&gt;
+&lt;p&gt;The &lt;code&gt;recv&lt;/code&gt; of our MAC protocol will look like this.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;void&lt;/span&gt;
+&lt;span class="n"&gt;RMAC&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;recv&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Packet&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;p&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;Handler&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;h&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+
+    &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="n"&gt;hdr_cmn&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;hdr&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;HDR_CMN&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;p&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="cm"&gt;/* let RMAC::send handle the outgoing packets */&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;hdr&lt;/span&gt;&lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;&lt;span class="n"&gt;direction&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;hdr_cmn&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;DOWN&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="n"&gt;sendDown&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;p&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;h&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="n"&gt;sendUp&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;p&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;h&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here we first get the header of the packet, and check it's directory.
+&lt;code&gt;hdr_cmn::DOWN&lt;/code&gt; means this packet is from upper layer, and we need to send it
+out. &lt;code&gt;hdr_cmn::UP&lt;/code&gt; means this packet is from lower layer (received packet), we 
+need to deliver it to upper layer.&lt;/p&gt;
+&lt;h3&gt;Repeat Sending&lt;/h3&gt;
+&lt;p&gt;The key part of our MAC protocol is to repeated send multiple copies when
+sending out a packet. So we need to mainly modify the &lt;code&gt;sendDown&lt;/code&gt; function.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;double&lt;/span&gt; &lt;span class="n"&gt;max_delay&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+&lt;span class="c1"&gt;// generate repeatTx_ number of random delays&lt;/span&gt;
+&lt;span class="kt"&gt;double&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;delays&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="kt"&gt;double&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;repeatTx_&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="n"&gt;repeatTx_&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;++&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;delays&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;rand&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="o"&gt;%&lt;/span&gt; &lt;span class="mi"&gt;100&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;/&lt;/span&gt; &lt;span class="mf"&gt;100.0&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;interval_&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;delays&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;max_delay&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="n"&gt;max_delay&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;delays&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="c1"&gt;// use dummy tx handler for first repeatTx_-1 packets&lt;/span&gt;
+&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="n"&gt;repeatTx_&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;++&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;delays&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;max_delay&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="n"&gt;Scheduler&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;instance&lt;/span&gt;&lt;span class="p"&gt;().&lt;/span&gt;&lt;span class="n"&gt;schedule&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;resendHandler_&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Event&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="n"&gt;p&lt;/span&gt;&lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;&lt;span class="n"&gt;copy&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt; &lt;span class="n"&gt;delays&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]);&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;span class="k"&gt;delete&lt;/span&gt; &lt;span class="n"&gt;delays&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+&lt;span class="n"&gt;waitTimer&lt;/span&gt;&lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;&lt;span class="n"&gt;restart&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;max_delay&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;rx_state_&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;MAC_IDLE&lt;/span&gt; &lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="c1"&gt;// we&amp;#39;re idle, so start sending now&lt;/span&gt;
+    &lt;span class="n"&gt;sendTimer&lt;/span&gt;&lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;&lt;span class="n"&gt;restart&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;max_delay&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;ch&lt;/span&gt;&lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;&lt;span class="n"&gt;txtime&lt;/span&gt;&lt;span class="p"&gt;());&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="c1"&gt;// we&amp;#39;re currently receiving, so schedule it after&lt;/span&gt;
+    &lt;span class="c1"&gt;// we finish receiving&lt;/span&gt;
+    &lt;span class="n"&gt;sendTimer&lt;/span&gt;&lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;&lt;span class="n"&gt;restart&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;max_delay&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;ch&lt;/span&gt;&lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;&lt;span class="n"&gt;txtime&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+            &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;HDR_CMN&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pktRx_&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;&lt;span class="n"&gt;txtime&lt;/span&gt;&lt;span class="p"&gt;());&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;We first generate &lt;code&gt;repeatTx_&lt;/code&gt; number of delays before next interval. Except for
+the &lt;code&gt;max_delay&lt;/code&gt;, which will be the last copy to send, we use the &lt;code&gt;Scheduler&lt;/code&gt; to
+resend the duplicated packets, and for last packet, we just use the timer
+scheme of &lt;code&gt;SimpleMac&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Here is the &lt;code&gt;resendHander_&lt;/code&gt; looks like.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;void&lt;/span&gt;
+&lt;span class="n"&gt;RMACResendHandler&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;handle&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Event&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;p&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;mac_&lt;/span&gt;&lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;&lt;span class="n"&gt;resend&lt;/span&gt;&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;Packet&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="n"&gt;p&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="kt"&gt;void&lt;/span&gt;
+&lt;span class="n"&gt;RMAC&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;resend&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Packet&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;p&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;downtarget_&lt;/span&gt;&lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;&lt;span class="n"&gt;recv&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;p&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;You can find the complete code for &lt;code&gt;rmac.cc&lt;/code&gt; and &lt;code&gt;rmac.h&lt;/code&gt; &lt;a href="https://github.com/jhshi/course.network.ns2"&gt;here&lt;/a&gt;.&lt;/p&gt;</summary><category term="mac"></category><category term="ns2"></category></entry><entry><title>Simulate Random MAC Protocol in NS2 (Part II)</title><link href="http://jhshi.me/2013/12/15/simulate-random-mac-protocol-in-ns2-part-ii/index.html" rel="alternate"></link><updated>2013-12-15T11:37:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-12-15:2013/12/15/simulate-random-mac-protocol-in-ns2-part-ii/index.html</id><summary type="html">&lt;p&gt;In &lt;a href="/2013/12/13/simulate-random-mac-protocol-in-ns2-part-i/"&gt;previous post&lt;/a&gt;, we wrote an NS2 simulation program that fits the
+project specification, except that we're using the standard 802.11 MAC protocol.
+In this post, we'll discuss how to add our own MAC protocol to NS2.&lt;/p&gt;
+
+
+&lt;h3&gt;Compile NS2 from Source&lt;/h3&gt;
+&lt;p&gt;To add an new protocol to NS2, we actually need to download the whole NS2 source
+tree and add some extra CPP files there, which is embarrassingly inconvenient.
+But for now, we have to live with it.&lt;/p&gt;
+&lt;p&gt;Anyways, download the NS2 all-in-one package from &lt;a href="http://sourceforge.net/projects/nsnam/files/allinone/ns-allinone-2.35/ns-allinone-2.35.tar.gz/download"&gt;here&lt;/a&gt;, put the
+tarball somewhere in your home, say &lt;code&gt;~/projects/&lt;/code&gt;, then extract it.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;cd&lt;/span&gt; ~/projects
+tar xvf ns2-allinone-2.35.tar.gz
+&lt;span class="nb"&gt;cd &lt;/span&gt;ns2-allinone-2.35
+./install
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The install script will only generate the binaries in current directory, and
+will NOT actually copy them to anywhere. After the compilation is done, you'll
+will find the &lt;code&gt;ns&lt;/code&gt; executable in the &lt;code&gt;ns-2.35&lt;/code&gt; subdirectory.&lt;/p&gt;
+&lt;p&gt;Suppose you put your project files (e.g., the TCL file we wrote) in
+&lt;code&gt;~/projects/network/ns2&lt;/code&gt;, then it's convenient to have an symbol link to the
+&lt;code&gt;ns&lt;/code&gt; binary. &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;cd&lt;/span&gt; ~/projects/network/ns2
+ln -svf ~/projects/ns2-allinone-2.35/ns-2.35/ns myns
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The you'll have an symbol link called &lt;code&gt;myns&lt;/code&gt;, which points the actual
+executable. Then you can run your simulation this way.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;myns random_mac.tcl
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;In which the &lt;code&gt;random_mac.tcl&lt;/code&gt; is the TCL file we wrote in last post.&lt;/p&gt;
+&lt;h3&gt;Add a New Mac Protocol&lt;/h3&gt;
+&lt;p&gt;To add a new MAC protocol, say &lt;code&gt;RMAC&lt;/code&gt;, we need to do the following. Suppose
+you're in the &lt;code&gt;ns2-allinone-2.35/ns-2.35&lt;/code&gt; directory.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Create &lt;code&gt;rmac.cc&lt;/code&gt; and &lt;code&gt;rmac.h&lt;/code&gt; file in the &lt;code&gt;mac&lt;/code&gt; subdirectory, for now, just
+   leave them empty.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Edit &lt;code&gt;Makefile&lt;/code&gt;, find the line contains &lt;code&gt;mac/smac.o&lt;/code&gt; (around line 249), add one line like this&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;    .....
+    mac/mac-802_3.o mac/mac-tdma.o mac/smac.o &lt;span class="se"&gt;\&lt;/span&gt;
+    mac/rmac.o&lt;span class="se"&gt;\&lt;/span&gt;
+    .....
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;So now, when you do &lt;code&gt;make&lt;/code&gt; inside the &lt;code&gt;ns-2.35&lt;/code&gt; directory, our source
+file &lt;code&gt;rmac.cc&lt;/code&gt; and &lt;code&gt;rmac.h&lt;/code&gt; will be compiled. Of course, at this point, there is
+no content at those two files, which we'll add later.&lt;/p&gt;
+&lt;h3&gt;Adapt the &lt;code&gt;SimpleMac&lt;/code&gt; Protocol&lt;/h3&gt;
+&lt;p&gt;The NS2 source contains a simple MAC protocol called &lt;code&gt;SimpleMac&lt;/code&gt;, which is a
+good start point for us to adapt.&lt;/p&gt;
+&lt;p&gt;Just copy all the contents in &lt;code&gt;mac/mac-simple.h&lt;/code&gt; to &lt;code&gt;mac/rmac.h&lt;/code&gt;, and
+&lt;code&gt;mac/mac-simple.cc&lt;/code&gt; to &lt;code&gt;mac/rmac.cc&lt;/code&gt;. Then change &lt;code&gt;Mac/Simple&lt;/code&gt; to &lt;code&gt;Mac/RMAC&lt;/code&gt; 
+line 60 of the &lt;code&gt;rmac.cc&lt;/code&gt; file. You should be able to compile using the &lt;code&gt;make&lt;/code&gt;
+command in &lt;code&gt;ns-2.35&lt;/code&gt; directory.&lt;/p&gt;
+&lt;p&gt;If everything is OK, go back to the project directory &lt;code&gt;~/projects/network/ns2&lt;/code&gt;,
+change the MAC protocol to &lt;code&gt;Mac/RMAC&lt;/code&gt; (previously &lt;code&gt;Mac/802.11&lt;/code&gt;), you should be
+able to run the simulation using &lt;code&gt;myns&lt;/code&gt;, which points to the &lt;code&gt;ns&lt;/code&gt; binary we just
+compiled.&lt;/p&gt;</summary><category term="ns2"></category><category term="tcl"></category><category term="mac"></category><category term="c++"></category></entry><entry><title>Simulate Random MAC Protocol in NS2 (Part I)</title><link href="http://jhshi.me/2013/12/13/simulate-random-mac-protocol-in-ns2-part-i/index.html" rel="alternate"></link><updated>2013-12-13T12:54:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-12-13:2013/12/13/simulate-random-mac-protocol-in-ns2-part-i/index.html</id><summary type="html">&lt;p&gt;In this network project, we would need to:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Write an simulator using TCL&lt;/li&gt;
+&lt;li&gt;Add an new MAC protocol to NS2&lt;/li&gt;
+&lt;li&gt;Analyze the simulation results&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Let's tackle them one by one. In this post, we'll mainly focus on the simulator
+part.&lt;/p&gt;
+
+
+&lt;h3&gt;Get Familiar with TCL&lt;/h3&gt;
+&lt;p&gt;&lt;a href="http://en.wikipedia.org/wiki/Tcl"&gt;TCL&lt;/a&gt; is actually a quite simple language. It's designed for fast
+scripting and glue things together. You can find many tutorials online. I found
+&lt;a href="http://users.belgacom.net/bruno.champagne/tcl.html"&gt;this one&lt;/a&gt; especially clean, and straightforward.&lt;/p&gt;
+&lt;h3&gt;Simulator Parameters&lt;/h3&gt;
+&lt;p&gt;First, let's define some parameters that we'll use later.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c"&gt;# ======================================================================&lt;/span&gt;
+&lt;span class="c"&gt;# Project parameters&lt;/span&gt;
+&lt;span class="c"&gt;# ======================================================================&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;node_num&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;       &lt;span class="mi"&gt;101&lt;/span&gt; 
+set val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;duration&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;       &lt;span class="mi"&gt;10&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;packetsize&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;     &lt;span class="mi"&gt;16&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;repeatTx&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;       &lt;span class="mi"&gt;10&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;interval&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;       &lt;span class="mf"&gt;0.02&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;dimx&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;           &lt;span class="mi"&gt;50&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;dimy&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;           &lt;span class="mi"&gt;50&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;nam_file&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;       &lt;span class="s2"&gt;&amp;quot;jinghaos_pa3.nam&amp;quot;&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;trace_file&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;     &lt;span class="s2"&gt;&amp;quot;jinghaos_pa3.tr&amp;quot;&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;stats_file&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;     &lt;span class="s2"&gt;&amp;quot;jinghaos_pa3.stats&amp;quot;&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;node_size&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;      &lt;span class="mi"&gt;5&lt;/span&gt;
+
+&lt;span class="c"&gt;# ======================================================================&lt;/span&gt;
+&lt;span class="c"&gt;# Node options&lt;/span&gt;
+&lt;span class="c"&gt;# ======================================================================&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;chan&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;           Channel&lt;span class="o"&gt;/&lt;/span&gt;WirelessChannel    &lt;span class="k"&gt;;&lt;/span&gt;&lt;span class="c"&gt;# channel type&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;prop&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;           Propagation&lt;span class="o"&gt;/&lt;/span&gt;TwoRayGround   &lt;span class="k"&gt;;&lt;/span&gt;&lt;span class="c"&gt;# radio-propagation model&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;netif&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;          Phy&lt;span class="o"&gt;/&lt;/span&gt;WirelessPhy            &lt;span class="k"&gt;;&lt;/span&gt;&lt;span class="c"&gt;# network interface type&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;mac&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;            Mac&lt;span class="o"&gt;/&lt;/span&gt;RMAC                 &lt;span class="k"&gt;;&lt;/span&gt;&lt;span class="c"&gt;# MAC type&lt;/span&gt;
+&lt;span class="c"&gt;#set val(mac)            Mac/802_11                 ;# MAC type&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;ifq&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;            Queue&lt;span class="o"&gt;/&lt;/span&gt;DropTail&lt;span class="o"&gt;/&lt;/span&gt;PriQueue    &lt;span class="k"&gt;;&lt;/span&gt;&lt;span class="c"&gt;# interface queue type&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;ll&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;             LL                         &lt;span class="k"&gt;;&lt;/span&gt;&lt;span class="c"&gt;# link layer type&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;ant&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;            Antenna&lt;span class="o"&gt;/&lt;/span&gt;OmniAntenna        &lt;span class="k"&gt;;&lt;/span&gt;&lt;span class="c"&gt;# antenna model&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;ifqlen&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;         &lt;span class="mi"&gt;50&lt;/span&gt;                         &lt;span class="k"&gt;;&lt;/span&gt;&lt;span class="c"&gt;# max packet in ifq&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;nn&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;             &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;node_num&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;                          &lt;span class="k"&gt;;&lt;/span&gt;&lt;span class="c"&gt;# number of mobilenodes&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; val&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;rp&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;             DSDV                       &lt;span class="k"&gt;;&lt;/span&gt;&lt;span class="c"&gt;# routing protocol&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The first part is parameters from the project specification. Here we have 101
+nodes (100 source node plus 1 sink node), simulation duration, packet rate,
+terrain size, etc.&lt;/p&gt;
+&lt;p&gt;The second part is for node configuration. Here we use &lt;code&gt;WirelessChannel&lt;/code&gt; with
+&lt;code&gt;DSDV&lt;/code&gt; routing protocol. Note that for MAC protocol, we use &lt;code&gt;Mac/RMAC&lt;/code&gt;, which
+stands for the random MAC protocol we'll add to NS2. Of course, at this point,
+we don't have our RMAC protocol yet, so you can substitute it with &lt;code&gt;Mac/802_11&lt;/code&gt;
+for the moment.&lt;/p&gt;
+&lt;h3&gt;Simulator Configuration&lt;/h3&gt;
+&lt;p&gt;We can obtain an instance of the simulator, and configure it this way.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c"&gt;# ======================================================================&lt;/span&gt;
+&lt;span class="c"&gt;# Global variables&lt;/span&gt;
+&lt;span class="c"&gt;# ======================================================================&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; ns                      &lt;span class="k"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;new&lt;/span&gt; Simulator&lt;span class="k"&gt;]&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; tracefd                 &lt;span class="k"&gt;[&lt;/span&gt;&lt;span class="nb"&gt;open&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;trace_file&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; w&lt;span class="k"&gt;]&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; nam                     &lt;span class="k"&gt;[&lt;/span&gt;&lt;span class="nb"&gt;open&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;nam_file&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; w&lt;span class="k"&gt;]&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; stats                   &lt;span class="k"&gt;[&lt;/span&gt;&lt;span class="nb"&gt;open&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;stats_file&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; w&lt;span class="k"&gt;]&lt;/span&gt;
+&lt;span class="nv"&gt;$ns&lt;/span&gt; &lt;span class="nv"&gt;namtrace-all-wireless&lt;/span&gt;   &lt;span class="nv"&gt;$nam&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;dimx&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;dimy&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;
+&lt;span class="nv"&gt;$ns&lt;/span&gt; &lt;span class="k"&gt;trace&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;all               &lt;span class="nv"&gt;$tracefd&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; topo                    &lt;span class="k"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;new&lt;/span&gt; Topography&lt;span class="k"&gt;]&lt;/span&gt;
+&lt;span class="nv"&gt;$topo&lt;/span&gt; &lt;span class="nv"&gt;load_flatgrid&lt;/span&gt;         &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;dimx&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;dimy&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here we set up various global variables, including trace and stats file fd, and
+also the topology.&lt;/p&gt;
+&lt;p&gt;The we configure the node.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c"&gt;#&lt;/span&gt;
+&lt;span class="c"&gt;# Create God&lt;/span&gt;
+&lt;span class="c"&gt;#&lt;/span&gt;
+&lt;span class="nv"&gt;create-god&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;nn&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;
+
+&lt;span class="c"&gt;#Mac/RMAC set repeatTx_ $val(repeatTx)&lt;/span&gt;
+&lt;span class="c"&gt;#Mac/RMAC set interval_ $val(interval)&lt;/span&gt;
+
+&lt;span class="nv"&gt;$ns&lt;/span&gt; &lt;span class="nv"&gt;node-config&lt;/span&gt; &lt;span class="err"&gt;\&lt;/span&gt;
+        &lt;span class="nv"&gt;-adhocRouting&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;rp&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="err"&gt;\&lt;/span&gt;
+        &lt;span class="nv"&gt;-llType&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;ll&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="err"&gt;\&lt;/span&gt;
+        &lt;span class="nv"&gt;-macType&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;mac&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="err"&gt;\&lt;/span&gt;
+        &lt;span class="nv"&gt;-ifqType&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;ifq&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="err"&gt;\&lt;/span&gt;
+        &lt;span class="nv"&gt;-ifqLen&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;ifqlen&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="err"&gt;\&lt;/span&gt;
+        &lt;span class="nv"&gt;-antType&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;ant&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="err"&gt;\&lt;/span&gt;
+        &lt;span class="nv"&gt;-propType&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;prop&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="err"&gt;\&lt;/span&gt;
+        &lt;span class="nv"&gt;-phyType&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;netif&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="err"&gt;\&lt;/span&gt;
+        &lt;span class="nv"&gt;-channelType&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;chan&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="err"&gt;\&lt;/span&gt;
+        &lt;span class="nv"&gt;-topoInstance&lt;/span&gt; &lt;span class="nv"&gt;$topo&lt;/span&gt; &lt;span class="err"&gt;\&lt;/span&gt;
+        &lt;span class="nv"&gt;-agentTrace&lt;/span&gt; ON &lt;span class="err"&gt;\&lt;/span&gt;
+        &lt;span class="nv"&gt;-routerTrace&lt;/span&gt; ON &lt;span class="err"&gt;\&lt;/span&gt;
+        &lt;span class="nv"&gt;-macTrace&lt;/span&gt; ON &lt;span class="err"&gt;\&lt;/span&gt;
+        &lt;span class="nv"&gt;-movementTrace&lt;/span&gt; OFF          
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here we first create an General Operations Director(GOD) object to track the
+nodes' position in the topology grid. Then we configure the nodes using the
+parameters we set up earlier.&lt;/p&gt;
+&lt;p&gt;Note that, again at this point we don't have a RMAC protocol, so we can just
+comment out the two lines that configure RMAC for now.&lt;/p&gt;
+&lt;h3&gt;The Only Sink Node&lt;/h3&gt;
+&lt;p&gt;Next, we're going to create the sink node.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c"&gt;#&lt;/span&gt;
+&lt;span class="c"&gt;# The only sink node&lt;/span&gt;
+&lt;span class="c"&gt;#&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; sink_node &lt;span class="k"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;$ns&lt;/span&gt; &lt;span class="nv"&gt;node&lt;/span&gt;&lt;span class="k"&gt;]&lt;/span&gt;
+&lt;span class="nv"&gt;$sink_node&lt;/span&gt; &lt;span class="nv"&gt;random-motion&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+&lt;span class="nv"&gt;$sink_node&lt;/span&gt; &lt;span class="k"&gt;set&lt;/span&gt; X_ &lt;span class="k"&gt;[expr&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;dimx&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="k"&gt;]&lt;/span&gt;
+&lt;span class="nv"&gt;$sink_node&lt;/span&gt; &lt;span class="k"&gt;set&lt;/span&gt; Y_ &lt;span class="k"&gt;[expr&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;dimy&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="k"&gt;]&lt;/span&gt;
+&lt;span class="nv"&gt;$sink_node&lt;/span&gt; &lt;span class="k"&gt;set&lt;/span&gt; Z_ &lt;span class="mi"&gt;0&lt;/span&gt;
+&lt;span class="nv"&gt;$ns&lt;/span&gt; &lt;span class="nv"&gt;initial_node_pos&lt;/span&gt; &lt;span class="nv"&gt;$sink_node&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;node_size&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;
+
+&lt;span class="k"&gt;set&lt;/span&gt; sink &lt;span class="k"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;new&lt;/span&gt; Agent&lt;span class="o"&gt;/&lt;/span&gt;LossMonitor&lt;span class="k"&gt;]&lt;/span&gt;
+&lt;span class="nv"&gt;$ns&lt;/span&gt; &lt;span class="nv"&gt;attach-agent&lt;/span&gt; &lt;span class="nv"&gt;$sink_node&lt;/span&gt; &lt;span class="nv"&gt;$sink&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here we place the sink node at the center of the terrain, and attach an
+&lt;code&gt;LossMonitor&lt;/code&gt; to it, so that we can get the packet statistics. Although the
+project specification requires us to get the packet statistics from the trace
+file, we can use the results from &lt;code&gt;LossMonitor&lt;/code&gt; to verify that analysis results.&lt;/p&gt;
+&lt;h3&gt;The Source Nodes&lt;/h3&gt;
+&lt;p&gt;We need to create 100 source nodes, they should scatter the whole terrain
+randomly, also, they should start transmission also randomly, which has two
+benefits:
+ - In practice, they're highly unlikable to synchronize perfectly, so we can
+   simulator real world better.
+ - By starting randomly, we're minimizing the chances they have collision.&lt;/p&gt;
+&lt;p&gt;So we'll have two random number generators, one for the position, and one for
+the starting time.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c"&gt;#&lt;/span&gt;
+&lt;span class="c"&gt;# Set up random number generator, to scatter the source nodes&lt;/span&gt;
+&lt;span class="c"&gt;#&lt;/span&gt;
+&lt;span class="k"&gt;set&lt;/span&gt; rng &lt;span class="k"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;new&lt;/span&gt; RNG&lt;span class="k"&gt;]&lt;/span&gt;
+&lt;span class="nv"&gt;$rng&lt;/span&gt; &lt;span class="nv"&gt;seed&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+
+&lt;span class="k"&gt;set&lt;/span&gt; xrand &lt;span class="k"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;new&lt;/span&gt; RandomVariable&lt;span class="o"&gt;/&lt;/span&gt;Uniform&lt;span class="k"&gt;]&lt;/span&gt;
+&lt;span class="nv"&gt;$xrand&lt;/span&gt; &lt;span class="nv"&gt;use-rng&lt;/span&gt; &lt;span class="nv"&gt;$rng&lt;/span&gt;
+&lt;span class="nv"&gt;$xrand&lt;/span&gt; &lt;span class="k"&gt;set&lt;/span&gt; min_ &lt;span class="k"&gt;[expr&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;dimx&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="k"&gt;]&lt;/span&gt;
+&lt;span class="nv"&gt;$xrand&lt;/span&gt; &lt;span class="k"&gt;set&lt;/span&gt; max_ &lt;span class="k"&gt;[expr&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;dimx&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="k"&gt;]&lt;/span&gt;
+
+&lt;span class="k"&gt;set&lt;/span&gt; yrand &lt;span class="k"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;new&lt;/span&gt; RandomVariable&lt;span class="o"&gt;/&lt;/span&gt;Uniform&lt;span class="k"&gt;]&lt;/span&gt;
+&lt;span class="nv"&gt;$yrand&lt;/span&gt; &lt;span class="nv"&gt;use-rng&lt;/span&gt; &lt;span class="nv"&gt;$rng&lt;/span&gt;
+&lt;span class="nv"&gt;$yrand&lt;/span&gt; &lt;span class="k"&gt;set&lt;/span&gt; min_ &lt;span class="k"&gt;[expr&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;dimy&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="k"&gt;]&lt;/span&gt;
+&lt;span class="nv"&gt;$yrand&lt;/span&gt; &lt;span class="k"&gt;set&lt;/span&gt; max_ &lt;span class="k"&gt;[expr&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;dimy&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="k"&gt;]&lt;/span&gt;
+
+&lt;span class="k"&gt;set&lt;/span&gt; trand &lt;span class="k"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;new&lt;/span&gt; RandomVariable&lt;span class="o"&gt;/&lt;/span&gt;Uniform&lt;span class="k"&gt;]&lt;/span&gt;
+&lt;span class="nv"&gt;$trand&lt;/span&gt; &lt;span class="nv"&gt;use-rng&lt;/span&gt; &lt;span class="nv"&gt;$rng&lt;/span&gt;
+&lt;span class="nv"&gt;$trand&lt;/span&gt; &lt;span class="k"&gt;set&lt;/span&gt; min_ &lt;span class="mi"&gt;0&lt;/span&gt;
+&lt;span class="nv"&gt;$trand&lt;/span&gt; &lt;span class="k"&gt;set&lt;/span&gt; max_ &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;interval&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Also note that we set the seed to the Random Number Generator (RNG) to a
+constant value &lt;code&gt;0&lt;/code&gt;, so that in each simulation we can get the same results, easy
+for debug and also analyzing.&lt;/p&gt;
+&lt;p&gt;Then we create all the source nodes in a &lt;code&gt;for&lt;/code&gt; loop.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c"&gt;#&lt;/span&gt;
+&lt;span class="c"&gt;# Create all the source nodes&lt;/span&gt;
+&lt;span class="c"&gt;#&lt;/span&gt;
+&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="k"&gt;{set&lt;/span&gt; i &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt; &lt;span class="k"&gt;{&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;nn&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;&lt;span class="nv"&gt;-1&lt;/span&gt; &lt;span class="k"&gt;}&lt;/span&gt; &lt;span class="k"&gt;{&lt;/span&gt;&lt;span class="nb"&gt;incr&lt;/span&gt; i&lt;span class="k"&gt;}&lt;/span&gt; &lt;span class="k"&gt;{&lt;/span&gt;
+    &lt;span class="k"&gt;set&lt;/span&gt; src_node&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="k"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;$ns&lt;/span&gt; &lt;span class="nv"&gt;node&lt;/span&gt;&lt;span class="k"&gt;]&lt;/span&gt; 
+    &lt;span class="nv"&gt;$src_node&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; random-motion &lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="k"&gt;set&lt;/span&gt; x &lt;span class="k"&gt;[expr&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;dimx&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="k"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;$xrand&lt;/span&gt; &lt;span class="nv"&gt;value&lt;/span&gt;&lt;span class="k"&gt;]]&lt;/span&gt;
+    &lt;span class="k"&gt;set&lt;/span&gt; y &lt;span class="k"&gt;[expr&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;dimx&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="k"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;$xrand&lt;/span&gt; &lt;span class="nv"&gt;value&lt;/span&gt;&lt;span class="k"&gt;]]&lt;/span&gt;
+    &lt;span class="nv"&gt;$src_node&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="k"&gt;set&lt;/span&gt; X_ &lt;span class="nv"&gt;$x&lt;/span&gt;
+    &lt;span class="nv"&gt;$src_node&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="k"&gt;set&lt;/span&gt; Y_ &lt;span class="nv"&gt;$y&lt;/span&gt;
+    &lt;span class="nv"&gt;$src_node&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="k"&gt;set&lt;/span&gt; Z_ &lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="nv"&gt;$ns&lt;/span&gt; &lt;span class="nv"&gt;initial_node_pos&lt;/span&gt; &lt;span class="nv"&gt;$src_node&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;node_size&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;
+
+    &lt;span class="k"&gt;set&lt;/span&gt; udp&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="k"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;new&lt;/span&gt; Agent&lt;span class="o"&gt;/&lt;/span&gt;UDP&lt;span class="k"&gt;]&lt;/span&gt;
+    &lt;span class="nv"&gt;$udp&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="k"&gt;set&lt;/span&gt; class_ &lt;span class="nv"&gt;$i&lt;/span&gt;
+    &lt;span class="nv"&gt;$ns&lt;/span&gt; &lt;span class="nv"&gt;attach-agent&lt;/span&gt; &lt;span class="nv"&gt;$src_node&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="nv"&gt;$udp&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;
+    &lt;span class="nv"&gt;$ns&lt;/span&gt; &lt;span class="nv"&gt;connect&lt;/span&gt; &lt;span class="nv"&gt;$udp&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="nv"&gt;$sink&lt;/span&gt;
+
+    &lt;span class="k"&gt;set&lt;/span&gt; cbr&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="k"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;new&lt;/span&gt; Application&lt;span class="o"&gt;/&lt;/span&gt;Traffic&lt;span class="o"&gt;/&lt;/span&gt;CBR&lt;span class="k"&gt;]&lt;/span&gt;
+    &lt;span class="nv"&gt;$cbr&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="k"&gt;set&lt;/span&gt; packet_size_ &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;packetsize&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;
+    &lt;span class="nv"&gt;$cbr&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="k"&gt;set&lt;/span&gt; interval_ &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;interval&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;
+    &lt;span class="nv"&gt;$cbr&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="nv"&gt;attach-agent&lt;/span&gt; &lt;span class="nv"&gt;$udp&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;set&lt;/span&gt; start &lt;span class="k"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;$trand&lt;/span&gt; &lt;span class="nv"&gt;value&lt;/span&gt;&lt;span class="k"&gt;]&lt;/span&gt;
+    &lt;span class="nv"&gt;$ns&lt;/span&gt; &lt;span class="nv"&gt;at&lt;/span&gt; &lt;span class="nv"&gt;$start&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;$cbr($i) start&amp;quot;&lt;/span&gt; 
+    &lt;span class="nv"&gt;$ns&lt;/span&gt; at &lt;span class="nv"&gt;$val&lt;/span&gt;&lt;span class="k"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;duration&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;$cbr($i) stop&amp;quot;&lt;/span&gt;
+&lt;span class="k"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Note that we use UDP here instead of TCP, since we don't need any reliable
+transfer or congestion control from up layer. Also, we attach an Constant Bit
+Generator (CBR) as the application.&lt;/p&gt;
+&lt;h3&gt;Simulator Control&lt;/h3&gt;
+&lt;p&gt;We first define the actions to take when the simulator stops.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;proc&lt;/span&gt; stop &lt;span class="k"&gt;{}&lt;/span&gt; &lt;span class="k"&gt;{&lt;/span&gt;
+    &lt;span class="k"&gt;global&lt;/span&gt; ns tracefd nam stats val sink
+
+    &lt;span class="k"&gt;set&lt;/span&gt; bytes &lt;span class="k"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;$sink&lt;/span&gt; &lt;span class="k"&gt;set&lt;/span&gt; bytes_&lt;span class="k"&gt;]&lt;/span&gt;
+    &lt;span class="k"&gt;set&lt;/span&gt; losts  &lt;span class="k"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;$sink&lt;/span&gt; &lt;span class="k"&gt;set&lt;/span&gt; nlost_&lt;span class="k"&gt;]&lt;/span&gt;
+    &lt;span class="k"&gt;set&lt;/span&gt; pkts &lt;span class="k"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;$sink&lt;/span&gt; &lt;span class="k"&gt;set&lt;/span&gt; npkts_&lt;span class="k"&gt;]&lt;/span&gt;
+    &lt;span class="nb"&gt;puts&lt;/span&gt; &lt;span class="nv"&gt;$stats&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;bytes losts pkts&amp;quot;&lt;/span&gt;
+    &lt;span class="nb"&gt;puts&lt;/span&gt; &lt;span class="nv"&gt;$stats&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;$bytes $losts $pkts&amp;quot;&lt;/span&gt;
+
+    &lt;span class="nv"&gt;$ns&lt;/span&gt; &lt;span class="nb"&gt;flush&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;trace
+    &lt;span class="nb"&gt;close&lt;/span&gt; &lt;span class="nv"&gt;$nam&lt;/span&gt;
+    &lt;span class="nb"&gt;close&lt;/span&gt; &lt;span class="nv"&gt;$tracefd&lt;/span&gt;
+    &lt;span class="nb"&gt;close&lt;/span&gt; &lt;span class="nv"&gt;$stats&lt;/span&gt;
+&lt;span class="k"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here we first get the packet statistics from &lt;code&gt;LossMonitor&lt;/code&gt;, and write them to
+the stats file, then we flush ns trace and close all the files.&lt;/p&gt;
+&lt;p&gt;Finally, we start the simulator.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;puts&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Starting Simulation...&amp;quot;&lt;/span&gt;
+&lt;span class="nv"&gt;$ns&lt;/span&gt; &lt;span class="nv"&gt;run&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="tcl"></category><category term="ns2"></category></entry><entry><title>Command Dispatching</title><link href="http://jhshi.me/2013/12/02/command-dispatching/index.html" rel="alternate"></link><updated>2013-12-02T12:52:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-12-02:2013/12/02/command-dispatching/index.html</id><summary type="html">&lt;p&gt;In a few network projects, we're asked to write an interactive shell, to receive
+command from user input. Here is the general pattern I used. The example I used
+here is from the &lt;a href="https://github.com/jhshi/course.network.p2p"&gt;P2P network project&lt;/a&gt;, and you can find my earlier post
+about &lt;a href="/2013/11/02/use-select-to-monitor-multiple-file-descriptors/"&gt;use select to monitor user input and socket at the same time&lt;/a&gt;.&lt;/p&gt;
+
+
+&lt;h3&gt;Command Handing Functions&lt;/h3&gt;
+&lt;p&gt;Since each command may have various number of arguments or options, it's
+straightforward to use the standard &lt;code&gt;argc&lt;/code&gt; and &lt;code&gt;argv&lt;/code&gt; interface. So for each
+command, we define there handling functions as follows.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;cmd_help&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;argc&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[]);&lt;/span&gt;
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;cmd_myip&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;argc&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[]);&lt;/span&gt;
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;cmd_myport&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;argc&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[]);&lt;/span&gt;
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;cmd_register&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;argc&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[]);&lt;/span&gt;
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;cmd_connect&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;argc&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[]);&lt;/span&gt;
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;cmd_list&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;argc&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[]);&lt;/span&gt;
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;cmd_terminate&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;argc&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[]);&lt;/span&gt;
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;cmd_exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;argc&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[]);&lt;/span&gt;
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;cmd_download&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;argc&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[]);&lt;/span&gt;
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;cmd_creator&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;argc&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[]);&lt;/span&gt;
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;cmd_packet&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;argc&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[]);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;Command Table&lt;/h3&gt;
+&lt;p&gt;It'll be tedious to manually decide which handling function to call. Instead,
+we'll use an data structure called &lt;em&gt;Command Table&lt;/em&gt; to gracefully handle the
+cases for all commands.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;handler&lt;/span&gt;&lt;span class="p"&gt;)(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;argc&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[]);&lt;/span&gt;
+    &lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;help_msg&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="n"&gt;cmd_table&lt;/span&gt;&lt;span class="p"&gt;[]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;HELP&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;cmd_help&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;: Show available user interface options.&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+    &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;MYIP&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;cmd_myip&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;: Show IP address of this process.&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+    &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;MYPORT&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;cmd_myport&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;: Show port on which this process is listening.&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+    &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;REGISTER&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;cmd_register&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot; &amp;lt;server_IP&amp;gt; &amp;lt;port_no&amp;gt;: Client register to server.&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+    &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;CONNECT&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;cmd_connect&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot; &amp;lt;destination&amp;gt; &amp;lt;port_no&amp;gt;: Connect to a peer client.&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+    &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;LIST&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;cmd_list&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;: Show list of connected hosts.&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+    &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;TERMINATE&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;cmd_terminate&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot; &amp;lt;connection_id&amp;gt;: Terminate a certain connection&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+    &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;EXIT&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;cmd_exit&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;: Close all connections and terminate this process.&amp;quot;&lt;/span&gt; &lt;span class="p"&gt;},&lt;/span&gt;
+    &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;DOWNLOAD&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;cmd_download&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot; &amp;lt;file_name&amp;gt; &amp;lt;file_chunk_size_in_bytes&amp;gt;: Download a file in parallel.&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+    &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;CREATOR&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;cmd_creator&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;: Show author&amp;#39;s info.&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+    &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;PACKET&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;cmd_packet&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot; &amp;lt;packet_size_in_bytes&amp;gt;: Set packet size.&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+    &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+&lt;span class="p"&gt;};&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here we define, for each command, which handler to use and also the help
+message. More specifically, our &lt;code&gt;cmd_help&lt;/code&gt; and be written as simple as follows.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;int&lt;/span&gt;
+&lt;span class="nf"&gt;cmd_help&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;argc&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[])&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;printf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;Available commands are:&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;cmd_table&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;++&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="n"&gt;printf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;%s%s&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;cmd_table&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;cmd_table&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="n"&gt;help_msg&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;Command Dispatching&lt;/h3&gt;
+&lt;p&gt;Now suppose you already found &lt;code&gt;STDIN_FILENO&lt;/code&gt; is available to read using
+&lt;code&gt;select&lt;/code&gt;, which means user has entered some input and hit the {% key Enter %} key.
+Then we need to read the input and dispatch the command.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;int&lt;/span&gt;
+&lt;span class="nf"&gt;handle_command&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;void&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;command&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="kt"&gt;size_t&lt;/span&gt; &lt;span class="n"&gt;len&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="cm"&gt;/* let getline allocate memory for us */&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;getline&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;command&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;len&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stdin&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="n"&gt;perror&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;getline&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;cmd_dispatch&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;command&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="n"&gt;free&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;command&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here we use the &lt;code&gt;getline&lt;/code&gt; function to read the input from &lt;code&gt;stdin&lt;/code&gt;. &lt;code&gt;getline&lt;/code&gt;
+will allocate the buffer for us, so we need not worry about the input size. But
+we do need to free the buffer afterwards.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;int&lt;/span&gt;
+&lt;span class="nf"&gt;cmd_dispatch&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;cmd&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="kt"&gt;char&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;512&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+    &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;argc&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;word&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;strtok&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;cmd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot; &lt;/span&gt;&lt;span class="se"&gt;\t\n&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+            &lt;span class="n"&gt;word&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+            &lt;span class="n"&gt;word&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;strtok&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot; &lt;/span&gt;&lt;span class="se"&gt;\t\n&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;argc&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;=&lt;/span&gt; &lt;span class="mi"&gt;512&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+            &lt;span class="n"&gt;printf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;[ERROR]: too many arguments&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+            &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+        &lt;span class="p"&gt;}&lt;/span&gt;
+
+        &lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;argc&lt;/span&gt;&lt;span class="o"&gt;++&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;word&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;argc&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;cmd_table&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;++&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;!&lt;/span&gt;&lt;span class="n"&gt;strcmp&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;cmd_table&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+            &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;cmd_table&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="n"&gt;handler&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;argc&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+        &lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+
+    &lt;span class="n"&gt;printf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;[ERROR]: command not found.&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;In &lt;code&gt;cmd_dispatch&lt;/code&gt;, we first split the inputs into an array of strings, then we
+traverse the command table to find a match.&lt;/p&gt;</summary><category term="C"></category><category term="dispatch"></category><category term="readline"></category></entry><entry><title>Fight Against the 'Address alrady in use' Error</title><link href="http://jhshi.me/2013/11/02/fight-against-the-address-alrady-in-use-error/index.html" rel="alternate"></link><updated>2013-11-02T22:36:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-11-02:2013/11/02/fight-against-the-address-alrady-in-use-error/index.html</id><summary type="html">&lt;p&gt;You have probably seen this error quite often. The detailed reason why this
+error occurs is explained in detail &lt;a href="http://www.serverframework.com/asynchronousevents/2011/01/time-wait-and-its-design-implications-for-protocols-and-scalable-servers.html"&gt;here&lt;/a&gt;. &lt;/p&gt;
+&lt;!--more --&gt;
+
+&lt;p&gt;In short, if a TCP socket is
+not closed properly when the program exits, the OS will put that socket in a &lt;code&gt;TIME_WAIT&lt;/code&gt;
+state for a period of time (&lt;a href="http://www.borella.net/content/MITP432/TCP/text26.html"&gt;&lt;code&gt;2MSL&lt;/code&gt;&lt;/a&gt;, usually a couple of minutes). During that time, if
+you want to bind to the same port, you'll get the "Address already in use"
+error, even though technically no body is actually using that port.&lt;/p&gt;
+&lt;p&gt;In practice, especially when you're debugging, it's very annoying to wait (even
+a few minutes) before you can re-run your program if it crashes previously. And
+you often very sure you're the only one that will use that certain port
+number. &lt;/p&gt;
+&lt;p&gt;The solution is, you can use the &lt;code&gt;SO_REUSEADDR&lt;/code&gt; option to avoid that binding error.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cm"&gt;/* reuse server port, since the OS will prevent us to bind to this port&lt;/span&gt;
+&lt;span class="cm"&gt; * immediately after we close the sock */&lt;/span&gt;
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;optval&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;setsockopt&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;server_sock&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;SOL_SOCKET&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;SO_REUSEADDR&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;optval&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="k"&gt;sizeof&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;optval&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;perror&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;setsockopt&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Now you can happily bind to that port again, again, and again...&lt;/p&gt;
+&lt;h3&gt;Resources&lt;/h3&gt;
+&lt;p&gt;Here is a few stackoverflow threads that discussing &lt;a href="http://stackoverflow.com/questions/775638/using-so-reuseaddr-what-happens-to-previously-open-socket"&gt;what happend to the old open
+socket&lt;/a&gt;, and &lt;a href="http://stackoverflow.com/questions/14388706/socket-options-so-reuseaddr-and-so-reuseport-how-do-they-differ-do-they-mean-t"&gt;the difference between SO_REUSEADDR and
+SO_REUSEPORT&lt;/a&gt;.&lt;/p&gt;</summary><category term="bind"></category><category term="SO_REUSEADDR"></category><category term="socket"></category></entry><entry><title>Use Select to Monitor Multiple File Descriptors</title><link href="http://jhshi.me/2013/11/02/use-select-to-monitor-multiple-file-descriptors/index.html" rel="alternate"></link><updated>2013-11-02T21:44:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-11-02:2013/11/02/use-select-to-monitor-multiple-file-descriptors/index.html</id><summary type="html">&lt;p&gt;In the &lt;a href="https://github.com/jhshi/course.network.p2p"&gt;P2P network project&lt;/a&gt;, we were asked to simultaneously monitor user input
+and also potential in-coming messages, yet we're not supposed to use multiple
+threads or processes. That leaves us no choice but the &lt;a href="http://man7.org/linux/man-pages/man2/pselect.2.html"&gt;&lt;code&gt;select&lt;/code&gt;&lt;/a&gt; function.&lt;/p&gt;
+
+
+&lt;p&gt;In short, &lt;code&gt;select&lt;/code&gt; allows you to monitor multiple file descriptors at the same
+time, and tells you when some of them are available to read or write. &lt;/p&gt;
+&lt;h3&gt;&lt;code&gt;fd_set&lt;/code&gt; Operations&lt;/h3&gt;
+&lt;p&gt;&lt;code&gt;fd_set&lt;/code&gt; is fixed-size buffer that can host a few (up to &lt;code&gt;FD_SETSIZE&lt;/code&gt;) file
+descriptors. &lt;code&gt;sys/select.h&lt;/code&gt; provide a few macros to manipulate the &lt;code&gt;fd_set&lt;/code&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;FD_CLR&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;fd_set&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;set&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="kt"&gt;int&lt;/span&gt;  &lt;span class="nf"&gt;FD_ISSET&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;fd_set&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;set&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;FD_SET&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;fd_set&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;set&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;FD_ZERO&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd_set&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;set&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Basically &lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;FD_CLR&lt;/code&gt; will remove a &lt;code&gt;fd&lt;/code&gt; from the &lt;code&gt;fd_set&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;FD_ISSET&lt;/code&gt; will test if a certain &lt;code&gt;fd&lt;/code&gt; in the &lt;code&gt;fd_set&lt;/code&gt; or not. &lt;/li&gt;
+&lt;li&gt;&lt;code&gt;FD_SET&lt;/code&gt; will add a &lt;code&gt;fd&lt;/code&gt; to the &lt;code&gt;fd_set&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;FD_ZERO&lt;/code&gt; will clear the &lt;code&gt;fd_set&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Improved &lt;code&gt;fd_set&lt;/code&gt; Wrappers&lt;/h3&gt;
+&lt;p&gt;In practice, you'll often need to maintain a &lt;code&gt;fd_set&lt;/code&gt; together with the maximun
+fd in that set (more on this later). So I use a few wrappers to update the
+&lt;code&gt;fd_set&lt;/code&gt; and the &lt;code&gt;max_fd&lt;/code&gt; at the same time.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;sys/select.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;assert.h&amp;gt;&lt;/span&gt;
+
+&lt;span class="cm"&gt;/* add a fd to fd_set, and update max_fd */&lt;/span&gt;
+&lt;span class="kt"&gt;int&lt;/span&gt;
+&lt;span class="nf"&gt;safe_fd_set&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;fd_set&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;fds&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;max_fd&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;assert&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;max_fd&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+
+    &lt;span class="n"&gt;FD_SET&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;fds&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;max_fd&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;max_fd&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="cm"&gt;/* clear fd from fds, update max fd if needed */&lt;/span&gt;
+&lt;span class="kt"&gt;int&lt;/span&gt;
+&lt;span class="nf"&gt;safe_fd_clr&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;fd_set&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;fds&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;max_fd&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;assert&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;max_fd&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+
+    &lt;span class="n"&gt;FD_CLR&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;fds&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;max_fd&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;max_fd&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;--&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;The &lt;code&gt;select&lt;/code&gt; Function&lt;/h3&gt;
+&lt;p&gt;The prototype of the function looks like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;select&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;nfds&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;fd_set&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;readfds&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;fd_set&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;writefds&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;fd_set&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;exceptfds&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="n"&gt;timeval&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;timeout&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;In our case, we only want to monitor a set of fds that are available to read, so
+we don't really care about the &lt;code&gt;writefds&lt;/code&gt; or &lt;code&gt;exceptfds&lt;/code&gt;, just leave them as
+&lt;code&gt;NULL&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;A key point here is that, console is also a file, with fd is &lt;code&gt;STDIN_FILENO&lt;/code&gt;,
+just as other files (socket, normal file, etc.). So to monitor user input as
+well as socket, we only need to add their fds to the &lt;code&gt;readfds&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Another trick is that, &lt;code&gt;nfds&lt;/code&gt; is the highest-numbered file descriptor in
+&lt;code&gt;readfds&lt;/code&gt;, &lt;em&gt;plus 1&lt;/em&gt;. So you'll want to set &lt;code&gt;nfds&lt;/code&gt; as &lt;code&gt;max_fd+1&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Also, note that &lt;code&gt;select&lt;/code&gt; will modify the &lt;code&gt;readfds&lt;/code&gt; you passed in, so you'll
+definitely back up your &lt;code&gt;readfds&lt;/code&gt; before calling &lt;code&gt;select&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;In this project, if nothing happens (no user input and no incoming message), we
+just wait, so &lt;code&gt;timeout&lt;/code&gt; parameter is not used here.&lt;/p&gt;
+&lt;h3&gt;Connect the Dots&lt;/h3&gt;
+&lt;p&gt;We usually call &lt;code&gt;select&lt;/code&gt; inside a &lt;code&gt;while&lt;/code&gt; loop to keep monitoring possible
+inputs. Here is the code snippets that demonstrate the typical usage of
+&lt;code&gt;select&lt;/code&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;fd_set master;
+
+/* add stdin and the sock fd to master fd_set */
+FD_ZERO(&amp;amp;master);
+safe_fd_set(STDIN_FILENO, &amp;amp;master, &amp;amp;max_fd);
+safe_fd_set(server_sock, &amp;amp;master, &amp;amp;max_fd);
+
+char prompt[512];
+sprintf(prompt, &amp;quot;[%s@%s] $ &amp;quot;, is_server?&amp;quot;server&amp;quot;:&amp;quot;client&amp;quot;, hostname);
+
+while (1) {
+    printf(&amp;quot;\r%s&amp;quot;, prompt);
+    fflush(stdout);
+
+    /* back up master */
+    fd_set dup = master;
+
+    /* note the max_fd+1 */
+    if (select(max_fd+1, &amp;amp;dup, NULL, NULL, NULL) &amp;lt; 0) {
+        perror(&amp;quot;select&amp;quot;);
+        return -1;
+    }
+
+    /* check which fd is avaialbe for read */
+    for (int fd = 0; fd &amp;lt;= max_fd; fd++) {
+        if (FD_ISSET(fd, &amp;amp;dup)) {
+            if (fd == STDIN_FILENO) {
+                handle_command();
+            }
+            else if (fd == server_sock) {
+                printf(&amp;quot;\n&amp;quot;);
+                handle_new_connection();
+            }
+            else {
+                handle_message(fd);
+            }
+        }
+    }
+}
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="select"></category><category term="fd_set"></category></entry><entry><title>How to Get Local Host's Real IP Address</title><link href="http://jhshi.me/2013/11/02/how-to-get-hosts-ip-address/index.html" rel="alternate"></link><updated>2013-11-02T20:20:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-11-02:2013/11/02/how-to-get-hosts-ip-address/index.html</id><summary type="html">&lt;p&gt;I encounter this problem while doing an &lt;a href="https://github.com/jhshi/course.network.p2p"&gt;network course project&lt;/a&gt;. Easy
+as it sounds, it's actually not a trivial task.&lt;/p&gt;
+
+
+&lt;h3&gt;Old-fashioned &lt;code&gt;gethostbyname&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;I did some network programing in old days, so I was tempted to use the
+straightforward way using &lt;a href="http://linux.die.net/man/3/gethostbyname"&gt;&lt;code&gt;gethostbyname&lt;/code&gt;&lt;/a&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;unistd.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;netdb.h&amp;gt;&lt;/span&gt;
+
+&lt;span class="kt"&gt;char&lt;/span&gt; &lt;span class="n"&gt;hostname&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;256&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;gethostname&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;hostname&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="k"&gt;sizeof&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;hostname&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;perror&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;gethostname&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="n"&gt;hostent&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;host&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;gethostbyname&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;hostname&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;host&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;perror&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;gethostbyname&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="n"&gt;in_addr&lt;/span&gt; &lt;span class="n"&gt;ip&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="n"&gt;in_addr&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="n"&gt;host&lt;/span&gt;&lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;&lt;span class="n"&gt;h_addr_list&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+&lt;span class="n"&gt;printf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;My IP is %s&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;inet_ntoa&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ip&lt;/span&gt;&lt;span class="p"&gt;));&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Yet when I run the program, this code snippet will always print out &lt;code&gt;127.0.0.1&lt;/code&gt;,
+which is not useful since I want to get the &lt;em&gt;real&lt;/em&gt; (or &lt;em&gt;external&lt;/em&gt;) IP address.&lt;/p&gt;
+&lt;p&gt;Apparently, this is because some nasty settings in the &lt;code&gt;/etc/hosts&lt;/code&gt; file, there
+is an entry looks like this&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;127.0.0.1   timberlake.cse.buffalo.edu timberlake localhost.localdomain localhost
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Since &lt;code&gt;gethostbyname&lt;/code&gt; is actually a DNS looking up process, that DNS request, 
+unfortunately, is served by the &lt;code&gt;/etc/hosts&lt;/code&gt; file, instead of a real decent DNS
+server.&lt;/p&gt;
+&lt;h3&gt;More Advanced &lt;code&gt;getifaddrs&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;I searched the web and found &lt;a href="http://stackoverflow.com/questions/212528/get-the-ip-address-of-the-machine"&gt;this stackoverflow threads&lt;/a&gt; talking 
+about using &lt;a href="http://man7.org/linux/man-pages/man3/getifaddrs.3.html"&gt;&lt;code&gt;getifaddrs&lt;/code&gt;&lt;/a&gt; to get NIC's IP address. I tried and it seems to work.
+Since the machine I worked on uses "eth0" as external NIC, so when looping the
+result, I just match the results that has the name "eth0".&lt;/p&gt;
+&lt;p&gt;Although it works well, the solution is a little bit ad-hoc. Since the network
+interface's name is not necessarily "eth0", for example, in some laptop or
+netbook, the primary interface may be "wlan0" instead of "eth0".&lt;/p&gt;
+&lt;h3&gt;Most Elegant Way&lt;/h3&gt;
+&lt;p&gt;Finally, I adopted the solution that mentioned later on that thread. Basically,
+I connected to a well-known server (e.g., Google's DNS server) and then get my 
+local socket's information (more specifically, IP) using &lt;a href="http://man7.org/linux/man-pages/man2/getsockname.2.html"&gt;&lt;code&gt;getsockname&lt;/code&gt;&lt;/a&gt;. 
+Here is the final code snippet.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c"&gt;/* get my hostname */&lt;/span&gt;
+&lt;span class="nt"&gt;char&lt;/span&gt; &lt;span class="nt"&gt;hostname&lt;/span&gt;&lt;span class="cp"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;256&lt;/span&gt;&lt;span class="cp"&gt;]&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="nt"&gt;if&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;gethostname&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;hostname&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;sizeof&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;hostname&lt;/span&gt;&lt;span class="o"&gt;))&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="nt"&gt;0&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;perror&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;gethostname&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;return&lt;/span&gt; &lt;span class="m"&gt;-1&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="o"&gt;//&lt;/span&gt; &lt;span class="nt"&gt;Google&lt;/span&gt;&lt;span class="err"&gt;&amp;#39;&lt;/span&gt;&lt;span class="nt"&gt;s&lt;/span&gt; &lt;span class="nt"&gt;DNS&lt;/span&gt; &lt;span class="nt"&gt;server&lt;/span&gt; &lt;span class="nt"&gt;IP&lt;/span&gt;
+&lt;span class="nt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="nt"&gt;target_name&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;8.8.8.8&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="o"&gt;//&lt;/span&gt; &lt;span class="nt"&gt;DNS&lt;/span&gt; &lt;span class="nt"&gt;port&lt;/span&gt;
+&lt;span class="nt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="nt"&gt;target_port&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;53&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+
+&lt;span class="c"&gt;/* get peer server */&lt;/span&gt;
+&lt;span class="nt"&gt;struct&lt;/span&gt; &lt;span class="nt"&gt;addrinfo&lt;/span&gt; &lt;span class="nt"&gt;hints&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="nt"&gt;memset&lt;/span&gt;&lt;span class="o"&gt;(&amp;amp;&lt;/span&gt;&lt;span class="nt"&gt;hints&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;0&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;sizeof&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;hints&lt;/span&gt;&lt;span class="o"&gt;));&lt;/span&gt;
+&lt;span class="nt"&gt;hints&lt;/span&gt;&lt;span class="nc"&gt;.ai_family&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nt"&gt;AF_INET&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="nt"&gt;hints&lt;/span&gt;&lt;span class="nc"&gt;.ai_socktype&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nt"&gt;SOCK_STREAM&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+
+&lt;span class="nt"&gt;struct&lt;/span&gt; &lt;span class="nt"&gt;addrinfo&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="nt"&gt;info&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="nt"&gt;int&lt;/span&gt; &lt;span class="nt"&gt;ret&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nt"&gt;0&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="nt"&gt;if&lt;/span&gt; &lt;span class="o"&gt;((&lt;/span&gt;&lt;span class="nt"&gt;ret&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nt"&gt;getaddrinfo&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;target_name&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;target_port&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="nt"&gt;hints&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="nt"&gt;info&lt;/span&gt;&lt;span class="o"&gt;))&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="nt"&gt;0&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;printf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="cp"&gt;[&lt;/span&gt;&lt;span class="nx"&gt;ERROR&lt;/span&gt;&lt;span class="cp"&gt;]&lt;/span&gt;&lt;span class="s2"&gt;: getaddrinfo error: %s\n&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;gai_strerror&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ret&lt;/span&gt;&lt;span class="p"&gt;));&lt;/span&gt;
+    &lt;span class="n"&gt;return&lt;/span&gt; &lt;span class="m"&gt;-1&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="nt"&gt;if&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;info-&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="nt"&gt;ai_family&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="nt"&gt;AF_INET6&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;printf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="cp"&gt;[&lt;/span&gt;&lt;span class="nx"&gt;ERROR&lt;/span&gt;&lt;span class="cp"&gt;]&lt;/span&gt;&lt;span class="s2"&gt;: do not support IPv6 yet.\n&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;return&lt;/span&gt; &lt;span class="m"&gt;-1&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="c"&gt;/* create socket */&lt;/span&gt;
+&lt;span class="nt"&gt;int&lt;/span&gt; &lt;span class="nt"&gt;sock&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nt"&gt;socket&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;info-&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="nt"&gt;ai_family&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;info-&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="nt"&gt;ai_socktype&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;info-&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="nt"&gt;ai_protocol&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="nt"&gt;if&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;sock&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;=&lt;/span&gt; &lt;span class="nt"&gt;0&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;perror&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;socket&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;return&lt;/span&gt; &lt;span class="m"&gt;-1&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="c"&gt;/* connect to server */&lt;/span&gt;
+&lt;span class="nt"&gt;if&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;connect&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;sock&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;info-&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="nt"&gt;ai_addr&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;info-&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="nt"&gt;ai_addrlen&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="nt"&gt;0&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;perror&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;connect&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;close&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;sock&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;return&lt;/span&gt; &lt;span class="m"&gt;-1&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="c"&gt;/* get local socket info */&lt;/span&gt;
+&lt;span class="nt"&gt;struct&lt;/span&gt; &lt;span class="nt"&gt;sockaddr_in&lt;/span&gt; &lt;span class="nt"&gt;local_addr&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="nt"&gt;socklen_t&lt;/span&gt; &lt;span class="nt"&gt;addr_len&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nt"&gt;sizeof&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;local_addr&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="nt"&gt;if&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;getsockname&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;sock&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;struct&lt;/span&gt; &lt;span class="nt"&gt;sockaddr&lt;/span&gt;&lt;span class="o"&gt;*)&amp;amp;&lt;/span&gt;&lt;span class="nt"&gt;local_addr&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="nt"&gt;addr_len&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="nt"&gt;0&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;perror&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;getsockname&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;close&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;sock&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;return&lt;/span&gt; &lt;span class="m"&gt;-1&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="c"&gt;/* get peer ip addr */&lt;/span&gt;
+&lt;span class="nt"&gt;char&lt;/span&gt; &lt;span class="nt"&gt;myip&lt;/span&gt;&lt;span class="cp"&gt;[&lt;/span&gt;&lt;span class="nx"&gt;INET_ADDRSTRLEN&lt;/span&gt;&lt;span class="cp"&gt;]&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="nt"&gt;if&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;inet_ntop&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;local_addr&lt;/span&gt;&lt;span class="nc"&gt;.sin_family&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;(&lt;/span&gt;&lt;span class="nt"&gt;local_addr&lt;/span&gt;&lt;span class="nc"&gt;.sin_addr&lt;/span&gt;&lt;span class="o"&gt;),&lt;/span&gt; &lt;span class="nt"&gt;myip&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;sizeof&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;myip&lt;/span&gt;&lt;span class="o"&gt;))&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="nt"&gt;NULL&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;perror&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;inet_ntop&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;return&lt;/span&gt; &lt;span class="m"&gt;-1&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="ip"></category><category term="getsockname"></category><category term="gethostbyname"></category><category term="getifaddrs"></category></entry></feed>

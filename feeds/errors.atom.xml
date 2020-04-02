@@ -1,0 +1,435 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Pearls in Life</title><link href="http://jhshi.me/" rel="alternate"></link><link href="http://jhshi.me/feeds/errors.atom.xml" rel="self"></link><id>http://jhshi.me/</id><updated>2016-11-07T17:54:53-05:00</updated><entry><title>ISE Error: version `GLIBCXX_3.4.9' not found</title><link href="http://jhshi.me/2016/11/07/ise-error-version-glibcxx_349-not-found/index.html" rel="alternate"></link><updated>2016-11-07T17:54:53-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-11-07:2016/11/07/ise-error-version-glibcxx_349-not-found/index.html</id><summary type="html">&lt;p&gt;I encountered this error while trying to run the Xilinx &lt;tt class="docutils literal"&gt;xlcm&lt;/tt&gt; tool for ISE
+12.2. Here is how to fix it.&lt;/p&gt;
+
+&lt;div class="section" id="the-error"&gt;
+&lt;h2&gt;The Error&lt;/h2&gt;
+&lt;p&gt;The &lt;tt class="docutils literal"&gt;xlcm&lt;/tt&gt; command runs fine until it tries to spawn a web page. Here is the
+error message:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3
+4
+5
+6&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;/usr/bin/google-chrome-stable: /opt/Xilinx/12.2/ISE_DS/common//lib/lin64/libstdc++.so.6: version &lt;span class="sb"&gt;`&lt;/span&gt;GLIBCXX_3.4.9&lt;span class="s1"&gt;&amp;#39; not found (required by /usr/bin/google-chrome-stable)&lt;/span&gt;
+&lt;span class="s1"&gt;/usr/bin/google-chrome-stable: /opt/Xilinx/12.2/ISE_DS/common//lib/lin64/libstdc++.so.6: version `CXXABI_1.3.5&amp;#39;&lt;/span&gt; not found &lt;span class="o"&gt;(&lt;/span&gt;required by /usr/bin/google-chrome-stable&lt;span class="o"&gt;)&lt;/span&gt;
+/usr/bin/google-chrome-stable: /opt/Xilinx/12.2/ISE_DS/common//lib/lin64/libstdc++.so.6: version &lt;span class="sb"&gt;`&lt;/span&gt;GLIBCXX_3.4.10&lt;span class="s1"&gt;&amp;#39; not found (required by /usr/bin/google-chrome-stable)&lt;/span&gt;
+&lt;span class="s1"&gt;/usr/bin/google-chrome-stable: /opt/Xilinx/12.2/ISE_DS/common//lib/lin64/libstdc++.so.6: version `GLIBCXX_3.4.15&amp;#39;&lt;/span&gt; not found &lt;span class="o"&gt;(&lt;/span&gt;required by /usr/bin/google-chrome-stable&lt;span class="o"&gt;)&lt;/span&gt;
+/usr/bin/google-chrome-stable: /opt/Xilinx/12.2/ISE_DS/common//lib/lin64/libstdc++.so.6: version &lt;span class="sb"&gt;`&lt;/span&gt;GLIBCXX_3.4.11&lt;span class="s1"&gt;&amp;#39; not found (required by /usr/bin/google-chrome-stable)&lt;/span&gt;
+&lt;span class="s1"&gt;/usr/bin/google-chrome-stable: /opt/Xilinx/12.2/ISE_DS/common//lib/lin64/libstdc++.so.6: version `GLIBCXX_3.4.14&amp;#39;&lt;/span&gt; not found &lt;span class="o"&gt;(&lt;/span&gt;required by /usr/bin/google-chrome-stable&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;It appears the &lt;tt class="docutils literal"&gt;xlcm&lt;/tt&gt; binary was statically configured to use the
+&lt;tt class="docutils literal"&gt;libstdc++&lt;/tt&gt; that are shipped with ISE. However, those libraries are too old to
+accommodate the modern applications such as Google Chrome.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="the-fix"&gt;
+&lt;h2&gt;The Fix&lt;/h2&gt;
+&lt;p&gt;First, make sure your system's &lt;tt class="docutils literal"&gt;libstdc++&lt;/tt&gt; file has the correct libc versions.
+On Ubuntu:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;strings /usr/lib/x86_64-linux-gnu/libstdc++.so.6 &lt;span class="p"&gt;|&lt;/span&gt; grep GLIBCXX
+GLIBCXX_3.4
+GLIBCXX_3.4.1
+GLIBCXX_3.4.2
+GLIBCXX_3.4.3
+GLIBCXX_3.4.4
+GLIBCXX_3.4.5
+GLIBCXX_3.4.6
+GLIBCXX_3.4.7
+GLIBCXX_3.4.8
+GLIBCXX_3.4.9
+GLIBCXX_3.4.10
+GLIBCXX_3.4.11
+GLIBCXX_3.4.12
+GLIBCXX_3.4.13
+GLIBCXX_3.4.14
+GLIBCXX_3.4.15
+GLIBCXX_3.4.16
+GLIBCXX_3.4.17
+GLIBCXX_3.4.18
+GLIBCXX_3.4.19
+GLIBCXX_DEBUG_MESSAGE_LENGTH
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;That's the right libc file that &lt;tt class="docutils literal"&gt;xlcm&lt;/tt&gt; should use. Now, just override the
+outdated libc file of ISE with this one.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;&lt;span class="nb"&gt;cd&lt;/span&gt; /opt/Xilinx/12.2/ISE_DS/common/lib/lin64/
+&lt;span class="nv"&gt;$ &lt;/span&gt;mv libstdc++.so.6 ise_libstdc++.so.6
+&lt;span class="nv"&gt;$ &lt;/span&gt;cp /usr/lib/x86_64-linux-gnu/libstdc++.so.6 libstdc++.so.6
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Use &lt;tt class="docutils literal"&gt;sudo&lt;/tt&gt; where required.&lt;/p&gt;
+&lt;p&gt;Now launch &lt;tt class="docutils literal"&gt;xlcm&lt;/tt&gt; again and it should be able to spawn a web page
+successfully.&lt;/p&gt;
+&lt;/div&gt;
+</summary><category term="glibc"></category><category term="Xilinx ISE"></category><category term="xlcm"></category></entry><entry><title>Python.h Error While Installing Numpy for PyPy on Ubuntu 16.04</title><link href="http://jhshi.me/2016/10/04/pythonh-error-while-installing-numpy-for-pypy-on-ubuntu-1604/index.html" rel="alternate"></link><updated>2016-10-04T20:40:34-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-10-04:2016/10/04/pythonh-error-while-installing-numpy-for-pypy-on-ubuntu-1604/index.html</id><summary type="html">&lt;p&gt;I encountered this error whiling install the PyPy port of Numpy on Ubuntu 16.04.
+Here is how to solve it.&lt;/p&gt;
+
+&lt;p&gt;The command line I used was:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;pip install git+https://bitbucket.org/pypy/numpy.git
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;The error message was like this:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;# a bunch of tracebacks
+# then this line
+SystemError: Cannot compile &amp;#39;Python.h&amp;#39;. Perhaps you need to install python-dev|python-devel.
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;The solution is actually to install the &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;pypy-dev&lt;/span&gt;&lt;/tt&gt; package instead of the
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;python-dev&lt;/span&gt;&lt;/tt&gt; package suggested by the error message.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;sudo apt-get intall pypy-dev
+&lt;span class="nv"&gt;$ &lt;/span&gt;pip install git+https://bitbucket.org/pypy/numpy.git
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Thanks to &lt;a class="reference external" href="http://askubuntu.com/a/612016/219398"&gt;http://askubuntu.com/a/612016/219398&lt;/a&gt;.&lt;/p&gt;
+</summary><category term="numpy"></category><category term="pypy"></category><category term="Python.h"></category><category term="Ubuntu 16.04"></category></entry><entry><title>FileNotFound Exception in RecoverySystem.installPackage</title><link href="http://jhshi.me/2016/08/06/filenotfound-exception-in-recoverysysteminstallpackage/index.html" rel="alternate"></link><updated>2016-08-06T21:42:06-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-08-06:2016/08/06/filenotfound-exception-in-recoverysysteminstallpackage/index.html</id><summary type="html">&lt;p&gt;I encountered this error while trying to use the
+&lt;tt class="docutils literal"&gt;RecoverySystem.installPackage&lt;/tt&gt; API to apply an OTA update. This post shows
+what causes the error and how to walk around it. The error occurs for AOSP
+release &lt;cite&gt;android-6.0.1_r24&lt;/cite&gt; in my case.&lt;/p&gt;
+
+&lt;div class="section" id="the-cause"&gt;
+&lt;h2&gt;The Cause&lt;/h2&gt;
+&lt;p&gt;By looking at the source code at
+&lt;tt class="docutils literal"&gt;$AOSP/frameworks/base/core/java/android/os/RecoverySystem.java&lt;/tt&gt; (Link
+&lt;a class="reference external" href="https://android.googlesource.com/platform/frameworks/base.git/+/android-6.0.1_r63/core/java/android/os/RecoverySystem.java"&gt;RecoverySystem.java&lt;/a&gt;). The exception was thrown from this line:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kd"&gt;public&lt;/span&gt; &lt;span class="kd"&gt;static&lt;/span&gt; &lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;installPackage&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Context&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;File&lt;/span&gt; &lt;span class="n"&gt;packageFile&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+        &lt;span class="kd"&gt;throws&lt;/span&gt; &lt;span class="n"&gt;IOException&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+        &lt;span class="n"&gt;String&lt;/span&gt; &lt;span class="n"&gt;filename&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;packageFile&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getCanonicalPath&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+        &lt;span class="n"&gt;FileWriter&lt;/span&gt; &lt;span class="n"&gt;uncryptFile&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;FileWriter&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;UNCRYPT_FILE&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt; &lt;span class="c1"&gt;// &amp;lt;-- THIS LINE&lt;/span&gt;
+        &lt;span class="k"&gt;try&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+            &lt;span class="n"&gt;uncryptFile&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;write&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;filename&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;\n&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+        &lt;span class="o"&gt;}&lt;/span&gt; &lt;span class="k"&gt;finally&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+            &lt;span class="n"&gt;uncryptFile&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;close&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+        &lt;span class="o"&gt;}&lt;/span&gt;
+        &lt;span class="n"&gt;Log&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;w&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;TAG&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;!!! REBOOTING TO INSTALL &amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;filename&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s"&gt;&amp;quot; !!!&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+        &lt;span class="c1"&gt;// If the package is on the /data partition, write the block map file&lt;/span&gt;
+        &lt;span class="c1"&gt;// into COMMAND_FILE instead.&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;filename&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;startsWith&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;/data/&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;))&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+            &lt;span class="n"&gt;filename&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;@/cache/recovery/block.map&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+        &lt;span class="o"&gt;}&lt;/span&gt;
+        &lt;span class="kd"&gt;final&lt;/span&gt; &lt;span class="n"&gt;String&lt;/span&gt; &lt;span class="n"&gt;filenameArg&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;--update_package=&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;filename&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+        &lt;span class="kd"&gt;final&lt;/span&gt; &lt;span class="n"&gt;String&lt;/span&gt; &lt;span class="n"&gt;localeArg&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;--locale=&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;Locale&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getDefault&lt;/span&gt;&lt;span class="o"&gt;().&lt;/span&gt;&lt;span class="na"&gt;toString&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+        &lt;span class="n"&gt;bootCommand&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;filenameArg&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;localeArg&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+    &lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Earlier, &lt;tt class="docutils literal"&gt;UNCRYPT_FILE&lt;/tt&gt; was defined as this:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kd"&gt;private&lt;/span&gt; &lt;span class="kd"&gt;static&lt;/span&gt; &lt;span class="n"&gt;File&lt;/span&gt; &lt;span class="n"&gt;RECOVERY_DIR&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;File&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;/cache/recovery&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="kd"&gt;private&lt;/span&gt; &lt;span class="kd"&gt;static&lt;/span&gt; &lt;span class="n"&gt;File&lt;/span&gt; &lt;span class="n"&gt;COMMAND_FILE&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;File&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;RECOVERY_DIR&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;command&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="kd"&gt;private&lt;/span&gt; &lt;span class="kd"&gt;static&lt;/span&gt; &lt;span class="n"&gt;File&lt;/span&gt; &lt;span class="n"&gt;UNCRYPT_FILE&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;File&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;RECOVERY_DIR&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;uncrypt_file&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;So its value is &lt;tt class="docutils literal"&gt;/cache/recovery/uncrypt_file&lt;/tt&gt;. However, at this point, its
+parent directory &lt;tt class="docutils literal"&gt;/cache/recovery/&lt;/tt&gt; does not exists yet! And &lt;tt class="docutils literal"&gt;FileWriter&lt;/tt&gt;
+will not create it automatically, therefore the &lt;tt class="docutils literal"&gt;FileNotFound&lt;/tt&gt; exception.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="the-fix"&gt;
+&lt;h2&gt;The Fix&lt;/h2&gt;
+&lt;p&gt;If you are a app developer and do not have access to the AOSP framework on your
+target system, simple create that folder before calling &lt;tt class="docutils literal"&gt;installPackage&lt;/tt&gt;.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;File&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;/cache/recovery/&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;)).&lt;/span&gt;&lt;span class="na"&gt;mkdirs&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+&lt;span class="n"&gt;RecoverySystem&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;installPackage&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;otaPackage&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;The real fix from the platform side is this:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3
+4
+5
+6
+7&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kd"&gt;public&lt;/span&gt; &lt;span class="kd"&gt;static&lt;/span&gt; &lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;installPackage&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Context&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;File&lt;/span&gt; &lt;span class="n"&gt;packageFile&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+       &lt;span class="kd"&gt;throws&lt;/span&gt; &lt;span class="n"&gt;IOException&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+       &lt;span class="n"&gt;String&lt;/span&gt; &lt;span class="n"&gt;filename&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;packageFile&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getCanonicalPath&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+       &lt;span class="n"&gt;RECOVERY_DIR&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;mkdirs&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+       &lt;span class="n"&gt;FileWriter&lt;/span&gt; &lt;span class="n"&gt;uncryptFile&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;FileWriter&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;UNCRYPT_FILE&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt; &lt;span class="c1"&gt;// &amp;lt;-- THIS LINE&lt;/span&gt;
+       &lt;span class="c1"&gt;//...&lt;/span&gt;
+       &lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+</summary><category term="RecoverySystem"></category><category term="OTA"></category><category term="AOSP"></category><category term="Exception"></category><category term="FileNotFound"></category></entry><entry><title>Xilinx ISE INTERNAL_ERROR:Xst:cmain.c:3483:1.56.16.1</title><link href="http://jhshi.me/2016/08/01/xilinx-ise-internal_errorxstcmainc3483156161/index.html" rel="alternate"></link><updated>2016-08-01T11:34:14-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-08-01:2016/08/01/xilinx-ise-internal_errorxstcmainc3483156161/index.html</id><summary type="html">&lt;p&gt;I encountered this error a lot recently when trying to compile a customized
+Verilog project for USRP N210 using Xilinx ISE 12.2. Here is one reason why this
+error might happen from my experience.&lt;/p&gt;
+
+&lt;p&gt;It seems ISE does not like it when you use indexed array items in module
+instance port. For example:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3
+4
+5
+6
+7
+8&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;reg&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mh"&gt;31&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="mh"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="n"&gt;ram&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mh"&gt;0&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="mh"&gt;127&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+&lt;span class="kt"&gt;reg&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mh"&gt;6&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="mh"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="n"&gt;addr&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+&lt;span class="n"&gt;some_module&lt;/span&gt; &lt;span class="n"&gt;m_inst&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+    &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;clock&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;clock&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+    &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;input&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ram&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;addr&lt;/span&gt;&lt;span class="p"&gt;]),&lt;/span&gt;
+    &lt;span class="c1"&gt;// other ports&lt;/span&gt;
+    &lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;This will mostly probably cause the &lt;tt class="docutils literal"&gt;INTERNAL_ERROR&lt;/tt&gt;.&lt;/p&gt;
+&lt;p&gt;The walk around is to use a dedicated wire for the port instead of a indexed
+array item.&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3
+4
+5
+6
+7
+8
+9&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;reg&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mh"&gt;31&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="mh"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="n"&gt;ram&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mh"&gt;0&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="mh"&gt;127&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+&lt;span class="kt"&gt;reg&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mh"&gt;6&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="mh"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="n"&gt;addr&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="kt"&gt;wire&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mh"&gt;31&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="mh"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="n"&gt;the_input&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ram&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;addr&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+
+&lt;span class="n"&gt;some_module&lt;/span&gt; &lt;span class="n"&gt;m_inst&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+    &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;clock&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;clock&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+    &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;input&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;the_input&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+    &lt;span class="c1"&gt;// other ports&lt;/span&gt;
+    &lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Apparently this is just &lt;strong&gt;one of the possible reasons&lt;/strong&gt; that could cause the
+error, but definitely worth checking out if you're desperate after exhausting
+out other possibilities.&lt;/p&gt;
+</summary><category term="Xilinx"></category><category term="ISE"></category><category term="Verilog"></category></entry><entry><title>ACPI Error: Method parse/execution failed [_GPE._L6F]</title><link href="http://jhshi.me/2015/11/14/acpi-error-method-parseexecution-failed-_gpe_l6f/index.html" rel="alternate"></link><updated>2015-11-14T01:53:47-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2015-11-14:2015/11/14/acpi-error-method-parseexecution-failed-_gpe_l6f/index.html</id><summary type="html">&lt;p&gt;I recently built a PC based on Intel's latest Skylake CPU (&lt;a class="reference external" href="http://ark.intel.com/products/88184/Intel-Core-i5-6500-Processor-6M-Cache-up-to-3_60-GHz"&gt;i5-6500&lt;/a&gt;) and Z170
+chipset (&lt;a class="reference external" href="http://www.asrock.com/mb/Intel/Z170%20Pro4/index.us.asp"&gt;AsRock Z170 Pro4&lt;/a&gt;), and installed Ubuntu 15.10 on it. After setting up,
+however, I found that the kernel message buffer was flooded with this error
+message. This is how I fixed it.&lt;/p&gt;
+
+&lt;div class="section" id="tl-dr"&gt;
+&lt;h2&gt;TL;DR&lt;/h2&gt;
+&lt;p&gt;This is how to fix it: add this line to &lt;tt class="docutils literal"&gt;/etc/rc.local&lt;/tt&gt;:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;disable&amp;quot;&lt;/span&gt; &amp;gt; /sys/firmware/acpi/interrupts/gpe6F
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Then reboot your PC, the error message should be gone. If you want to learn more
+about how I came up with fix, keep reading.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="the-symptoms"&gt;
+&lt;h2&gt;The Symptoms&lt;/h2&gt;
+&lt;p&gt;As described earlier, after the system booted up, this error message flooded the
+kernel ring buffer:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="o"&gt;[&lt;/span&gt;    0.922778&lt;span class="o"&gt;]&lt;/span&gt; ACPI Exception: AE_NOT_FOUND, &lt;span class="k"&gt;while&lt;/span&gt; evaluating GPE method &lt;span class="o"&gt;[&lt;/span&gt;_L6F&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;20150619/evgpe-592&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;span class="o"&gt;[&lt;/span&gt;    0.923906&lt;span class="o"&gt;]&lt;/span&gt; ACPI Error: &lt;span class="o"&gt;[&lt;/span&gt;PGRT&lt;span class="o"&gt;]&lt;/span&gt; Namespace lookup failure, AE_NOT_FOUND &lt;span class="o"&gt;(&lt;/span&gt;20150619/psargs-359&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;span class="o"&gt;[&lt;/span&gt;    0.923908&lt;span class="o"&gt;]&lt;/span&gt; ACPI Error: Method parse/execution failed &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="se"&gt;\_&lt;/span&gt;GPE._L6F&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;Node ffff8804654cd118&lt;span class="o"&gt;)&lt;/span&gt;, AE_NOT_FOUND &lt;span class="o"&gt;(&lt;/span&gt;20150619/psparse-536&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;These three error messages were printed over and over again, and the
+&lt;tt class="docutils literal"&gt;/var/log/kern.log&lt;/tt&gt; file rapidly exceeds several GB in about half an hour.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="attempts"&gt;
+&lt;h2&gt;Attempts&lt;/h2&gt;
+&lt;p&gt;After Googling around, I found this kernel bug report that is exactly the same
+problem:&lt;/p&gt;
+&lt;p&gt;&lt;a class="reference external" href="https://bugzilla.kernel.org/show_bug.cgi?id=105491"&gt;https://bugzilla.kernel.org/show_bug.cgi?id=105491&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;It seems that adding &lt;tt class="docutils literal"&gt;acpi=off&lt;/tt&gt; to kernel arguments could eliminate this
+error, but that will also disable all the ACPI functionality and the system
+would not be shut down properly (got stuck when do a &lt;tt class="docutils literal"&gt;sudo reboot&lt;/tt&gt;).&lt;/p&gt;
+&lt;p&gt;I also updated to the latest BIOS (&lt;tt class="docutils literal"&gt;v2.80&lt;/tt&gt;) from AsRock, that still does not
+fix the problem.&lt;/p&gt;
+&lt;p&gt;Finally, later on that thread, somebody mentioned that we could just disable the
+GPE.L6F function by echoing &lt;tt class="docutils literal"&gt;disable&lt;/tt&gt; to a specific pseudo file in &lt;tt class="docutils literal"&gt;/sys&lt;/tt&gt;
+directory, hence the solution mentioned earlier.&lt;/p&gt;
+&lt;/div&gt;
+</summary><category term="acpi"></category><category term="linux"></category><category term="skylake"></category><category term="gpe"></category><category term="ubuntu"></category></entry><entry><title>ImportError: cannot import name compare_xml</title><link href="http://jhshi.me/2013/09/03/importerror-cannot-import-name-compare-xml/index.html" rel="alternate"></link><updated>2013-09-03T11:23:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-09-03:2013/09/03/importerror-cannot-import-name-compare-xml/index.html</id><summary type="html">&lt;p&gt;When I tried to fire up Django server using &lt;code&gt;manage.py&lt;/code&gt;, I kept getting this
+error,which is cause by &lt;code&gt;from django.test.utils import compare_xml&lt;/code&gt;. It turns 
+out that I'm using the wrong Django version (1.4), and I should
+upgrade to 1.5.&lt;/p&gt;
+
+
+&lt;p&gt;The easiest way to upgrade is using &lt;code&gt;easy_install&lt;/code&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c"&gt;# install easy_install if you haven&amp;#39;t done so&lt;/span&gt;
+sudo apt-get install python-setuptools
+&lt;span class="c"&gt;# now upgrade&lt;/span&gt;
+sudo easy_install --upgrade django
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;And the python file that actually contains the &lt;code&gt;compare_xml&lt;/code&gt; method is located
+in (in my case):
+&lt;code&gt;/use/local/lib/python2.7/dist-packages/Django-1.5.2-py2.7.egg/django/test/utils.py&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;But in the process of figuring out this issue, I learned several things.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;When importing django modules, e.g., you have to define the
+  &lt;code&gt;DJANGO_SETTINGS_MODULES&lt;/code&gt; environment variable. Just set it to your project's
+  &lt;code&gt;settings.py&lt;/code&gt; will be OK.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;To find out what methods are provided in a module and various other
+  information, say &lt;code&gt;django.test.utils&lt;/code&gt;,  you can use this command in shell:&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ DJANGO_SETTINGS_MODULES&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;settings python -c &lt;span class="s2"&gt;&amp;quot;import django.test.utils;help(django.test.utils);&amp;quot;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="django"></category><category term="python"></category><category term="compare_xml"></category></entry><entry><title>UserWarning: module dap was already imported from None</title><link href="http://jhshi.me/2013/04/13/userwarning-module-dap-was-already-imported-from-none/index.html" rel="alternate"></link><updated>2013-04-13T18:52:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-04-13:2013/04/13/userwarning-module-dap-was-already-imported-from-none/index.html</id><summary type="html">&lt;p&gt;I installed &lt;code&gt;python-matploglib&lt;/code&gt; and &lt;code&gt;python-mpltoolkits.basemap&lt;/code&gt; using &lt;code&gt;apt&lt;/code&gt;,
+but when I tried to import Basemap using &lt;code&gt;from mpltoolkits.basemap import
+Basemap&lt;/code&gt;, the following warning shows up:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;usr/lib/pymodules/python2.7/mpl_toolkits/__init__.py:2: UserWarning: Module dap was already imported from None, but /usr/lib/python2.7/dist-packages is being added to sys.path
+  __import__(&amp;#39;pkg_resources&amp;#39;).declare_namespace(__name__)
+&lt;/pre&gt;&lt;/div&gt;
+
+
+
+
+&lt;p&gt;To resolve this warning, edit the file
+&lt;code&gt;/usr/lib/python2.7/dist-packages/dap-2.2.6.7.egg-info/namespace_packages.txt&lt;/code&gt;,
+add &lt;code&gt;dap&lt;/code&gt; as the first line.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;dap
+dap.plugins
+dap.responses
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Ref: &lt;a href="http://stackoverflow.com/questions/13915269/why-do-i-get-userwarning-module-dap-was-already-imported-from-none"&gt;Stackoverflow Question&lt;/a&gt;&lt;/p&gt;</summary><category term="python"></category><category term="dap"></category><category term="basemap"></category><category term="matplot"></category></entry><entry><title>Eclim E218 When Open a File in New Tab</title><link href="http://jhshi.me/2013/02/26/eclim-e218-when-open-a-file-in-new-tab/index.html" rel="alternate"></link><updated>2013-02-26T07:24:45-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-02-26:2013/02/26/eclim-e218-when-open-a-file-in-new-tab/index.html</id><summary type="html">&lt;p&gt;In the directory sub window, when I use &lt;code&gt;T&lt;/code&gt; to open a file in new tab, the
+following error message will occur:&lt;/p&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nx"&gt;No&lt;/span&gt; &lt;span class="nx"&gt;matching&lt;/span&gt; &lt;span class="nx"&gt;autocommands&lt;/span&gt;
+&lt;span class="nb"&gt;Error&lt;/span&gt; &lt;span class="nx"&gt;detected&lt;/span&gt; &lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="nx"&gt;processing&lt;/span&gt; &lt;span class="kd"&gt;function&lt;/span&gt; &lt;span class="nx"&gt;eclim&lt;/span&gt;&lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="nx"&gt;project&lt;/span&gt;&lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="nx"&gt;tree&lt;/span&gt;&lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="nx"&gt;ProjectTree&lt;/span&gt;&lt;span class="p"&gt;..&lt;/span&gt;&lt;span class="nx"&gt;eclim&lt;/span&gt;&lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="nx"&gt;project&lt;/span&gt;&lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="nx"&gt;tree&lt;/span&gt;&lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="nx"&gt;ProjectTreeOpen&lt;/span&gt;&lt;span class="p"&gt;..&lt;/span&gt;&lt;span class="nx"&gt;eclim&lt;/span&gt;&lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="nx"&gt;display&lt;/span&gt;&lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="nb"&gt;window&lt;/span&gt;&lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="nx"&gt;VerticalToolWindowOpen&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;
+&lt;span class="nx"&gt;line&lt;/span&gt; &lt;span class="mi"&gt;78&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;
+&lt;span class="nx"&gt;E218&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="nx"&gt;autocommand&lt;/span&gt; &lt;span class="nx"&gt;nesting&lt;/span&gt; &lt;span class="nx"&gt;too&lt;/span&gt; &lt;span class="nx"&gt;deep&lt;/span&gt;
+&lt;span class="nb"&gt;Error&lt;/span&gt; &lt;span class="nx"&gt;detected&lt;/span&gt; &lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="nx"&gt;processing&lt;/span&gt; &lt;span class="kd"&gt;function&lt;/span&gt; &lt;span class="mi"&gt;53&lt;/span&gt;&lt;span class="nx"&gt;_OpenFile&lt;/span&gt;&lt;span class="p"&gt;..&lt;/span&gt;&lt;span class="nx"&gt;eclim&lt;/span&gt;&lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="nx"&gt;tree&lt;/span&gt;&lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="nx"&gt;ExecuteAction&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;
+&lt;span class="nx"&gt;line&lt;/span&gt; &lt;span class="mi"&gt;12&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;
+&lt;span class="nx"&gt;E171&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="nx"&gt;Missing&lt;/span&gt; &lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="nx"&gt;endif&lt;/span&gt;
+&lt;span class="nb"&gt;Error&lt;/span&gt; &lt;span class="nx"&gt;detected&lt;/span&gt; &lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="nx"&gt;processing&lt;/span&gt; &lt;span class="kd"&gt;function&lt;/span&gt; &lt;span class="mi"&gt;53&lt;/span&gt;&lt;span class="nx"&gt;_OpenFile&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;
+&lt;span class="nx"&gt;line&lt;/span&gt; &lt;span class="mi"&gt;8&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;
+&lt;span class="nx"&gt;E171&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="nx"&gt;Missing&lt;/span&gt; &lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="nx"&gt;endif&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;To fix this, apply the following patch to &lt;code&gt;$HOME/.vim/eclim/plugin/project.vim&lt;/code&gt;
+described in &lt;a href="https://github.com/ervandew/eclim/commit/597aeb31fa4ea1e2c102547871935dbb89cf9202"&gt;here&lt;/a&gt;&lt;/p&gt;</summary><category term="eclim"></category><category term="vim"></category></entry><entry><title>LFS 6.9.1: command substitution: line 3: syntax error near unexpected token `)'</title><link href="http://jhshi.me/2012/09/18/lfs-6-9-1-command-substitution-line-3-syntax-error-near-unexpected-token/index.html" rel="alternate"></link><updated>2012-09-18T18:57:23-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-09-18:2012/09/18/lfs-6-9-1-command-substitution-line-3-syntax-error-near-unexpected-token/index.html</id><summary type="html">&lt;p&gt;I encountered this error when compiling glibc. The apparent cause is that
+bash can not deal with brackets correctly. So even a simple command like echo
+&lt;code&gt;$(ls)&lt;/code&gt; will fail with the same error (command substitution).&lt;/p&gt;
+
+
+&lt;p&gt;The most suspicious cause is that when compile bash in section 5.15.1, I use
+&lt;code&gt;byacc&lt;/code&gt; for walk around when the compiler complained the absence of &lt;code&gt;yacc&lt;/code&gt;. &lt;strong&gt;Bash
+uses yacc grammer rules and only GNU bison will generate the correct parsing
+code for the bash build&lt;/strong&gt;. So I un-installed byacc and installed bison. Then&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Make a soft link at &lt;code&gt;/usr/bin/yacc&lt;/code&gt; to bison&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Recompile all the package after 5.10 (tcl) and before 5.15 (include 5.15)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Test if problem solved using echo &lt;code&gt;$(ls)&lt;/code&gt; command&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;If yes, then using &lt;code&gt;/tools/bin/bash --login +h&lt;/code&gt; to lunch the new bash&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Also see:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://www.mail-archive.com/lfs-support@linuxfromscratch.org/msg16549.html"&gt;http://www.mail-archive.com/lfs-support@linuxfromscratch.org/msg16549.html&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://unix.stackexchange.com/questions/28369/linux-from-scratchs-bash-problem-syntax-error"&gt;http://unix.stackexchange.com/questions/28369/linux-from-scratchs-bash-problem-syntax-error&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</summary><category term="lfs"></category><category term="bison"></category><category term="glic"></category><category term="yacc"></category></entry><entry><title>Dropbox: Unable to monitor filesystem</title><link href="http://jhshi.me/2012/07/11/dropbox-unable-to-monitor-filesystem/index.html" rel="alternate"></link><updated>2012-07-11T15:39:14-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-07-11:2012/07/11/dropbox-unable-to-monitor-filesystem/index.html</id><summary type="html">&lt;p&gt;Sometime this error occurs that says:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;"Unable to monitor file system. Please run: echo 100000 | sudo tee
+/proc/sys/fs/inotify/max_user_watches and restart Dropbox to correct the
+problem.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+
+&lt;p&gt;We need to adjust the system setting on the maximum file number that Dropbox
+can watch.&lt;/p&gt;
+&lt;p&gt;The following command will solve your pain:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;&lt;span class="nb"&gt;echo &lt;/span&gt;fs.inotify.max_user_watches&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;100000&lt;/span&gt; &lt;span class="p"&gt;|&lt;/span&gt; sudo tee -a /etc/sysctl.conf&lt;span class="p"&gt;;&lt;/span&gt; sudo sysctl -p
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here is &lt;a href="https://www.dropbox.com/help/145/en"&gt;the tip from Dropbox website&lt;/a&gt;.&lt;/p&gt;</summary><category term="dropbox"></category></entry><entry><title>ssh error: Agent admitted failure to sign using the key</title><link href="http://jhshi.me/2012/07/11/ssh-error-agent-admitted-failure-to-sign-using-the-key/index.html" rel="alternate"></link><updated>2012-07-11T14:37:38-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-07-11:2012/07/11/ssh-error-agent-admitted-failure-to-sign-using-the-key/index.html</id><summary type="html">&lt;p&gt;If you follow &lt;a href="/2012/04/27/sshscp-without-password/"&gt;my previous post about ssh/scp without password&lt;/a&gt;, but you
+got this error when you try to ssh to B on A, then you need to add RSA or DSA
+identities to the authentication agent. A ssh-add command on host A will solve
+your pain.&lt;/p&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;ssh-add
+&lt;span class="c"&gt;# Sample output&lt;/span&gt;
+Identity added: /home/jack/.ssh/id_rsa &lt;span class="o"&gt;(&lt;/span&gt;/home/jack/.ssh/id_rsa&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;strong&gt;Reference&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href="http://www.cyberciti.biz/faq/unix-appleosx-linux-bsd-agent-admitted-failuretosignusingkey/"&gt;http://www.cyberciti.biz/faq/unix-appleosx-linux-bsd-agent-admitted-failuretosignusingkey/&lt;/a&gt;&lt;/p&gt;</summary><category term="ssh"></category></entry><entry><title>error: function declaration isn't a prototype</title><link href="http://jhshi.me/2012/02/14/error-function-declaration-isnt-a-prototype/index.html" rel="alternate"></link><updated>2012-02-14T14:51:44-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-02-14:2012/02/14/error-function-declaration-isnt-a-prototype/index.html</id><summary type="html">&lt;p&gt;This error occurs when you try to declare a function with no arguments, and
+compile with &lt;code&gt;-Werror=strict-prototypes&lt;/code&gt;, as follows:&lt;/p&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;foo&lt;/span&gt;&lt;span class="p"&gt;();&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Fix it by declare it as&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;foo&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;void&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;This is because in c, &lt;code&gt;foo(void)&lt;/code&gt; takes no arguments while &lt;code&gt;foo()&lt;/code&gt; takes a infinite
+number of arguments.&lt;/p&gt;
+&lt;p&gt;Thanks to this &lt;a href="http://stackoverflow.com/questions/42125/function-declaration-isnt-a-prototype"&gt;stackoverflow post&lt;/a&gt;&lt;/p&gt;</summary><category term="c"></category><category term="function"></category><category term="prototype"></category></entry><entry><title>Fix for Google Calendar Crash in Chrome/Chromium on Fedora</title><link href="http://jhshi.me/2012/01/31/fix-for-google-calendar-crash-in-chromechromium-on-fedora/index.html" rel="alternate"></link><updated>2012-01-31T22:20:26-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-01-31:2012/01/31/fix-for-google-calendar-crash-in-chromechromium-on-fedora/index.html</id><summary type="html">&lt;p&gt;This problem is caused by the collision of chrome/chromium sandbox and Fedora's
+SELinux, as explained &lt;a href="https://bugzilla.redhat.com/show_bug.cgi?id=710273#c1"&gt;here&lt;/a&gt;. The same problem occurs when you open
+twitter (see &lt;a href="http://jamesmcdonald.id.au/it-tips/chromium-browser-fedora-15-twitter-aw-snap"&gt;this&lt;/a&gt;).&lt;/p&gt;
+
+
+&lt;p&gt;The solution is&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;restorecon -R ~/.config
+
+# install restorecond
+su -c &amp;#39;yum install policycoreutils-restorecond&amp;#39;
+# enable it
+su -c &amp;#39;chkconfig restorecond on&amp;#39;
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="chrome"></category><category term="google calendar"></category><category term="fedora"></category></entry><entry><title>pdflatex: error while loading shared libraries: libpoppler.so.13</title><link href="http://jhshi.me/2011/11/10/pdflatex-error-while-loading-shared-libraries-libpoppler-so-13/index.html" rel="alternate"></link><updated>2011-11-10T17:30:33-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2011-11-10:2011/11/10/pdflatex-error-while-loading-shared-libraries-libpoppler-so-13/index.html</id><summary type="html">&lt;p&gt;This error occurs when I try to use latex after upgrading to fedora 16. After
+Google it, I find the reason may be when upgrading, the pregrade just update
+the system components, but not user applications, such as &lt;code&gt;texlive&lt;/code&gt;. And since
+current version &lt;code&gt;texlive&lt;/code&gt; counts on some older libraries, issues occur.&lt;/p&gt;
+
+
+&lt;p&gt;I find that the current &lt;code&gt;libpoppler&lt;/code&gt; in &lt;code&gt;/usr/lib&lt;/code&gt; is &lt;code&gt;libpoppler.so.18&lt;/code&gt;, so I
+made a symbolic link to it:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;sudo ln -s /usr/lib/libpoppler.so.18 /usr/lib/libpoppler.so.13
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;This fixes the problem. Thanks to &lt;a href="https://bugs.launchpad.net/ubuntu/+source/xournal/+bug/778234"&gt;this post&lt;/a&gt;&lt;/p&gt;</summary><category term="libpopller"></category><category term="pdflatex"></category><category term="linux"></category></entry></feed>

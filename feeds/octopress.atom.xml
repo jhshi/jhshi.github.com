@@ -1,0 +1,564 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Pearls in Life</title><link href="http://jhshi.me/" rel="alternate"></link><link href="http://jhshi.me/feeds/octopress.atom.xml" rel="self"></link><id>http://jhshi.me/</id><updated>2015-10-11T21:53:54-04:00</updated><entry><title>Migrating from Octopress to Pelican</title><link href="http://jhshi.me/2015/10/11/migrating-from-octopress-to-pelican/index.html" rel="alternate"></link><updated>2015-10-11T21:53:54-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2015-10-11:2015/10/11/migrating-from-octopress-to-pelican/index.html</id><summary type="html">&lt;p&gt;Recently I migrated this blog site from &lt;a class="reference external" href="http://octopress.org/"&gt;Octopress&lt;/a&gt; to &lt;a class="reference external" href="http://docs.getpelican.com"&gt;Pelican&lt;/a&gt;. Here is why and
+how.&lt;/p&gt;
+
+&lt;div class="section" id="what-s-wrong-with-octopress"&gt;
+&lt;h2&gt;What's Wrong with Octopress?&lt;/h2&gt;
+&lt;p&gt;I have been using &lt;a class="reference external" href="http://octopress.org/"&gt;Octopress&lt;/a&gt; for a while (actually almost two years!) and it's
+been working great. In fact, I even wrote a few Octopress plugins myself (e.g,
+&lt;a class="reference external" href="http://github.com/jhshi/octopress-page-view"&gt;page-view&lt;/a&gt;, &lt;a class="reference external" href="https://github.com/jhshi/octopress-post-revision"&gt;post-revision&lt;/a&gt; and &lt;a class="reference external" href="https://github.com/jhshi/octopress-popular-posts"&gt;popular-posts&lt;/a&gt;) to make blogging easier.&lt;/p&gt;
+&lt;p&gt;However, the major problem with Octopress is that &lt;strong&gt;building the site is super
+slow&lt;/strong&gt;. Right now I have roughly 100 posts, and a build can take up to several
+minutes to finish (vs. 9 seconds in Pelican). And I just can not stand it any more.&lt;/p&gt;
+&lt;p&gt;Additionally, Octopress is based on &lt;a class="reference external" href="https://jekyllrb.com/"&gt;Jekyll&lt;/a&gt;, which uses Ruby, which I am never a
+fan of. And the author of Octopress promised to &lt;a class="reference external" href="http://octopress.org/2015/01/15/octopress-3.0-is-coming/"&gt;clean up the spaghetti layout
+of the repository&lt;/a&gt;,
+yet it seems takes forever to finish.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="why-pelican"&gt;
+&lt;h2&gt;Why &lt;a class="reference external" href="http://docs.getpelican.com"&gt;Pelican&lt;/a&gt;?&lt;/h2&gt;
+&lt;p&gt;Pelican has several great features that look very appeal to me:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;Using &lt;a class="reference external" href="https://www.python.org/"&gt;Python&lt;/a&gt;---my favorite language.&lt;/li&gt;
+&lt;li&gt;The framework is packaged cleanly as a single Python package, so I can use
+&lt;a class="reference external" href="https://virtualenv.pypa.io/en/latest/"&gt;Virtualenv&lt;/a&gt; and all that great stuff from &lt;a class="reference external" href="https://www.python.org/"&gt;Python&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;Support reStructuredText and Markdown, so it's potently easy to migrate from
+Octopress.&lt;/li&gt;
+&lt;li&gt;Because it uses &lt;a class="reference external" href="https://www.python.org/"&gt;Python&lt;/a&gt;, I might actually willing to fix a thing or two in
+case it breaks.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class="section" id="migration"&gt;
+&lt;h2&gt;Migration&lt;/h2&gt;
+&lt;p&gt;&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;pelican-quickstart&lt;/span&gt;&lt;/tt&gt; is great in set up a minimal working directory quickly.
+After copying the posts from &lt;tt class="docutils literal"&gt;source/_posts&lt;/tt&gt; to &lt;tt class="docutils literal"&gt;content&lt;/tt&gt;, there are a
+couple of things to take care of.&lt;/p&gt;
+&lt;div class="section" id="yaml-front-matter"&gt;
+&lt;h3&gt;YAML Front Matter&lt;/h3&gt;
+&lt;p&gt;&lt;a class="reference external" href="http://octopress.org/"&gt;Octopress&lt;/a&gt; uses YAML front matter for post meta data, such as title, date, tags,
+etc. Pelican can recognize most of them but &lt;tt class="docutils literal"&gt;tags&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;category&lt;/tt&gt;. More
+specifically,&lt;/p&gt;
+&lt;ol class="arabic simple"&gt;
+&lt;li&gt;In &lt;a class="reference external" href="http://octopress.org/"&gt;Octopress&lt;/a&gt;, you can put a post in multiple categories using the
+&lt;tt class="docutils literal"&gt;categories&lt;/tt&gt; attribute. But in Pelican, one post can only in one category
+using the &lt;tt class="docutils literal"&gt;category&lt;/tt&gt; attribute. This may cause trouble if you had some post
+in multiple categories in Octopress.&lt;/li&gt;
+&lt;li&gt;Pelican can not recognize the YAML front matter for &lt;tt class="docutils literal"&gt;tags&lt;/tt&gt;, which is very
+similar to a JSON array. For example, in Octopress, it's &lt;tt class="docutils literal"&gt;tags: [&amp;quot;tag1&amp;quot;,
+&amp;quot;tag2&amp;quot;]&lt;/tt&gt;. In Pelican, it's &lt;tt class="docutils literal"&gt;tags: tag1; tag2&lt;/tt&gt;.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;I fixed the first one by substituting all &lt;tt class="docutils literal"&gt;categories&lt;/tt&gt; with &lt;tt class="docutils literal"&gt;category&lt;/tt&gt;. Then
+I tried to manually convert the YAML style array to Pelican style array using
+&lt;tt class="docutils literal"&gt;sed&lt;/tt&gt;, which failed miserably.&lt;/p&gt;
+&lt;p&gt;Then I found the &lt;a class="reference external" href="https://github.com/joachimneu/pelican-md-metayaml"&gt;md-metayaml&lt;/a&gt; Pelican plugin, which was exactly what I needed. Just
+add &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;md-metayaml&lt;/span&gt;&lt;/tt&gt; to your &lt;tt class="docutils literal"&gt;PLUGINS&lt;/tt&gt; and boom, Pelican can now recognize YAML
+front matter!&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="liquid-tags"&gt;
+&lt;h3&gt;Liquid Tags&lt;/h3&gt;
+&lt;p&gt;Octopress uses Liquid Tags for multimedia resources, such as images, videos,
+etc. Similar to YAML, there is also a &lt;a class="reference external" href="https://github.com/getpelican/pelican-plugins/tree/master/liquid_tags"&gt;liquid-tags&lt;/a&gt; plugin for Pelican. I mostly
+use the &lt;tt class="docutils literal"&gt;img&lt;/tt&gt; tag, so I just added &lt;tt class="docutils literal"&gt;liqued_tags.img&lt;/tt&gt; to the &lt;tt class="docutils literal"&gt;PLUGINS&lt;/tt&gt;. You
+can add others as well, such as &lt;tt class="docutils literal"&gt;youtube&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;video&lt;/tt&gt;.&lt;/p&gt;
+&lt;p&gt;However, there is one tags that I used before that is missing in &lt;a class="reference external" href="https://github.com/getpelican/pelican-plugins/tree/master/liquid_tags"&gt;liquid-tags&lt;/a&gt;
+plugin---&lt;tt class="docutils literal"&gt;blockquote&lt;/tt&gt;. Fortunately, I only used this tag in one post and I
+happily convert it using the standard Markdown block quote syntax.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="summary-text"&gt;
+&lt;h3&gt;Summary Text&lt;/h3&gt;
+&lt;p&gt;By default, Pelican uses a fixed number of words as the post summary. I prefer
+the way that Octopress handles summary: explicitly use a excerpt separator
+(&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;&amp;lt;!--&lt;/span&gt; more &lt;span class="pre"&gt;--&amp;gt;&lt;/span&gt;&lt;/tt&gt;) to control which part goes to the post summary (typically
+first paragraph).&lt;/p&gt;
+&lt;p&gt;Again, there is this &lt;a class="reference external" href="https://github.com/getpelican/pelican-plugins/tree/master/summary"&gt;summary&lt;/a&gt; plugin that does exactly as mentioned above. Just
+put &lt;tt class="docutils literal"&gt;summary&lt;/tt&gt; in &lt;tt class="docutils literal"&gt;PLUGINS&lt;/tt&gt; and set &lt;tt class="docutils literal"&gt;SUMMARY_END_MARKER&lt;/tt&gt; to be
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;&amp;lt;!--&lt;/span&gt; more &lt;span class="pre"&gt;--&amp;gt;&lt;/span&gt;&lt;/tt&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="url-pattern"&gt;
+&lt;h3&gt;URL Pattern&lt;/h3&gt;
+&lt;p&gt;This is probably just me: the URL pattern on this site is actually inherited
+from the old days when I was using WordPress. Basically, the post URL is
+something like &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;/2015/10/11/title-slug/index.html&lt;/span&gt;&lt;/tt&gt;, which corresponds to
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;2015-10-11-title-slug.markdown&lt;/span&gt;&lt;/tt&gt; file in Octopress.&lt;/p&gt;
+&lt;p&gt;First, we need to tell Pelican to obtain URL slug from the file name:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;FILENAME_METADATA&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;(?P&amp;lt;date&amp;gt;\d{4}-\d{2}-\d{2})-(?P&amp;lt;slug&amp;gt;.*)&amp;#39;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Then we set the article URL pattern:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;ARTICLE_URL&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;{date:%Y}/{date:%m}/{date:&lt;/span&gt;&lt;span class="si"&gt;%d&lt;/span&gt;&lt;span class="s"&gt;}/{slug}/&amp;#39;&lt;/span&gt;
+&lt;span class="n"&gt;ARTICLE_SAVE_AS&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;{date:%Y}/{date:%m}/{date:&lt;/span&gt;&lt;span class="si"&gt;%d&lt;/span&gt;&lt;span class="s"&gt;}/{slug}/index.html&amp;#39;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;div class="section" id="wrap-it-up"&gt;
+&lt;h4&gt;Wrap It Up&lt;/h4&gt;
+&lt;p&gt;At this point, we have done most of the migrations. There are couple of more
+tweaks that makes Pelican works better:&lt;/p&gt;
+&lt;ol class="arabic simple"&gt;
+&lt;li&gt;Using a theme (I used &lt;a class="reference external" href="https://github.com/jhshi/pelican-bootstrap3"&gt;pelican-bootstrap3&lt;/a&gt;)&lt;/li&gt;
+&lt;li&gt;Add some awesome plugins, such as &lt;a class="reference external" href="https://github.com/getpelican/pelican-plugins/tree/master/related_posts"&gt;related_posts&lt;/a&gt;, &lt;a class="reference external" href="https://github.com/getpelican/pelican-plugins/tree/master/tag_cloud"&gt;tag_cloud&lt;/a&gt;, &lt;a class="reference external" href="https://github.com/getpelican/pelican-plugins/tree/master/sitemap"&gt;sitemap&lt;/a&gt;, and
+&lt;a class="reference external" href="https://github.com/getpelican/pelican-plugins/tree/master/tipue_search"&gt;tipue_search&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;Enable monthly and yearly archives.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;You can see a full Pelican configuration file &lt;a class="reference external" href="https://github.com/jhshi/blog_source/blob/master/pelicanconf.py"&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+</summary><category term="pelican"></category><category term="blog"></category></entry><entry><title>Post Revision Plugin For Octopress</title><link href="http://jhshi.me/2013/11/17/post-revision-plugin-for-octopress/index.html" rel="alternate"></link><updated>2013-11-17T16:39:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-11-17:2013/11/17/post-revision-plugin-for-octopress/index.html</id><summary type="html">&lt;p&gt;Writing blogs is not a one-time thing. Maybe sometime after you posted a blog,
+you find a typo, or you get some feedback from your readers and want to further
+elaborate on some paragraph in your blog, and so on. So keep a revision history
+for each post is a good idea, not only for you, but also for your readers, to
+let them know that you're keep polishing your blogs.&lt;/p&gt;
+
+
+&lt;p&gt;However, doing this manually is kind of tedious, especially when you made
+multiple changes you want to show. Fortunately, you use static site generator
+(like &lt;a href="http://jekyllrb.com/"&gt;Jekyll&lt;/a&gt; or &lt;a href="http://octopress.org/"&gt;Octopress&lt;/a&gt;) and use &lt;code&gt;git&lt;/code&gt; to manage your
+content. (What? You don't? The I feel sad for you :-) So why don't just show the
+&lt;code&gt;git&lt;/code&gt; revision history for that blog? This is the &lt;a href="https://github.com/jhshi/octopress-post-revision"&gt;octopress-post-revision&lt;/a&gt;
+comes for.&lt;/p&gt;
+&lt;p&gt;If you feel interested, please refer to the &lt;a href="https://github.com/jhshi/octopress-post-revision"&gt;README page&lt;/a&gt; on how to
+install this plugin and how to configure it. This post will give a detailed
+description on how this plugin works.&lt;/p&gt;
+&lt;p&gt;The idea is simple, yet implementing it is not trivial. It's more difficult for
+me since this is my first time trying to write some code in ruby... But let's
+break down the task into pieces ant tackle them one by one.&lt;/p&gt;
+&lt;h3&gt;Get Post's Path On You Local File System&lt;/h3&gt;
+&lt;p&gt;We need these information since we need to do a &lt;code&gt;git log&lt;/code&gt; on those files. Jekyll
+provides the &lt;code&gt;Generator&lt;/code&gt; interface which allows us to generate extra
+information, which is exactly what we want.&lt;/p&gt;
+&lt;p&gt;We need three piece of information:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Post file's full/absolute path&lt;/li&gt;
+&lt;li&gt;Post file name&lt;/li&gt;
+&lt;li&gt;Post file's dir name&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The last two information are used to generate the &lt;code&gt;View on Github&lt;/code&gt; link.&lt;/p&gt;
+&lt;p&gt;This is what the &lt;code&gt;PostFullPath&lt;/code&gt; looks like.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;PostFullPath&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="no"&gt;Generator&lt;/span&gt;
+    &lt;span class="n"&gt;safe&lt;/span&gt; &lt;span class="ss"&gt;:true&lt;/span&gt;
+    &lt;span class="n"&gt;priority&lt;/span&gt; &lt;span class="ss"&gt;:high&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Generate file info for each post and page&lt;/span&gt;
+    &lt;span class="c1"&gt;#  +site+ is the site&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;generate&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;site&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+      &lt;span class="n"&gt;site&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;posts&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;each&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt;&lt;span class="n"&gt;post&lt;/span&gt;&lt;span class="o"&gt;|&lt;/span&gt;
+        &lt;span class="n"&gt;base&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;post&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;instance_variable_get&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:@base&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="nb"&gt;name&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;post&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;instance_variable_get&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:@name&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;post&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;merge!&lt;/span&gt;&lt;span class="p"&gt;({&lt;/span&gt;
+          &lt;span class="s1"&gt;&amp;#39;dir_name&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;_posts&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+          &lt;span class="s1"&gt;&amp;#39;file_name&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="nb"&gt;name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; 
+          &lt;span class="s1"&gt;&amp;#39;full_path&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="no"&gt;File&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;base&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;name&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+        &lt;span class="p"&gt;})&lt;/span&gt;
+      &lt;span class="k"&gt;end&lt;/span&gt;
+      &lt;span class="n"&gt;site&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;pages&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;each&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt;&lt;span class="n"&gt;page&lt;/span&gt;&lt;span class="o"&gt;|&lt;/span&gt;
+        &lt;span class="n"&gt;base&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;page&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;instance_variable_get&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:@base&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;dir&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;page&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;instance_variable_get&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:@dir&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="nb"&gt;name&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;page&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;instance_variable_get&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:@name&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;page&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;merge!&lt;/span&gt;&lt;span class="p"&gt;({&lt;/span&gt;
+          &lt;span class="s1"&gt;&amp;#39;dir_name&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;dir&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+          &lt;span class="s1"&gt;&amp;#39;file_name&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="nb"&gt;name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; 
+          &lt;span class="s1"&gt;&amp;#39;full_path&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="no"&gt;File&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;base&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;dir&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;name&lt;/span&gt;&lt;span class="p"&gt;)})&lt;/span&gt;
+      &lt;span class="k"&gt;end&lt;/span&gt;
+    &lt;span class="k"&gt;end&lt;/span&gt;
+&lt;span class="k"&gt;end&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The &lt;code&gt;Post&lt;/code&gt; class has several instance variables (e.g., &lt;code&gt;@base, @name&lt;/code&gt;) that has
+the file information, yet how to get them outside the class got me. After Google
+a bit, &lt;a href="http://stackoverflow.com/questions/12122736/access-instance-variable-from-outside-the-class"&gt;this thread&lt;/a&gt; gives me the solution, i.e., the
+&lt;code&gt;instance_variable_get&lt;/code&gt; method.&lt;/p&gt;
+&lt;p&gt;Another thing to note is the &lt;code&gt;dir_name&lt;/code&gt;, since Jekyll assumes post files are put
+in the &lt;code&gt;_post&lt;/code&gt; directory, so we can hard code &lt;code&gt;post['dir_name']&lt;/code&gt; as &lt;code&gt;_posts&lt;/code&gt;.
+Yet for pages, we need the real dir name.&lt;/p&gt;
+&lt;h3&gt;The &lt;code&gt;revision&lt;/code&gt; Liquid Tag&lt;/h3&gt;
+&lt;p&gt;Once we got the file information, we can use &lt;code&gt;git&lt;/code&gt; to get the change history of
+that file. We also need to format the logs for display purpose.&lt;/p&gt;
+&lt;p&gt;Here is the code that fetch logs from &lt;code&gt;git&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;cmd&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;git log --date=local --pretty=&amp;quot;%cd|%s&amp;quot; --max-count=&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="vi"&gt;@limit&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;to_s&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39; &amp;#39;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;full_path&lt;/span&gt;
+&lt;span class="n"&gt;logs&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="sb"&gt;`&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;cmd&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="sb"&gt;`&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;We specify the date format as &lt;code&gt;local&lt;/code&gt;, and the log message as customized format.
+&lt;code&gt;%cd&lt;/code&gt; means commit date, and &lt;code&gt;%s&lt;/code&gt; is the subject. We also limit the number of
+logs, in case you get to many commit on on post.&lt;/p&gt;
+&lt;h3&gt;The &lt;code&gt;View on Github&lt;/code&gt; Link&lt;/h3&gt;
+&lt;p&gt;Since we only display the latest &lt;code&gt;@limit&lt;/code&gt; number of commit, we provide the &lt;code&gt;View
+on Github&lt;/code&gt; link which links to the Github's commit history page. The format of
+the URL is&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;https://github.com/&amp;lt;user&amp;gt;/&amp;lt;repo&amp;gt;/commits/&amp;lt;branch&amp;gt;/&amp;lt;file_path&amp;gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here is the code that get branch information.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;cmd&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;git rev-parse --abbrev-ref HEAD&amp;#39;&lt;/span&gt;
+&lt;span class="c1"&gt;# chop last &amp;#39;\n&amp;#39; of branch name&lt;/span&gt;
+&lt;span class="n"&gt;branch&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="sb"&gt;`&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;cmd&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="sb"&gt;`&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;chop&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Now we have all the information we need, and here is how we compose the final
+URL.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;link&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="no"&gt;File&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;https://github.com&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;site&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;github_user&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;site&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;github_repo&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+                 &lt;span class="s1"&gt;&amp;#39;commits&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;branch&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;site&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;source&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;post&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;dir_name&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;post&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;file_name&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="plugin"></category><category term="revision"></category><category term="git"></category><category term="ruby"></category><category term="jekyll"></category><category term="Liquid"></category></entry><entry><title>Popular Posts Plugin for Octopress</title><link href="http://jhshi.me/2013/11/10/popular-posts-plugin-for-octopress/index.html" rel="alternate"></link><updated>2013-11-10T20:08:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-11-10:2013/11/10/popular-posts-plugin-for-octopress/index.html</id><summary type="html">&lt;p&gt;This post describes the &lt;a href="https://github.com/jhshi/octopress-popular-posts"&gt;octopress-popular-posts&lt;/a&gt; for Octopress. Although
+there is &lt;a href="https://github.com/octopress-themes/popular-posts"&gt;one plugin&lt;/a&gt; that does the job, it used Google Page Rank to
+determine if a post is popular or not. I'd like to, however, use the page view
+of the post as metric.&lt;/p&gt;
+
+
+&lt;h2&gt;How To Use&lt;/h2&gt;
+&lt;p&gt;In &lt;a href="/2013/11/10/page-view-plugin-for-octopress/"&gt;another post&lt;/a&gt;, I described how to use the &lt;a href="https://github.com/jhshi/octopress-page-view"&gt;octopress-page-view&lt;/a&gt; plugin to
+show the PV of each post and the whole site. This plugin depend on that to
+generate each post's PV count. So you need to first install that plugin.&lt;/p&gt;
+&lt;h3&gt;Installation&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Clone the repo from Github&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;cd&lt;/span&gt; /tmp
+git clone https://github.com/jhshi/octopress-popular-posts.git
+&lt;span class="nb"&gt;cd &lt;/span&gt;octopress-popular-posts
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The structure of the directory will look like this&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;octopress-popular-posts/
+|-- _config.yml
+|-- plugins
+|   `-- popular_posts.rb
+|-- README.md
+`-- source
+    `-- _include
+        `-- custom
+            `-- asides
+                `-- popular_posts.html
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Copy &lt;code&gt;plugins/popular_posts.rb&lt;/code&gt; to your &lt;code&gt;plugins&lt;/code&gt; directory. And place 
+&lt;code&gt;source/include/custom/asides/popular_posts.html&lt;/code&gt; in your custom asides directory.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Add this asides to your asides list in &lt;code&gt;_config.yml&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Configuration&lt;/h3&gt;
+&lt;p&gt;This plugin doesn't need any special configurations, as long as you set 
+&lt;code&gt;octopress-page-view&lt;/code&gt; plugin correctly, it should work out of box.&lt;/p&gt;
+&lt;p&gt;There is one parameters you can tune, though. You can set how many popular posts
+will be shown in &lt;code&gt;popular_posts.html&lt;/code&gt;&lt;/p&gt;
+&lt;h2&gt;How It Works&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;octopress-page-view&lt;/code&gt; has done all the hard job for us. All we need to do is
+just sort the posts by their page view count.&lt;/p&gt;
+&lt;p&gt;Note that we need to set the &lt;code&gt;priority&lt;/code&gt; of this plugin as &lt;code&gt;low&lt;/code&gt;, since we reply
+on &lt;code&gt;octopress-page-view&lt;/code&gt; plugin to run first to generate the PV count.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;PopularPosts&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="no"&gt;Generator&lt;/span&gt;
+    &lt;span class="n"&gt;safe&lt;/span&gt; &lt;span class="ss"&gt;:true&lt;/span&gt;
+    &lt;span class="n"&gt;priority&lt;/span&gt; &lt;span class="ss"&gt;:low&lt;/span&gt;
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;generate&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;site&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+      &lt;span class="c1"&gt;# require octopress-page-view plugin&lt;/span&gt;
+      &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="o"&gt;!&lt;/span&gt;&lt;span class="n"&gt;site&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;config&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;page-view&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt;
+      &lt;span class="k"&gt;end&lt;/span&gt;
+
+      &lt;span class="n"&gt;popular_posts&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;site&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;posts&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sort&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt;&lt;span class="n"&gt;px&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;py&lt;/span&gt;&lt;span class="o"&gt;|&lt;/span&gt;
+        &lt;span class="c1"&gt;# just catch the rare case&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;px&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;_pv&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="kp"&gt;nil&lt;/span&gt; &lt;span class="o"&gt;||&lt;/span&gt; &lt;span class="n"&gt;py&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;_pv&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="kp"&gt;nil&lt;/span&gt; &lt;span class="k"&gt;then&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+        &lt;span class="k"&gt;elsif&lt;/span&gt; &lt;span class="n"&gt;px&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;_pv&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;py&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;_pv&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="k"&gt;then&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;
+        &lt;span class="k"&gt;elsif&lt;/span&gt; &lt;span class="n"&gt;px&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;_pv&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="n"&gt;py&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;_pv&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="k"&gt;then&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+        &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+        &lt;span class="k"&gt;end&lt;/span&gt;
+      &lt;span class="k"&gt;end&lt;/span&gt;
+
+      &lt;span class="n"&gt;site&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;config&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;merge!&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;popular_posts&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;popular_posts&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;end&lt;/span&gt;
+&lt;span class="k"&gt;end&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;One trick I did here is that, &lt;code&gt;site&lt;/code&gt; object has not &lt;code&gt;data&lt;/code&gt; field to merge into,
+so I merge the &lt;code&gt;popular_posts&lt;/code&gt; data to &lt;code&gt;site.config&lt;/code&gt;.&lt;/p&gt;</summary><category term="popular posts"></category><category term="jekyll"></category><category term="plugin"></category><category term="ruby"></category></entry><entry><title>Page View Plugin for Octopress</title><link href="http://jhshi.me/2013/11/10/page-view-plugin-for-octopress/index.html" rel="alternate"></link><updated>2013-11-10T18:21:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-11-10:2013/11/10/page-view-plugin-for-octopress/index.html</id><summary type="html">&lt;p&gt;It's always nice to display some blog stats, such as page view count, to give
+readers an sense how &lt;em&gt;popular&lt;/em&gt; some site/posts are. Unfortunately, there is (or
+should I say 'was'?) no such plugin that does this job nicely for 
+&lt;a href="http://octopress.org/"&gt;Octopress&lt;/a&gt;, so I decided to write one myself. And here comes the
+plugin called &lt;a href="https://github.com/jhshi/octopress-page-view"&gt;octopress-page-view&lt;/a&gt;.&lt;/p&gt;
+
+
+&lt;p&gt;I use &lt;a href="http://www.google.com/analytics/"&gt;Google Analytics&lt;/a&gt; to track my blog. And there is an Octopress 
+plugin called &lt;a href="https://github.com/developmentseed/jekyll-ga"&gt;jekyll-ga&lt;/a&gt;, which can sort blog posts by certain metrics of 
+Google Analytics. For me, chronological order works just fine. So I just grab
+the part that fetch data from Google Analytics.&lt;/p&gt;
+&lt;p&gt;I haven't done any decent ruby coding before, so bear with me if I wrote some
+silly ruby code. But it works.&lt;/p&gt;
+&lt;h2&gt;How To Use&lt;/h2&gt;
+&lt;h3&gt;Get the plugin&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Install required gems&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;sudo gem install chronic google-api-client
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ul&gt;
+&lt;li&gt;Clone the repository&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nb"&gt;cd&lt;/span&gt; /tmp
+git clone https://github.com/jhshi/octopress-page-view.git
+&lt;span class="nb"&gt;cd &lt;/span&gt;octopress-page-view
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The structure of the directory will look like this&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;octopress-page-view/
+&lt;span class="p"&gt;|&lt;/span&gt;-- _config.yml
+&lt;span class="p"&gt;|&lt;/span&gt;-- plugins
+&lt;span class="p"&gt;|&lt;/span&gt;   &lt;span class="sb"&gt;`&lt;/span&gt;-- page_view.rb
+&lt;span class="p"&gt;|&lt;/span&gt;-- README.md
+&lt;span class="sb"&gt;`&lt;/span&gt;-- &lt;span class="nb"&gt;source&lt;/span&gt;
+    &lt;span class="sb"&gt;`&lt;/span&gt;-- _include
+        &lt;span class="sb"&gt;`&lt;/span&gt;-- custom
+            &lt;span class="sb"&gt;`&lt;/span&gt;-- asides
+                &lt;span class="sb"&gt;`&lt;/span&gt;-- pageview.html
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Copy &lt;code&gt;plugins/page_view.rb&lt;/code&gt; to your &lt;code&gt;plugins&lt;/code&gt; directory, and copy
+   &lt;code&gt;source/_include/custom/asides/pageview.html&lt;/code&gt; to your custom asides
+   directory.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;In your &lt;code&gt;_config.yml&lt;/code&gt;, add &lt;code&gt;pageview.html&lt;/code&gt; to your asides array.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Setup and Configuration&lt;/h3&gt;
+&lt;p&gt;The README file of the &lt;a href="https://github.com/developmentseed/jekyll-ga"&gt;jekyll-ga&lt;/a&gt; project gives an very detailed
+description about &lt;a href="https://github.com/developmentseed/jekyll-ga#set-up-a-service-account-for-the-google-data-api"&gt;how to set up a service account for Google data API&lt;/a&gt;,
+which I'm not going to repeat here.&lt;/p&gt;
+&lt;p&gt;After you've set up the service account, you'll need to add some configurations
+to your &lt;code&gt;_config.yml&lt;/code&gt; file. Here is a sample configuration.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c1"&gt;# octopress-page-view&lt;/span&gt;
+&lt;span class="l-Scalar-Plain"&gt;page-view&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt;
+  &lt;span class="l-Scalar-Plain"&gt;service_account_email&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt;    &lt;span class="c1"&gt;# XXXXXX@developer.gserviceaccount.com&lt;/span&gt;
+  &lt;span class="l-Scalar-Plain"&gt;key_file&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt; &lt;span class="l-Scalar-Plain"&gt;privatekey.p12&lt;/span&gt;  &lt;span class="c1"&gt;# service account private key file&lt;/span&gt;
+  &lt;span class="l-Scalar-Plain"&gt;key_secret&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt; &lt;span class="l-Scalar-Plain"&gt;notasecret&lt;/span&gt;    &lt;span class="c1"&gt;# service account private key&amp;#39;s password&lt;/span&gt;
+  &lt;span class="l-Scalar-Plain"&gt;profileID&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt;                &lt;span class="c1"&gt;# ga:XXXXXXXX&lt;/span&gt;
+  &lt;span class="l-Scalar-Plain"&gt;start&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt; &lt;span class="l-Scalar-Plain"&gt;3 years ago&lt;/span&gt;        &lt;span class="c1"&gt;# Beginning of report&lt;/span&gt;
+  &lt;span class="l-Scalar-Plain"&gt;end&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt; &lt;span class="l-Scalar-Plain"&gt;now&lt;/span&gt;                  &lt;span class="c1"&gt;# End of report&lt;/span&gt;
+  &lt;span class="l-Scalar-Plain"&gt;metric&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt; &lt;span class="l-Scalar-Plain"&gt;ga:pageviews&lt;/span&gt;      &lt;span class="c1"&gt;# Metric code&lt;/span&gt;
+  &lt;span class="l-Scalar-Plain"&gt;segment&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt; &lt;span class="l-Scalar-Plain"&gt;gaid::-1&lt;/span&gt;         &lt;span class="c1"&gt;# All visits&lt;/span&gt;
+  &lt;span class="l-Scalar-Plain"&gt;filters&lt;/span&gt;&lt;span class="p-Indicator"&gt;:&lt;/span&gt;                  &lt;span class="c1"&gt;# optional&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;How It Works&lt;/h2&gt;
+&lt;p&gt;This plugin provides an Jekyll &lt;a href="http://jekyllrb.com/docs/plugins/"&gt;Generator&lt;/a&gt;, called &lt;code&gt;GoogleAnalytics&lt;/code&gt;,
+to fetech data from Google, and a Jekyll &lt;a href="http://jekyllrb.com/docs/plugins/"&gt;Liquid Tag&lt;/a&gt; to actually generate
+the formated page view count.&lt;/p&gt;
+&lt;h3&gt;Fetch Analytics Data&lt;/h3&gt;
+&lt;p&gt;This part is adapted from &lt;a href="https://github.com/developmentseed/jekyll-ga"&gt;jekyll-ga&lt;/a&gt;. Basically, we will create an Google
+API client, and after proper authorization, making request to Google.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;pv&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;site&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;config&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;page-view&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
+
+&lt;span class="c1"&gt;# need to provide application_name and application_version, otherwise, APIClient&lt;/span&gt;
+&lt;span class="c1"&gt;# will warn ...&lt;/span&gt;
+&lt;span class="n"&gt;client&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="no"&gt;Google&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="no"&gt;APIClient&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;new&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="ss"&gt;:application_name&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;octopress-page-view&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="ss"&gt;:application_version&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;1.0&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Load our credentials for the service account&lt;/span&gt;
+&lt;span class="n"&gt;key&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="no"&gt;Google&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="no"&gt;APIClient&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="no"&gt;KeyUtils&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;load_from_pkcs12&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pv&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;key_file&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;pv&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;key_secret&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;client&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;authorization&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="no"&gt;Signet&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="no"&gt;OAuth2&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="no"&gt;Client&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;new&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="ss"&gt;:token_credential_uri&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;https://accounts.google.com/o/oauth2/token&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="ss"&gt;:audience&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;https://accounts.google.com/o/oauth2/token&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="ss"&gt;:scope&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;https://www.googleapis.com/auth/analytics.readonly&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="ss"&gt;:issuer&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;pv&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;service_account_email&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="ss"&gt;:signing_key&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;key&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Request a token for our service account&lt;/span&gt;
+&lt;span class="n"&gt;client&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;authorization&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fetch_access_token!&lt;/span&gt;
+&lt;span class="n"&gt;analytics&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;client&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;discovered_api&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;analytics&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;v3&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="c1"&gt;# prepare parameters&lt;/span&gt;
+&lt;span class="n"&gt;params&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="s1"&gt;&amp;#39;ids&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;pv&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;profileID&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="s1"&gt;&amp;#39;start-date&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="no"&gt;Chronic&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;parse&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pv&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;start&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;strftime&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;%Y-%m-%d&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+    &lt;span class="s1"&gt;&amp;#39;end-date&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="no"&gt;Chronic&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;parse&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pv&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;end&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;strftime&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;%Y-%m-%d&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+    &lt;span class="s1"&gt;&amp;#39;dimensions&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;ga:pagePath&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="s1"&gt;&amp;#39;metrics&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;pv&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;metric&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="s1"&gt;&amp;#39;max-results&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;100000&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;pv&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;segment&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
+    &lt;span class="n"&gt;params&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;segment&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pv&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;segment&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
+&lt;span class="k"&gt;end&lt;/span&gt;
+&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;pv&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;filters&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
+    &lt;span class="n"&gt;params&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;filters&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pv&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;filters&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
+&lt;span class="k"&gt;end&lt;/span&gt;
+
+&lt;span class="n"&gt;response&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;client&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;execute&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:api_method&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;analytics&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ga&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ss"&gt;:parameters&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;params&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;results&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="no"&gt;Hash&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;response&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;rows&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;So now we have a hash about query results.&lt;/p&gt;
+&lt;h3&gt;Calculate Page View&lt;/h3&gt;
+&lt;p&gt;For each blog post, we want to display just the page view of that blog. However,
+in blog index pages, we want to display the total page view of this site. So we
+process &lt;code&gt;post&lt;/code&gt; and &lt;code&gt;page&lt;/code&gt; slightly differently.&lt;/p&gt;
+&lt;p&gt;Also, we'll set our generator's priority to &lt;code&gt;high&lt;/code&gt;, in case other plugins also
+want to use the &lt;code&gt;_pv&lt;/code&gt; information.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c1"&gt;# total page view of this site&lt;/span&gt;
+&lt;span class="n"&gt;tot&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+
+&lt;span class="c1"&gt;# display per post page view&lt;/span&gt;
+&lt;span class="n"&gt;site&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;posts&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;each&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt;&lt;span class="n"&gt;post&lt;/span&gt;&lt;span class="o"&gt;|&lt;/span&gt;
+    &lt;span class="n"&gt;url&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;site&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;config&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;baseurl&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;||&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;post&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;url&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;index.html&amp;#39;&lt;/span&gt;
+    &lt;span class="n"&gt;hits&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;results&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;url&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;)?&lt;/span&gt; &lt;span class="n"&gt;results&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;url&lt;/span&gt;&lt;span class="o"&gt;].&lt;/span&gt;&lt;span class="n"&gt;to_i&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="n"&gt;post&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;merge!&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;_pv&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;hits&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;tot&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="n"&gt;hits&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="c1"&gt;# calculate total page view&lt;/span&gt;
+&lt;span class="n"&gt;site&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;pages&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;each&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt;&lt;span class="n"&gt;page&lt;/span&gt;&lt;span class="o"&gt;|&lt;/span&gt;
+    &lt;span class="n"&gt;url&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;site&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;config&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;baseurl&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;||&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;page&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;url&lt;/span&gt;
+    &lt;span class="n"&gt;hits&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;results&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;url&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;)?&lt;/span&gt; &lt;span class="n"&gt;results&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;url&lt;/span&gt;&lt;span class="o"&gt;].&lt;/span&gt;&lt;span class="n"&gt;to_i&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="n"&gt;tot&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="n"&gt;hits&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="c1"&gt;# display total page view in page&lt;/span&gt;
+&lt;span class="n"&gt;site&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;pages&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;each&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt;&lt;span class="n"&gt;page&lt;/span&gt;&lt;span class="o"&gt;|&lt;/span&gt;
+    &lt;span class="n"&gt;page&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;merge!&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;_pv&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;tot&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;So now each &lt;code&gt;post&lt;/code&gt; or &lt;code&gt;page&lt;/code&gt; contains one ore field, called &lt;code&gt;_pv&lt;/code&gt;, which is the
+page view count of that &lt;code&gt;post&lt;/code&gt;, or total PV for &lt;code&gt;page&lt;/code&gt;.&lt;/p&gt;
+&lt;h3&gt;Display Page View&lt;/h3&gt;
+&lt;p&gt;This is done using a Liquid Tag called &lt;code&gt;PageViewTag&lt;/code&gt;. In the &lt;code&gt;render&lt;/code&gt; method, we
+just output an nicely formatted page view count.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;site&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;environments&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;first&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;site&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
+&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="o"&gt;!&lt;/span&gt;&lt;span class="n"&gt;site&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;page-view&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;&amp;#39;&lt;/span&gt;
+&lt;span class="k"&gt;end&lt;/span&gt;
+
+&lt;span class="n"&gt;post&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;environments&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;first&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;post&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
+&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;post&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="kp"&gt;nil&lt;/span&gt;
+    &lt;span class="n"&gt;post&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;environments&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;first&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;page&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;post&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="kp"&gt;nil&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;&amp;#39;&lt;/span&gt;
+    &lt;span class="k"&gt;end&lt;/span&gt;
+&lt;span class="k"&gt;end&lt;/span&gt;
+
+&lt;span class="n"&gt;pv&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;post&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;_pv&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
+&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;pv&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="kp"&gt;nil&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;&amp;#39;&lt;/span&gt;
+&lt;span class="k"&gt;end&lt;/span&gt;
+
+&lt;span class="n"&gt;html&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pv&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;to_s&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;reverse&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;gsub&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="sr"&gt;/...(?=.)/&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;\&amp;amp;,&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;reverse&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39; hits&amp;#39;&lt;/span&gt;
+&lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;html&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="plugin"></category><category term="jekyll"></category><category term="octopress"></category><category term="ruby"></category></entry><entry><title>Speed up Octopress Generation</title><link href="http://jhshi.me/2013/04/07/speed-up-octopress-generation/index.html" rel="alternate"></link><updated>2013-04-07T17:04:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-04-07:2013/04/07/speed-up-octopress-generation/index.html</id><summary type="html">&lt;p&gt;&lt;code&gt;rake generate&lt;/code&gt; can take quite a while, especially when you have many blog
+posts. Here are a few tips on how to speed up the generation process.&lt;/p&gt;
+
+
+&lt;h3&gt;Use &lt;code&gt;rake isolate&lt;/code&gt; and &lt;code&gt;rake integrate&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;It's usually the case when you have many existing posts, while you're modifying
+a few of them, it's certainly a overkill to compile all the posts if you just
+ant to preview what you're really editing. Octopress provide an &lt;code&gt;isolate&lt;/code&gt;
+command just for this purpose.&lt;/p&gt;
+&lt;p&gt;The idea is, you can use &lt;code&gt;rake isolate&lt;/code&gt; to move all no-interested posts in an
+separate directory outside &lt;code&gt;source/_posts&lt;/code&gt; , so when you do &lt;code&gt;rake generate&lt;/code&gt;,
+you'll just compile those posts you care about. When you're done editing and
+want to deploy your sites, you can use &lt;code&gt;rake integrate&lt;/code&gt; to move those posts back
+and generate a complete site.&lt;/p&gt;
+&lt;p&gt;The usage of &lt;code&gt;rake isolate&lt;/code&gt; is simple, you just provide the keywords, and those
+posts whose title contain these keywords are kept, other posts are moved to
+&lt;code&gt;source/_stash&lt;/code&gt;. Say I'm composing a post named
+&lt;code&gt;2013-04-07-hello-world.markdown&lt;/code&gt;, and assume this post is the only one that
+contains &lt;code&gt;hello&lt;/code&gt; in its title. Then the following command will do the job:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;rake isolate&lt;span class="o"&gt;[&lt;/span&gt;hello&lt;span class="o"&gt;]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;Use rb-gsl to boost lsi computation&lt;/h3&gt;
+&lt;p&gt;Jekyll has builtin support for related posts, so as Octopress. You just need to
+add this line to your &lt;code&gt;_config.yml&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;lsi&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="kc"&gt;true&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Once you enabled &lt;code&gt;lsi&lt;/code&gt;, you'll definite want to install &lt;code&gt;rb-gsl&lt;/code&gt; package to make
+the related post generation process faster. When Octopress remind you that:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;Notice&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="n"&gt;x&lt;/span&gt; &lt;span class="n"&gt;faster&lt;/span&gt; &lt;span class="n"&gt;LSI&lt;/span&gt; &lt;span class="n"&gt;support&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;please&lt;/span&gt; &lt;span class="n"&gt;install&lt;/span&gt; &lt;span class="n"&gt;http&lt;/span&gt;&lt;span class="o"&gt;://&lt;/span&gt;&lt;span class="n"&gt;rb&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;gsl&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;rubyforge&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;org&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;It's not kidding! &lt;/p&gt;
+&lt;p&gt;Note that Octopress doesn't work with the latest gsl versioned &lt;code&gt;1.15.*&lt;/code&gt;. You'll
+need to install gsl &lt;code&gt;1.14&lt;/code&gt; manually since &lt;code&gt;apt&lt;/code&gt; or &lt;code&gt;yum&lt;/code&gt; will probably install
+&lt;code&gt;1.15.*&lt;/code&gt; for you.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;wget http://ftp.gnu.org/gnu/gsl/gsl-1.14.tar.gz
+tar xvf gsl-1.14.tar.gz
+&lt;span class="nb"&gt;cd &lt;/span&gt;gsl-1.14
+./configure
+make
+sudo make install
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Check the installation by the &lt;code&gt;gsl-config&lt;/code&gt; command:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;gsl-config --version
+1.14
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then edit your &lt;code&gt;Gemfile&lt;/code&gt; in your blog source root. Add the following line in the
+&lt;code&gt;development&lt;/code&gt; group:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;gem &amp;#39;gsl&amp;#39;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then use &lt;code&gt;bundle&lt;/code&gt; to install it.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;bundle install
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;You're all set. Now when you do &lt;code&gt;rake generate&lt;/code&gt;, you shouldn't see that &lt;code&gt;10x
+faster&lt;/code&gt; line anymore.&lt;/p&gt;</summary><category term="generation"></category><category term="speedup"></category><category term="gsl"></category><category term="isolate"></category></entry><entry><title>Why I Switched to Octopress</title><link href="http://jhshi.me/2013/04/07/why-i-switched-to-octopress/index.html" rel="alternate"></link><updated>2013-04-07T16:01:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-04-07:2013/04/07/why-i-switched-to-octopress/index.html</id><summary type="html">&lt;p&gt;I used to blog on wordpress.com. After a year or so, I finally
+decided to abandoned it and switched to &lt;a href="http://octopress.org"&gt;Octopress&lt;/a&gt; + 
+&lt;a href="http://pages.github.com"&gt;Github Pages&lt;/a&gt;. 
+Here are the reasons and how I migrated to Octopress. Maybe because I was using 
+&lt;em&gt;wordpress.com&lt;/em&gt;, and those who use a self-hosted wordpress have something 
+different to say, the way I see it, wordpress, at least &lt;em&gt;wordpress.com&lt;/em&gt;, sucks.&lt;/p&gt;
+
+
+&lt;h3&gt;Use your favorite editor? No-no&lt;/h3&gt;
+&lt;p&gt;I am an Vim addict and I almost use Vim for everything (except for watching
+videos perhaps). It's extremely uncomfortable using the dumb text input frame
+embedded in web page. Besides, I often need to insert inlining code or code block 
+in blogs. For inline code, I have to use plain text mode and wrap them using the
+html &lt;code&gt;&amp;lt;code&amp;gt;&lt;/code&gt; tag manually. And for code blocks, I have to use the stupid,
+&lt;strong&gt;unportable&lt;/strong&gt; &lt;code&gt;[sourcecode]&lt;/code&gt; tag.&lt;/p&gt;
+&lt;p&gt;When I realized that awful experience even cool down my passion for blogging, I 
+know it's time to change.&lt;/p&gt;
+&lt;p&gt;With Octopress, I can use Vim to compose blogs locally. For formating, 
+&lt;a href="http://daringfireball.net/projects/markdown/"&gt;Markdown&lt;/a&gt; did a decent enough job. I'm more than happy with these.&lt;/p&gt;
+&lt;h3&gt;Page loading speed&lt;/h3&gt;
+&lt;p&gt;In Wordpress, everything is stored in database, and the page is generated
+dynamically when you request it. Despite those &lt;a href="http://codex.wordpress.org/WordPress_Optimization/Caching#Caching_Plugins"&gt;caching plugins&lt;/a&gt;, why
+bother dynamic anyway when static pages are just good enough?&lt;/p&gt;
+&lt;p&gt;Using &lt;a href="https://developers.google.com/speed/pagespeed/insights"&gt;Google's PageSpeed Insights&lt;/a&gt; for measurement, my old blog site
+hosted in &lt;em&gt;wordpress.com&lt;/em&gt; got 78 out of 100 score, while this blog got 91 out of 100. 
+Hooray!&lt;/p&gt;
+&lt;h3&gt;Migration&lt;/h3&gt;
+&lt;p&gt;Jekyll offers several ways to &lt;a href="https://github.com/mojombo/jekyll/wiki/blog-migrations"&gt;migrate your previous blogs&lt;/a&gt;. Octopress
+is based on Jekyll, so all these ways also apply. I found the &lt;a href="https://github.com/thomasf/exitwp"&gt;Exitwp&lt;/a&gt;
+tool extremely usefully for migrating wordpress blogs. One drawback of Exitwp is it can
+not handle non-ascii characters so a few of my previous blogs written in Chinese
+can not be migrated using it.&lt;/p&gt;</summary><category term="wordpress"></category><category term="migration"></category></entry></feed>

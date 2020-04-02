@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns# fb: https://www.facebook.com/2008/fbml">
+<head>
+    <title>OS161: Unknown syscall -1 - Pearls in Life</title>
+    <!-- Using the latest rendering mode for IE -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <link href="http://jhshi.me/images/favicon.ico" rel="icon">
+
+<link rel="canonical" href="http://jhshi.me/2014/03/06/os161-unknown-syscall-1/index.html">
+
+        <meta name="author" content="Jinghao Shi" />
+        <meta name="keywords" content="syscall" />
+        <meta name="description" content="When working on OS161 system calls, you&#39;ll probably see a bunch of this error, especially you haven&#39;t implemented _exit syscall and try to do some basic user programs, e.g., p /bin/true. Note, this problem has been fixed in OS/161 version 1.99.07." />
+
+            <meta property="fb:app_id" content="156751911645324"/>
+        <meta property="og:site_name" content="Pearls in Life" />
+        <meta property="og:type" content="article"/>
+        <meta property="og:title" content="OS161: Unknown syscall -1"/>
+        <meta property="og:url" content="http://jhshi.me/2014/03/06/os161-unknown-syscall-1/index.html"/>
+        <meta property="og:description" content="When working on OS161 system calls, you&#39;ll probably see a bunch of this error, especially you haven&#39;t implemented _exit syscall and try to do some basic user programs, e.g., p /bin/true. Note, this problem has been fixed in OS/161 version 1.99.07."/>
+        <meta property="article:published_time" content="2014-03-06" />
+            <meta property="article:section" content="os161" />
+            <meta property="article:tag" content="syscall" />
+            <meta property="article:author" content="Jinghao Shi" />
+
+
+    <!-- Bootstrap -->
+        <link rel="stylesheet" href="http://jhshi.me/theme/css/bootstrap.readable.min.css" type="text/css"/>
+    <link href="http://jhshi.me/theme/css/font-awesome.min.css" rel="stylesheet">
+
+    <link href="http://jhshi.me/theme/css/pygments/friendly.css" rel="stylesheet">
+    <link href="http://jhshi.me/theme/tipuesearch/tipuesearch.css" rel="stylesheet">
+    <link rel="stylesheet" href="http://jhshi.me/theme/css/style.css" type="text/css"/>
+
+        <link href="http://jhshi.me/feeds/all.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life ATOM Feed"/>
+
+
+
+        <link href="http://jhshi.me/feeds/os161.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life os161 ATOM Feed"/>
+
+</head>
+<body>
+
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({
+            appId      : "156751911645324",
+          xfbml      : true,
+          version    : 'v2.11'
+        });
+        FB.AppEvents.logPageView();
+      };
+
+      (function(d, s, id){
+         var js, fjs = d.getElementsByTagName(s)[0];
+         if (d.getElementById(id)) {return;}
+         js = d.createElement(s); js.id = id;
+         js.src = "https://connect.facebook.net/en_US/sdk.js";
+         fjs.parentNode.insertBefore(js, fjs);
+       }(document, 'script', 'facebook-jssdk'));
+    </script>
+
+<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+	<div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a href="http://jhshi.me/" class="navbar-brand">
+Pearls in Life            </a>
+        </div>
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav">
+                    <li><a href="/home">Home</a></li>
+                    <li><a href="/">Blog</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+              <li><span>
+                <form class="navbar-search" action="/search.html">
+                  <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input" required>
+                </form></span>
+              </li>
+              <li><a href="http://jhshi.me/blog/archives/index.html"><i class="fa fa-th-list"></i><span class="icon-label">Archives</span></a></li>
+            </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+</div> <!-- /.navbar -->
+<!-- Banner -->
+<!-- End Banner -->
+<div class="container">
+    <div class="row">
+        <div class="col-sm-9">
+    <section id="content">
+        <article>
+            <header class="page-header">
+                <h1>
+                    <a href="http://jhshi.me/2014/03/06/os161-unknown-syscall-1/index.html"
+                       rel="bookmark"
+                       title="Permalink to OS161: Unknown syscall -1">
+                        OS161: Unknown syscall -1
+                    </a>
+                </h1>
+            </header>
+            <div class="entry-content">
+                <div class="panel">
+                    <div class="panel-body">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2014-03-06T16:50:00-05:00"> Thu 06 March 2014</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/os161/index.html">os161</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/syscall/index.html">syscall</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                </div>
+                <p>When working on OS161 system calls, you'll probably see a bunch of this error,
+especially you haven't implemented <code>_exit</code> syscall and try to do some basic user
+programs, e.g., <code>p /bin/true</code>.</p>
+<p>Note, this problem has been fixed in OS/161 version 1.99.07.</p>
+
+
+<p>The code for <code>/bin/true</code> is as follows.</p>
+<div class="highlight"><pre><span class="kt">int</span>
+<span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="cm">/* Just exit with success. */</span>
+    <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>It does nothing but just exit with 0. Because at this point, you may don't
+have <code>exit</code> syscall implemented, so it'll fail, so you'll see one error message
+saying "Unknown syscall 3", in which 3 is just <code>SYS__exit</code>. Then what happens?
+Why are there a bunch of "Unknown syscall -1" following that?</p>
+<p>To understand this, you need to know about a bit of GCC optimization and also several
+<a href="http://www.mrc.uidaho.edu/mrc/people/jff/digital/MIPSir.html">MIPS instructions</a>, especially <code>jal</code> and <code>jr</code>.</p>
+<h3>MIPS Function Call and Return</h3>
+<p>Here is the MIPS assembly instruction that "calls" a function <code>foo</code>.</p>
+<div class="highlight"><pre>jal foo
+</pre></div>
+
+
+<p><code>jal</code> stands for "Jump And Link", it will first save <code>$epc+8</code> into register
+<code>$ra</code> (return address), and set <code>$epc</code> to whatever address <code>foo</code> are, to "jump"
+to that function.</p>
+<p>Now you may wonder why <code>$ra</code> is <code>$epc+8</code>, since a natural next instruction
+would be <code>$epc+4</code>. That's because <code>$epc+4</code> is in <code>jal</code>'s <a href="http://en.wikipedia.org/wiki/Delay_slot">delay slot</a>,
+which means the instruction will get executed <strong>before</strong> the <code>jal</code> instruction.
+So the real <strong>next</strong> instruction after the function call should be <code>$epc+8</code>.</p>
+<p>And when <code>foo</code> is done and about to return, it just does this:</p>
+<div class="highlight"><pre>jr ra
+</pre></div>
+
+
+<p><code>jr</code> stands for "Jump Register". It just set <code>$epc</code> to whatever value in that
+register. In this case, since <code>$ra</code> contains the value of return address, the
+<code>foo</code> functions "returns" to the next instruction after <code>jal</code> in callee.</p>
+<h3>GCC Optimization</h3>
+<p>As per the comments in <code>$OS161_SRC/user/lib/libc/stdlib/exit.c</code>, GCC is way too
+smart to know, without being explicitly told, that <code>exit</code> doesn't return. So it
+actually omit the <code>jr</code> instruction at the end of <code>exit</code>. That is, if <code>exit</code>
+<em>does</em> return, the CPU will continue to execute whatever the following
+instructions.</p>
+<h3>What really happened?</h3>
+<p>Here is the assembly code of <code>/bin/true</code>. You can obtain it by doing this in the
+<code>root</code> directory:</p>
+<div class="highlight"><pre><span class="nv">$ </span>os161-objdump -d bin/true &gt; true.S
+</pre></div>
+
+
+<div class="highlight"><pre>00400100 &lt;main&gt;:
+  400100:   27bdffe8    addiu   sp,sp,-24
+  400104:   afbf0010    sw  ra,16(sp)
+  400108:   0c10004d    jal 400134 &lt;exit&gt;
+  40010c:   00002021    move    a0,zero
+
+00400110 &lt;__exit_hack&gt;:
+  400110:   27bdfff8    addiu   sp,sp,-8
+  400114:   24020001    li  v0,1
+  400118:   afa20000    sw  v0,0(sp)
+  40011c:   8fa20000    lw  v0,0(sp)
+  400120:   00000000    nop
+  400124:   1440fffd    bnez    v0,40011c &lt;__exit_hack+0xc&gt;
+  400128:   00000000    nop
+  40012c:   03e00008    jr  ra
+  400130:   27bd0008    addiu   sp,sp,8
+
+00400134 &lt;exit&gt;:
+  400134:   27bdffe8    addiu   sp,sp,-24
+  400138:   afbf0010    sw  ra,16(sp)
+  40013c:   0c100063    jal 40018c &lt;_exit&gt;
+  400140:   00000000    nop
+    ...
+
+00400150 &lt;__syscall&gt;:
+  400150:   0000000c    syscall
+  400154:   10e00005    beqz    a3,40016c &lt;__syscall+0x1c&gt;
+  400158:   00000000    nop
+  40015c:   3c010044    lui at,0x44
+  400160:   ac220430    sw  v0,1072(at)
+  400164:   2403ffff    li  v1,-1
+  400168:   2402ffff    li  v0,-1
+  40016c:   03e00008    jr  ra
+  400170:   00000000    nop
+</pre></div>
+
+
+<p>So <code>main</code> calls <code>exit</code> (0x400108), <code>exit</code> calls <code>_exit</code> (0x40013c). <strong>Note that
+at this point, <code>$ra=$epc+8=0x400144</code></strong>. <code>_exit</code> fails (because we haven't
+implemented it yet), <code>$v0</code> is set to -1, and
+returns to <code>$ra</code>. The memory between 0x400140 and 0x400150 are filled by 0,
+which is <code>nop</code> instruction in MIPS. So the CPU get all the way down to the
+<code>__syscall</code> function at 0x400150, and execute the <code>syscall</code> instruction. At this
+point, the value of <code>$v0</code> is -1. That's why we see the first <code>Unknown syscall
+-1</code> error message.</p>
+<p>And after the syscall fails, the CPU will continue execution at 0x400154, and
+finally do <code>jr ra</code> (0x40016c). Since <code>$ra</code> is still 0x400144, the whole process
+repeats again. That's why you keep seeing <code>Unknown syscall -1</code> error.</p>
+<h3>How to fix?</h3>
+<p>The problem is, GCC assumes <code>exit</code> does not return, thus doesn't generate the
+<code>jr ra</code> instruction for <code>exit</code>. But before we implement <code>_exit</code> syscall, <code>exit</code>
+<em>does</em> return. Then we lose control and things get messy.</p>
+<p>Then how to fix this? Well, the easiest way to fix this is...implement <code>_exit</code>,
+of course. After all, that's what you suppose to do in ASST2 anyway.</p>
+<p>In terms of the problem itself, the latest version of OS/161 (1.99.07) has fixed
+this. Here is how:</p>
+<div class="highlight"><pre><span class="kt">void</span>
+<span class="nf">exit</span><span class="p">(</span><span class="kt">int</span> <span class="n">code</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="cm">/*</span>
+<span class="cm">     * In a more complicated libc, this would call functions registered</span>
+<span class="cm">     * with atexit() before calling the syscall to actually exit.</span>
+<span class="cm">     */</span>
+
+<span class="cp">#ifdef __mips__</span>
+    <span class="cm">/*</span>
+<span class="cm">     * Because gcc knows that _exit doesn&#39;t return, if we call it</span>
+<span class="cm">     * directly it will drop any code that follows it. This means</span>
+<span class="cm">     * that if _exit *does* return, as happens before it&#39;s</span>
+<span class="cm">     * implemented, undefined and usually weird behavior ensues.</span>
+<span class="cm">     *</span>
+<span class="cm">     * As a hack (this is quite gross) do the call by hand in an</span>
+<span class="cm">     * asm block. Then gcc doesn&#39;t know what it is, and won&#39;t</span>
+<span class="cm">     * optimize the following code out, and we can make sure</span>
+<span class="cm">     * that exit() at least really does not return.</span>
+<span class="cm">     *</span>
+<span class="cm">     * This asm block violates gcc&#39;s asm rules by destroying a</span>
+<span class="cm">     * register it doesn&#39;t declare ($4, which is a0) but this</span>
+<span class="cm">     * hopefully doesn&#39;t matter as the only local it can lose</span>
+<span class="cm">     * track of is &quot;code&quot; and we don&#39;t use it afterwards.</span>
+<span class="cm">     */</span>
+    <span class="kr">__asm</span> <span class="k">volatile</span><span class="p">(</span><span class="s">&quot;jal _exit;&quot;</span> <span class="cm">/* call _exit */</span>
+               <span class="s">&quot;move $4, %0&quot;</span>    <span class="cm">/* put code in a0 (delay slot) */</span>
+               <span class="o">:</span>        <span class="cm">/* no outputs */</span>
+               <span class="o">:</span> <span class="s">&quot;r&quot;</span> <span class="p">(</span><span class="n">code</span><span class="p">));</span>   <span class="cm">/* code is an input */</span>
+    <span class="cm">/*</span>
+<span class="cm">     * Ok, exiting doesn&#39;t work; see if we can get our process</span>
+<span class="cm">     * killed by making an illegal memory access. Use a magic</span>
+<span class="cm">     * number address so the symptoms are recognizable and</span>
+<span class="cm">     * unlikely to occur by accident otherwise.</span>
+<span class="cm">     */</span>
+    <span class="kr">__asm</span> <span class="k">volatile</span><span class="p">(</span><span class="s">&quot;li $2, 0xeeeee00f;&quot;</span> <span class="cm">/* load magic addr into v0 */</span>
+               <span class="s">&quot;lw $2, 0($2)&quot;</span>       <span class="cm">/* fetch from it */</span>
+               <span class="o">::</span> <span class="p">);</span>            <span class="cm">/* no args */</span>
+<span class="cp">#else</span>
+    <span class="n">_exit</span><span class="p">(</span><span class="n">code</span><span class="p">);</span>
+<span class="cp">#endif</span>
+    <span class="cm">/*</span>
+<span class="cm">     * We can&#39;t return; so if we can&#39;t exit, the only other choice</span>
+<span class="cm">     * is to loop.</span>
+<span class="cm">     */</span>
+    <span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span> <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>So if <code>_exit</code> returns for any reason, we just access an address we know is
+invalid, thus trigger an exception, and the kernel just panics.</p>
+            </div>
+            <!-- /.entry-content -->
+<section class="well" id="related-posts">
+    <h4>Related Posts:</h4>
+    <ul>
+        <li><a href="http://jhshi.me/2013/03/15/console-input-messed-up-in-os161/index.html">Console Input Messed up in OS161</a></li>
+        <li><a href="http://jhshi.me/2012/03/28/os161-arguments-passing-in-system-call/index.html">OS161: Arguments Passing in System Call</a></li>
+        <li><a href="http://jhshi.me/2012/03/21/os161-general-tips-for-system-call/index.html">OS161: General Tips for System Call</a></li>
+        <li><a href="http://jhshi.me/2012/03/21/os161-how-to-add-a-system-call/index.html">OS161: How to Add a System Call</a></li>
+        <li><a href="http://jhshi.me/2012/03/14/os161-file-operation-overview/index.html">OS161 File Operation Overview</a></li>
+    </ul>
+</section>
+<section class="well" id="related-posts">
+      <h4><a href=https://github.com/jhshi/blog_source/commits/master/content/2014-03-06-os161-unknown-syscall-1.markdown>Post History:</a></h4>
+
+      <b>Tuesday 11:09 PM, January 23 2018</b><br/><p>resume os161</p>
+      <b>Monday 11:20 AM, October 31 2016</b><br/><p>remove os161 related posts</p>
+      <b>Sunday 11:42 PM, October 11 2015</b><br/><p>fix summary end</p>
+      <b>Saturday 07:19 PM, October 10 2015</b><br/><p>fix category</p>
+      <b>Saturday 06:06 PM, October 10 2015</b><br/><p>working</p>
+</section>
+<div class="fb-like" 
+     data-href="http://jhshi.me/2014/03/06/os161-unknown-syscall-1/index.html"
+     data-layout="standard" 
+     data-action="like" 
+     data-show-faces="true">
+</div>
+
+
+<div class="fb-comments"
+     data-href="http://jhshi.me/2014/03/06/os161-unknown-syscall-1/index.html"
+     data-numposts="5"
+     data-order-by="reverse_time"
+     data-width="100%"
+    ></div>
+        </article>
+    </section>
+
+        </div>
+        <div class="col-sm-3" id="sidebar">
+            <aside>
+
+<section class="well well-sm">
+    <ul class="list-group list-group-flush">
+        <li class="list-group-item"><h4><i class="fa fa-eye"></i><span class="icon-label">0 Hits</span></h4>
+    <li class="list-group-item"><h4><i class="fa fa-fire fa-lg"></i><span class="icon-label">Popular Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Recent Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/categories/index.html"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Categories</span></h4></a>
+        <ul class="list-group" id="categories">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/os161/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> os161 [27]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/linux/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> linux [24]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/android/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> android [20]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/errors/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> errors [14]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/network/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> network [11]
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/tags/index.html"><h4><i class="fa fa-tags fa-lg"></i><span class="icon-label">Tags</span></h4></a>
+        <ul class="list-group list-inline tagcloud" id="tags">
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/aosp/index.html">
+                    AOSP
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/backup/index.html">
+                    backup
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/beamer/index.html">
+                    beamer
+                </a>
+            </li>
+            <li class="list-group-item tag-7">
+                <a href="http://jhshi.me/blog/tag/blog/index.html">
+                    blog
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/c/index.html">
+                    c
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/gdb/index.html">
+                    gdb
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/hammerhead/index.html">
+                    hammerhead
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/jekyll/index.html">
+                    jekyll
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/mac/index.html">
+                    mac
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ns2/index.html">
+                    ns2
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ota/index.html">
+                    OTA
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/plugin/index.html">
+                    plugin
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/python/index.html">
+                    python
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ruby/index.html">
+                    ruby
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ssh/index.html">
+                    ssh
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/synchronization/index.html">
+                    synchronization
+                </a>
+            </li>
+            <li class="list-group-item tag-1">
+                <a href="http://jhshi.me/blog/tag/syscall/index.html">
+                    syscall
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/travis/index.html">
+                    travis
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ubuntu/index.html">
+                    ubuntu
+                </a>
+            </li>
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/vm/index.html">
+                    vm
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Social</span></h4>
+      <ul class="list-group" id="social">
+        <li class="list-group-item"><a href="https://github.com/jhshi"><i class="fa fa-github-square fa-lg"></i> github</a></li>
+        <li class="list-group-item"><a href="http://stackoverflow.com/users/963538/jinghao-shi"><i class="fa fa-stack-overflow fa-lg"></i> stack-overflow</a></li>
+      </ul>
+    </li>
+
+    <li class="list-group-item"><h4><i class="fa fa-github fa-lg"></i><span class="icon-label">GitHub Repos</span></h4>
+        <div id="gh_repos">
+            <p class="list-group-item">Status updating...</p>
+        </div>
+            <a href="https://github.com/jhshi">@jhshi</a> on GitHub
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-external-link-square fa-lg"></i><span class="icon-label">Links</span></h4>
+      <ul class="list-group" id="links">
+        <li class="list-group-item">
+            <a href="http://blue.cse.buffalo.edu" target="_blank">
+                blue Systems Group
+            </a>
+        </li>
+        <li class="list-group-item">
+            <a href="http://www.buffalo.edu" target="_blank">
+                University at Buffalo
+            </a>
+        </li>
+      </ul>
+    </li>
+    </ul>
+</section>            </aside>
+        </div>
+    </div>
+</div>
+<footer>
+   <div class="container">
+      <hr>
+      <div class="row">
+         <div class="col-xs-10">&copy; 2018 Jinghao Shi
+            &middot;
+            Updated on 2020-04-02
+            &middot; Powered by <a href="https://github.com/jhshi/pelican-bootstrap3" target="_blank">pelican-bootstrap3</a>,
+            <a href="http://docs.getpelican.com/" target="_blank">Pelican</a>,
+            <a href="http://getbootstrap.com" target="_blank">Bootstrap</a>         </div>
+         <div class="col-xs-2"><p class="pull-right"><i class="fa fa-arrow-up"></i> <a href="#">Back to top</a></p></div>
+      </div>
+   </div>
+</footer>
+<script src="http://jhshi.me/theme/js/jquery.min.js"></script>
+
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="http://jhshi.me/theme/js/bootstrap.min.js"></script>
+
+<!-- Enable responsive features in IE8 with Respond.js (https://github.com/scottjehl/Respond) -->
+<script src="http://jhshi.me/theme/js/respond.min.js"></script>
+
+    <!-- GitHub JS -->
+    <script type="text/javascript">
+        $(document).ready(function () {
+            if (!window.jXHR) {
+                var jxhr = document.createElement('script');
+                jxhr.type = 'text/javascript';
+                jxhr.src = 'http://jhshi.me/theme/js/jXHR.js';
+                var s = document.getElementsByTagName('script')[0];
+                s.parentNode.insertBefore(jxhr, s);
+            }
+
+            github.showRepos({
+                user: 'jhshi',
+                count: 5,
+                skip_forks: true,
+                target: '#gh_repos'
+            });
+        });
+    </script>
+    <script src="http://jhshi.me/theme/js/github.js" type="text/javascript"></script>
+    <!-- End GitHub JS Code -->
+    <!-- Google Analytics -->
+    <script type="text/javascript">
+
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-39842003-1']);
+        _gaq.push(['_trackPageview']);
+
+        (function () {
+            var ga = document.createElement('script');
+            ga.type = 'text/javascript';
+            ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+    <!-- End Google Analytics Code -->
+
+        <script type="text/javascript">var addthis_config = {"data_track_addressbar": true};</script>
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5a6b8e0310bbbd35"></script>
+</body>
+</html>

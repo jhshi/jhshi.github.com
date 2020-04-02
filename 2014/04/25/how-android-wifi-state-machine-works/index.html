@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns# fb: https://www.facebook.com/2008/fbml">
+<head>
+    <title>How Android Wifi State Machine Works - Pearls in Life</title>
+    <!-- Using the latest rendering mode for IE -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <link href="http://jhshi.me/images/favicon.ico" rel="icon">
+
+<link rel="canonical" href="http://jhshi.me/2014/04/25/how-android-wifi-state-machine-works/index.html">
+
+        <meta name="author" content="Jinghao Shi" />
+        <meta name="keywords" content="android,wifi,state machine,wpa_supplicant" />
+        <meta name="description" content="Recently, I studied how Android Wi-Fi subsystem works. I was more specifically interested to learn the scan behavior. The source code related to this is mainly in framework/base/wifi/java/android/net/wifi/ within AOSP source tree." />
+
+            <meta property="fb:app_id" content="156751911645324"/>
+        <meta property="og:site_name" content="Pearls in Life" />
+        <meta property="og:type" content="article"/>
+        <meta property="og:title" content="How Android Wifi State Machine Works"/>
+        <meta property="og:url" content="http://jhshi.me/2014/04/25/how-android-wifi-state-machine-works/index.html"/>
+        <meta property="og:description" content="Recently, I studied how Android Wi-Fi subsystem works. I was more specifically interested to learn the scan behavior. The source code related to this is mainly in framework/base/wifi/java/android/net/wifi/ within AOSP source tree."/>
+        <meta property="article:published_time" content="2014-04-25" />
+            <meta property="article:section" content="research" />
+            <meta property="article:tag" content="android" />
+            <meta property="article:tag" content="wifi" />
+            <meta property="article:tag" content="state machine" />
+            <meta property="article:tag" content="wpa_supplicant" />
+            <meta property="article:author" content="Jinghao Shi" />
+
+
+    <!-- Bootstrap -->
+        <link rel="stylesheet" href="http://jhshi.me/theme/css/bootstrap.readable.min.css" type="text/css"/>
+    <link href="http://jhshi.me/theme/css/font-awesome.min.css" rel="stylesheet">
+
+    <link href="http://jhshi.me/theme/css/pygments/friendly.css" rel="stylesheet">
+    <link href="http://jhshi.me/theme/tipuesearch/tipuesearch.css" rel="stylesheet">
+    <link rel="stylesheet" href="http://jhshi.me/theme/css/style.css" type="text/css"/>
+
+        <link href="http://jhshi.me/feeds/all.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life ATOM Feed"/>
+
+
+
+        <link href="http://jhshi.me/feeds/research.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life research ATOM Feed"/>
+
+</head>
+<body>
+
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({
+            appId      : "156751911645324",
+          xfbml      : true,
+          version    : 'v2.11'
+        });
+        FB.AppEvents.logPageView();
+      };
+
+      (function(d, s, id){
+         var js, fjs = d.getElementsByTagName(s)[0];
+         if (d.getElementById(id)) {return;}
+         js = d.createElement(s); js.id = id;
+         js.src = "https://connect.facebook.net/en_US/sdk.js";
+         fjs.parentNode.insertBefore(js, fjs);
+       }(document, 'script', 'facebook-jssdk'));
+    </script>
+
+<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+	<div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a href="http://jhshi.me/" class="navbar-brand">
+Pearls in Life            </a>
+        </div>
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav">
+                    <li><a href="/home">Home</a></li>
+                    <li><a href="/">Blog</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+              <li><span>
+                <form class="navbar-search" action="/search.html">
+                  <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input" required>
+                </form></span>
+              </li>
+              <li><a href="http://jhshi.me/blog/archives/index.html"><i class="fa fa-th-list"></i><span class="icon-label">Archives</span></a></li>
+            </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+</div> <!-- /.navbar -->
+<!-- Banner -->
+<!-- End Banner -->
+<div class="container">
+    <div class="row">
+        <div class="col-sm-9">
+    <section id="content">
+        <article>
+            <header class="page-header">
+                <h1>
+                    <a href="http://jhshi.me/2014/04/25/how-android-wifi-state-machine-works/index.html"
+                       rel="bookmark"
+                       title="Permalink to How Android Wifi State Machine Works">
+                        How Android Wifi State Machine Works
+                    </a>
+                </h1>
+            </header>
+            <div class="entry-content">
+                <div class="panel">
+                    <div class="panel-body">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2014-04-25T10:39:00-04:00"> Fri 25 April 2014</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/research/index.html">research</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/android/index.html">android</a>
+        /
+	<a href="http://jhshi.me/blog/tag/wifi/index.html">wifi</a>
+        /
+	<a href="http://jhshi.me/blog/tag/state-machine/index.html">state machine</a>
+        /
+	<a href="http://jhshi.me/blog/tag/wpa_supplicant/index.html">wpa_supplicant</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                </div>
+                <p>Recently, I studied how Android Wi-Fi subsystem works. I was more specifically
+interested to learn the scan behavior. The source code related to this is mainly
+in <code>framework/base/wifi/java/android/net/wifi/</code> within AOSP source tree.</p>
+
+
+<h3>The Big Picture</h3>
+<p><img src="/images/android_wifi.png" class="center"></p>
+<p>Android uses a customized wpa_supplicant to perform AP authentication and
+association, and also communicate with underlying driver. The <code>WifiNative</code> class
+is used to send various commands to wpa_supplicant ,and the <code>WifiMonitor</code> class
+is used to monitor wpa_supplicant status change and notify Android framework.</p>
+<p>wpa_supplicant communicates with underlying driver using new
+<a href="http://wireless.kernel.org/en/developers/Documentation/cfg80211">CFG80211/NL80211</a> interface.</p>
+<h3>Basics of Hierarchical State Machine</h3>
+<p>Android framework uses a Hierarchical State Machine (HSM) to maintain the
+different states of Wi-Fi connection. As the name indicates, all states are
+organized in a tree, and there is one special initial state. The interface of
+each state is as follows:</p>
+<ul>
+<li><code>enter()</code>: called when entering this state.</li>
+<li><code>exit()</code>: called when exiting this state.</li>
+<li><code>processMessage()</code>: called when message arrives.</li>
+</ul>
+<p>The most import property of HSM is that when transitioning between states, we
+first found the common ancestor state that's closest to current state, the we
+exit from current state and all its ancestor state <strong>up to but not include</strong> the
+closest common ancestor, then enter all of the new states below the closet
+common ancestor down to the new state. </p>
+<p>Here is a simple example HSM. </p>
+<p><img src="/images/hsm_example.png" class="center"></p>
+<p><code>S4</code> is the initial state. When we first start the HSM, <code>S0.enter()</code>,
+<code>S1.enter()</code> and <code>S4.enter()</code> will be called in sequence. Suppose we want to
+transit from <code>S0</code> to <code>S7</code>, since the closet common ancestor is <code>S0</code>, <code>S4.exit()</code>
+<code>S1.exit()</code>, <code>S2.enter()</code>, <code>S5.enter()</code> and <code>S7.enter()</code> will be called in
+sequence.</p>
+<p>More details about HSM can be found in the comments of
+<code>frameworks/base/core/java/com/android/internal/util/StateMachin.java</code>.</p>
+<h3>Wifi State Machine</h3>
+<p>Here is a subset of the whole Android Wifi HSM, states about P2P connections are
+omitted.</p>
+<p><img src="/images/android_wifi_hsm.png" class="center"></p>
+<p>So in Initial state's <code>enter()</code> function, we check if the driver is loaded, and
+transit to Driver Loaded state if yes. Then we start wpa_supplicant and transit</p>
+<p>When we receive <code>SUP_CONNECTED_EVENT</code>, we switch to Driver Started state. <strong>But
+before that, we need to first enter Supplicant Started state first.</strong> In the
+<code>enter()</code> function of Supplicant Started state, we set the supplicant scan
+interval, which,  by default, is 15 seconds defined in
+<code>frameworks/base/core/res/res/values/config.xml</code> as
+<code>config_wifi_supplicant_scan_interval</code>. So the first fact of Android scan
+behavior is that <strong>it'll do scan every 15 seconds as long as the wpa_supplicant
+is started, no matter what the Wi-Fi condition is.</strong></p>
+<p>Then we come to Driver Started State, if we're not in scan mode, then we switch
+to Disconnected Mode state. Scan mode means that Wi-Fi will be kept active, but
+the only operation that will be supported is initiation of scans, and the
+subsequent reporting of scan results. No attempts will be made to automatically
+connect to remembered access points, nor will periodic scans be automatically
+performed looking for remembered access points.</p>
+<p>In Disconnected Mode state's <code>enter()</code> function, if the chipset does not support
+background scan, then we enable framework periodic scan. The default interval is
+300 seconds (5 mins), defined in <code>framworks/base/core/res/res/values/config.xml</code>
+as <code>config_wifi_framework_scan_interval</code>. So the second behavior of Android scan
+is that, <strong>in disconnected mode, it'll issue scan every 5 mins.</strong></p>
+<p>Then if received <code>NETWORK_CONNECTION_EVENT</code> event from <code>WifiMonitor</code>, we switch
+to Obtaining IP state, which will initiate the DHCP process if needed. Then we
+go through Veifying Link and Captive Portal Check state, and finally reach
+Connected state.</p>
+<p><code>WifiWatchdogStateMachine</code> will continuously monitor the link quality and packet
+loss event, and will send out <code>POOR_LINK_DETECTED</code> or <code>GOOD_LINK_DETECTED</code>
+event.</p>
+<h3>Android Scan Interval</h3>
+<p>Here is the statistics of scan interval distribution collected on 129 Nexus S
+phones for about 5 months.</p>
+<p><img src="/images/scan_interval_stats.png" class="center"></p>
+<p>We can see that there are 4 peaks in the distribution. The peak around 15
+seconds is due to wpa_supplicant scan interval, and the peak around 300 is due
+to framework periodic scan. The peak around 60 seconds is not much clear yet,
+probably due to the scan interval when P2P is connected.</p>
+<p>The interesting fact is actually the peak within 2 seconds. It seems most of the
+scan results are clustered together in a small time windows (1~2 seconds).  This
+is because when the driver is scanning, it'll report every time it detects one
+AP. So in one scan, multiple scan result event will be triggered. And every time
+when there is a low level scan result event, Android will report the complete
+updated scan result list.</p>
+            </div>
+            <!-- /.entry-content -->
+<section class="well" id="related-posts">
+    <h4>Related Posts:</h4>
+    <ul>
+        <li><a href="http://jhshi.me/2014/03/21/switch-channel-without-breaking-tcp-connection-in-openwrt/index.html">Switch Channel Without Breaking TCP Connection in OpenWrt</a></li>
+    </ul>
+</section>
+<section class="well" id="related-posts">
+      <h4><a href=https://github.com/jhshi/blog_source/commits/master/content/2014-04-25-how-android-wifi-state-machine-works.markdown>Post History:</a></h4>
+
+      <b>Sunday 11:42 PM, October 11 2015</b><br/><p>fix summary end</p>
+      <b>Saturday 07:19 PM, October 10 2015</b><br/><p>fix category</p>
+      <b>Saturday 06:06 PM, October 10 2015</b><br/><p>working</p>
+</section>
+<div class="fb-like" 
+     data-href="http://jhshi.me/2014/04/25/how-android-wifi-state-machine-works/index.html"
+     data-layout="standard" 
+     data-action="like" 
+     data-show-faces="true">
+</div>
+
+
+<div class="fb-comments"
+     data-href="http://jhshi.me/2014/04/25/how-android-wifi-state-machine-works/index.html"
+     data-numposts="5"
+     data-order-by="reverse_time"
+     data-width="100%"
+    ></div>
+        </article>
+    </section>
+
+        </div>
+        <div class="col-sm-3" id="sidebar">
+            <aside>
+
+<section class="well well-sm">
+    <ul class="list-group list-group-flush">
+        <li class="list-group-item"><h4><i class="fa fa-eye"></i><span class="icon-label">0 Hits</span></h4>
+    <li class="list-group-item"><h4><i class="fa fa-fire fa-lg"></i><span class="icon-label">Popular Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Recent Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/categories/index.html"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Categories</span></h4></a>
+        <ul class="list-group" id="categories">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/os161/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> os161 [27]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/linux/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> linux [24]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/android/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> android [20]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/errors/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> errors [14]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/network/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> network [11]
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/tags/index.html"><h4><i class="fa fa-tags fa-lg"></i><span class="icon-label">Tags</span></h4></a>
+        <ul class="list-group list-inline tagcloud" id="tags">
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/aosp/index.html">
+                    AOSP
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/backup/index.html">
+                    backup
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/beamer/index.html">
+                    beamer
+                </a>
+            </li>
+            <li class="list-group-item tag-7">
+                <a href="http://jhshi.me/blog/tag/blog/index.html">
+                    blog
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/c/index.html">
+                    c
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/gdb/index.html">
+                    gdb
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/hammerhead/index.html">
+                    hammerhead
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/jekyll/index.html">
+                    jekyll
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/mac/index.html">
+                    mac
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ns2/index.html">
+                    ns2
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ota/index.html">
+                    OTA
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/plugin/index.html">
+                    plugin
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/python/index.html">
+                    python
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ruby/index.html">
+                    ruby
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ssh/index.html">
+                    ssh
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/synchronization/index.html">
+                    synchronization
+                </a>
+            </li>
+            <li class="list-group-item tag-1">
+                <a href="http://jhshi.me/blog/tag/syscall/index.html">
+                    syscall
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/travis/index.html">
+                    travis
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ubuntu/index.html">
+                    ubuntu
+                </a>
+            </li>
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/vm/index.html">
+                    vm
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Social</span></h4>
+      <ul class="list-group" id="social">
+        <li class="list-group-item"><a href="https://github.com/jhshi"><i class="fa fa-github-square fa-lg"></i> github</a></li>
+        <li class="list-group-item"><a href="http://stackoverflow.com/users/963538/jinghao-shi"><i class="fa fa-stack-overflow fa-lg"></i> stack-overflow</a></li>
+      </ul>
+    </li>
+
+    <li class="list-group-item"><h4><i class="fa fa-github fa-lg"></i><span class="icon-label">GitHub Repos</span></h4>
+        <div id="gh_repos">
+            <p class="list-group-item">Status updating...</p>
+        </div>
+            <a href="https://github.com/jhshi">@jhshi</a> on GitHub
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-external-link-square fa-lg"></i><span class="icon-label">Links</span></h4>
+      <ul class="list-group" id="links">
+        <li class="list-group-item">
+            <a href="http://blue.cse.buffalo.edu" target="_blank">
+                blue Systems Group
+            </a>
+        </li>
+        <li class="list-group-item">
+            <a href="http://www.buffalo.edu" target="_blank">
+                University at Buffalo
+            </a>
+        </li>
+      </ul>
+    </li>
+    </ul>
+</section>            </aside>
+        </div>
+    </div>
+</div>
+<footer>
+   <div class="container">
+      <hr>
+      <div class="row">
+         <div class="col-xs-10">&copy; 2018 Jinghao Shi
+            &middot;
+            Updated on 2020-04-02
+            &middot; Powered by <a href="https://github.com/jhshi/pelican-bootstrap3" target="_blank">pelican-bootstrap3</a>,
+            <a href="http://docs.getpelican.com/" target="_blank">Pelican</a>,
+            <a href="http://getbootstrap.com" target="_blank">Bootstrap</a>         </div>
+         <div class="col-xs-2"><p class="pull-right"><i class="fa fa-arrow-up"></i> <a href="#">Back to top</a></p></div>
+      </div>
+   </div>
+</footer>
+<script src="http://jhshi.me/theme/js/jquery.min.js"></script>
+
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="http://jhshi.me/theme/js/bootstrap.min.js"></script>
+
+<!-- Enable responsive features in IE8 with Respond.js (https://github.com/scottjehl/Respond) -->
+<script src="http://jhshi.me/theme/js/respond.min.js"></script>
+
+    <!-- GitHub JS -->
+    <script type="text/javascript">
+        $(document).ready(function () {
+            if (!window.jXHR) {
+                var jxhr = document.createElement('script');
+                jxhr.type = 'text/javascript';
+                jxhr.src = 'http://jhshi.me/theme/js/jXHR.js';
+                var s = document.getElementsByTagName('script')[0];
+                s.parentNode.insertBefore(jxhr, s);
+            }
+
+            github.showRepos({
+                user: 'jhshi',
+                count: 5,
+                skip_forks: true,
+                target: '#gh_repos'
+            });
+        });
+    </script>
+    <script src="http://jhshi.me/theme/js/github.js" type="text/javascript"></script>
+    <!-- End GitHub JS Code -->
+    <!-- Google Analytics -->
+    <script type="text/javascript">
+
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-39842003-1']);
+        _gaq.push(['_trackPageview']);
+
+        (function () {
+            var ga = document.createElement('script');
+            ga.type = 'text/javascript';
+            ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+    <!-- End Google Analytics Code -->
+
+        <script type="text/javascript">var addthis_config = {"data_track_addressbar": true};</script>
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5a6b8e0310bbbd35"></script>
+</body>
+</html>

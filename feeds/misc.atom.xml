@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Pearls in Life</title><link href="http://jhshi.me/" rel="alternate"></link><link href="http://jhshi.me/feeds/misc.atom.xml" rel="self"></link><id>http://jhshi.me/</id><updated>2016-08-14T03:11:58-04:00</updated><entry><title>Disable "New sign-in from" Email from Google</title><link href="http://jhshi.me/2016/08/14/disable-new-sign-in-from-email-from-google/index.html" rel="alternate"></link><updated>2016-08-14T03:11:58-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-08-14:2016/08/14/disable-new-sign-in-from-email-from-google/index.html</id><summary type="html">&lt;p&gt;I have a Gmail account for Android ROM testing purpose. And I kept receiving
+this annoying email from Google anytime I use that account to sign in Gmail
+(most of the time it's a clean flashed Android phone which I will wipe out
+later). Here is how to disable the email notification.&lt;/p&gt;
+
+&lt;p&gt;Login to Gmail using the account which you wish to stop receiving notifications.
+At the very bottom right of Inbox page, you will see this:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;Last account activity: 0 minutes ago
+Details
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Click on &amp;quot;Details&amp;quot;, then at the bottom of the pop up window:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;Alert preference: Show an alert for unusual activity. change
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;p&gt;Click &amp;quot;change&amp;quot; and then choose &amp;quot;Never show an alert for unusual activity&amp;quot;. Then
+&amp;quot;Apply&amp;quot;, then &amp;quot;Disable alerts&amp;quot;.&lt;/p&gt;
+&lt;p&gt;Thanks to:&lt;/p&gt;
+&lt;p&gt;&lt;a class="reference external" href="https://webapps.stackexchange.com/questions/85727/make-google-stop-sending-new-sign-in-from-emails/86432#86432"&gt;https://webapps.stackexchange.com/questions/85727/make-google-stop-sending-new-sign-in-from-emails/86432#86432&lt;/a&gt;?s=77a2ae5697034627aab8f8eb0388f4ce&lt;/p&gt;
+</summary><category term="Google"></category><category term="Email"></category></entry></feed>

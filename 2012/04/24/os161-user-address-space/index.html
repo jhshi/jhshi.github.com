@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns# fb: https://www.facebook.com/2008/fbml">
+<head>
+    <title>OS161 User Address Space - Pearls in Life</title>
+    <!-- Using the latest rendering mode for IE -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <link href="http://jhshi.me/images/favicon.ico" rel="icon">
+
+<link rel="canonical" href="http://jhshi.me/2012/04/24/os161-user-address-space/index.html">
+
+        <meta name="author" content="Jinghao Shi" />
+        <meta name="keywords" content="addrspace,vm,page table" />
+        <meta name="description" content="Now we&#39;ve set up our coremap and also have the routines to allocate and free physical pages. It&#39;s the time to set up user&#39;s virtual address space. Basically, we&#39;ll adopt two-level page table. If you&#39;re not already familiar with this, you can check out the page table wiki and this document talking about MIPS and X86 paging." />
+
+            <meta property="fb:app_id" content="156751911645324"/>
+        <meta property="og:site_name" content="Pearls in Life" />
+        <meta property="og:type" content="article"/>
+        <meta property="og:title" content="OS161 User Address Space"/>
+        <meta property="og:url" content="http://jhshi.me/2012/04/24/os161-user-address-space/index.html"/>
+        <meta property="og:description" content="Now we&#39;ve set up our coremap and also have the routines to allocate and free physical pages. It&#39;s the time to set up user&#39;s virtual address space. Basically, we&#39;ll adopt two-level page table. If you&#39;re not already familiar with this, you can check out the page table wiki and this document talking about MIPS and X86 paging."/>
+        <meta property="article:published_time" content="2012-04-24" />
+            <meta property="article:section" content="os161" />
+            <meta property="article:tag" content="addrspace" />
+            <meta property="article:tag" content="vm" />
+            <meta property="article:tag" content="page table" />
+            <meta property="article:author" content="Jinghao Shi" />
+
+
+    <!-- Bootstrap -->
+        <link rel="stylesheet" href="http://jhshi.me/theme/css/bootstrap.readable.min.css" type="text/css"/>
+    <link href="http://jhshi.me/theme/css/font-awesome.min.css" rel="stylesheet">
+
+    <link href="http://jhshi.me/theme/css/pygments/friendly.css" rel="stylesheet">
+    <link href="http://jhshi.me/theme/tipuesearch/tipuesearch.css" rel="stylesheet">
+    <link rel="stylesheet" href="http://jhshi.me/theme/css/style.css" type="text/css"/>
+
+        <link href="http://jhshi.me/feeds/all.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life ATOM Feed"/>
+
+
+
+        <link href="http://jhshi.me/feeds/os161.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Pearls in Life os161 ATOM Feed"/>
+
+</head>
+<body>
+
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({
+            appId      : "156751911645324",
+          xfbml      : true,
+          version    : 'v2.11'
+        });
+        FB.AppEvents.logPageView();
+      };
+
+      (function(d, s, id){
+         var js, fjs = d.getElementsByTagName(s)[0];
+         if (d.getElementById(id)) {return;}
+         js = d.createElement(s); js.id = id;
+         js.src = "https://connect.facebook.net/en_US/sdk.js";
+         fjs.parentNode.insertBefore(js, fjs);
+       }(document, 'script', 'facebook-jssdk'));
+    </script>
+
+<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+	<div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a href="http://jhshi.me/" class="navbar-brand">
+Pearls in Life            </a>
+        </div>
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav">
+                    <li><a href="/home">Home</a></li>
+                    <li><a href="/">Blog</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+              <li><span>
+                <form class="navbar-search" action="/search.html">
+                  <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input" required>
+                </form></span>
+              </li>
+              <li><a href="http://jhshi.me/blog/archives/index.html"><i class="fa fa-th-list"></i><span class="icon-label">Archives</span></a></li>
+            </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+</div> <!-- /.navbar -->
+<!-- Banner -->
+<!-- End Banner -->
+<div class="container">
+    <div class="row">
+        <div class="col-sm-9">
+    <section id="content">
+        <article>
+            <header class="page-header">
+                <h1>
+                    <a href="http://jhshi.me/2012/04/24/os161-user-address-space/index.html"
+                       rel="bookmark"
+                       title="Permalink to OS161 User Address Space">
+                        OS161 User Address Space
+                    </a>
+                </h1>
+            </header>
+            <div class="entry-content">
+                <div class="panel">
+                    <div class="panel-body">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2012-04-24T23:14:14-04:00"> Tue 24 April 2012</time>
+    </span>
+
+
+
+        <span class="label label-default">Category</span>
+        <a href="http://jhshi.me/blog/category/os161/index.html">os161</a>
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://jhshi.me/blog/tag/addrspace/index.html">addrspace</a>
+        /
+	<a href="http://jhshi.me/blog/tag/vm/index.html">vm</a>
+        /
+	<a href="http://jhshi.me/blog/tag/page-table/index.html">page table</a>
+    
+</footer><!-- /.post-info -->                    </div>
+                </div>
+                <p>Now we've set up our coremap and also have the routines to allocate and free
+physical pages. It's the time to set up user's virtual address space.</p>
+<p>Basically, we'll adopt <em>two-level page table</em>. If you're not
+already familiar with this, you can check out the <a href="http://en.wikipedia.org/wiki/Page_table">page table wiki</a> 
+and <a href="http://pages.cs.wisc.edu/~remzi/OSFEP/vm-tlbs.pdf">this document talking about MIPS and X86 paging</a>.</p>
+
+
+<p>The page table entry format will be much alike those in X86. For a page
+directory entry, the upper 20 bits indicates the base physical address of the
+page table, and <em>we use one bit in the lower 12 bits to indicate whether this
+page table exist or not</em>. For a page table entry, the upper 20 bits stores
+the base physical address of the actual page, while the lower 12 bits contain
+some attribute of this page, e.g., readable, writable, executable, etc. You are
+free to define all these (format of page directory and page table entry)
+though, since the addressing process are totally done by software in MIPS, but
+following the conventions is still better for compatibility as well as easy
+programming.</p>
+<h3>What to store in the <code>addrspace</code> structure?</h3>
+<p><em>An address space is actually just a page directory</em>: we can use this
+directory and page table to translate all the addresses inside the address
+space. And we also need to keep some other information like user heap start,
+user heap end, etc. But that's all, and no more.</p>
+<p>So in <code>as_create</code>, we just allocate a <code>addrspace</code> structure using <code>kmalloc</code>,
+and allocate a physical page (using <code>page_alloc</code>) as page directory and store
+it's address (either <code>KVADDR</code> or <code>PADDR</code> is OK, but you can just choose one).</p>
+<p>Besides, we need to record somewhere in the <code>addrspace</code> structure the valid
+regions user defined using <code>as_define_region</code>, since we're going to need that
+information during page fault handing to check whether the faulted address is
+valid or not.</p>
+<h3>Address Translating with <code>pgdir_walk</code></h3>
+<p><em>This is another most important and core function in this lab.</em> Basically,
+given an address space and virtual address, we want to find the corresponding
+physical address. This is what <code>pgdir_walk</code> does. We first extract the page
+directory index (top 10 bits) from the <code>va</code> and use it to index the page
+directory, thus we get the base physical address of the page table. Then we
+extract the page table index (middle 10 bits) from <code>va</code> and use it to index the
+page directory, thus we get the base physical address of the actual page.</p>
+<p>Several points to note:</p>
+<ul>
+<li>
+<p>Instead of return the physical address, <em>you may want to return the page
+table entry pointer</em> instead. Since in most cases, we use <code>pgdir_walk</code> to get
+page table entries and modify it</p>
+</li>
+<li>
+<p>We'll also need to pass <code>pgdir_walk</code> a flag, indicating that whether we want
+to create a page table if non-exist (remember the <em>present bit</em> of page
+directory entry?). Since sometimes, we want to make sure that a <code>va</code> is mapped to
+a physical page when calling <code>pgdir_walk</code>. But most of the time, we just want to
+query if a <code>va</code> is mapped.</p>
+</li>
+<li>
+<p>Think clearly about which is physical address, and which is virtual
+address. Page directory entry and page table entry should store the physical
+address base. You'll need a lot <code>PADDR_TO_KVADDR</code> here.</p>
+</li>
+</ul>
+<h3>Copy address space using <code>as_copy</code></h3>
+<p>This part is easy if you decide not support Copy-On-Write pages. Basically, you
+just <code>pgdir_walk</code> old address space's page table, and copy all the present pages.
+Only one point, don't forget to <em>copy all the attribute bits (low 12 bits) of
+the old page table entry</em>.</p>
+<p>You'll get some extra work when you enable swapping: you need to copy all the
+swapped pages beside present pages as well.</p>
+<h4>Destroy address space with <code>as_destroy</code></h4>
+<p>Same easy as <code>as_copy</code>, just <code>pgdir_walk</code> the page table and free all the present
+pages. Also same with <code>as_copy</code>, you need to free the swapped pages latter</p>
+<h3>Define regions using <code>as_define_region</code></h3>
+<p>Since we'll do <em>on-demand paging</em>, so we won't allocate any pages in
+<code>as_define_region</code> Instead, we just walk through the
+page table, and set the attribute bits accordingly. One point, remember the
+<code>heap_start</code> and <code>heap_end</code> field in <code>struct addrspace</code>? Question: <em>where should
+user heap start? Immediately after user bss segment!</em> And how would we know the
+end of user bss segment? In <code>as_define_region</code>! So each time in <code>as_define_region</code>,
+we just compare addrspace's current hew<code>and the region end, and set
+the</code>heap_start<code>right after (</code>vaddr+sz<code>). Don't forget to _proper align the</code>heap_start`(by page bound)_, of course.</p>
+<p>This should also be the place we record each region information (e.g., base,
+size, permission, etc) so that we can check them in <code>vm_fault</code>.</p>
+<p><img src="/images/2012-04-24-mips-as1.png" class="center"></p>
+<h3>Miscellaneous</h3>
+<p>In <code>as_activate</code>, if you don't use the ASID field of TLB entry, then you can just
+shoot down all the tlb entries. It's the easiest to way to go.</p>
+<p>In <code>as_prepare_load</code>, we need to change each regions' page table permision as read-write
+since we're going to load content (code, date) into them. And in
+<code>as_complete_load</code>, we need to change their page table permissions back to
+whatever the original value.</p>
+<p>In <code>as_define_stack</code>, we just return <code>USERSTACKTOP</code>.</p>
+            </div>
+            <!-- /.entry-content -->
+<section class="well" id="related-posts">
+    <h4>Related Posts:</h4>
+    <ul>
+        <li><a href="http://jhshi.me/2012/04/24/os161-coremap/index.html">OS161 Coremap</a></li>
+        <li><a href="http://jhshi.me/2012/04/27/os161-sbrk-system-call/index.html">OS161 sbrk System Call</a></li>
+        <li><a href="http://jhshi.me/2012/04/19/os161-virtual-memory-resources/index.html">OS161 Virtual Memory Resources</a></li>
+        <li><a href="http://jhshi.me/2012/04/28/os161-swapping/index.html">OS161 Swapping</a></li>
+        <li><a href="http://jhshi.me/2012/04/24/os161-physical-page-management/index.html">OS161 Physical Page Management</a></li>
+    </ul>
+</section>
+<section class="well" id="related-posts">
+      <h4><a href=https://github.com/jhshi/blog_source/commits/master/content/2012-04-24-os161-user-address-space.markdown>Post History:</a></h4>
+
+      <b>Tuesday 11:09 PM, January 23 2018</b><br/><p>resume os161</p>
+      <b>Monday 11:20 AM, October 31 2016</b><br/><p>remove os161 related posts</p>
+      <b>Saturday 07:19 PM, October 10 2015</b><br/><p>fix category</p>
+      <b>Saturday 07:05 PM, October 10 2015</b><br/><p>Revert "os161 category"</p>
+      <b>Saturday 06:46 PM, October 10 2015</b><br/><p>os161 category</p>
+</section>
+<div class="fb-like" 
+     data-href="http://jhshi.me/2012/04/24/os161-user-address-space/index.html"
+     data-layout="standard" 
+     data-action="like" 
+     data-show-faces="true">
+</div>
+
+
+<div class="fb-comments"
+     data-href="http://jhshi.me/2012/04/24/os161-user-address-space/index.html"
+     data-numposts="5"
+     data-order-by="reverse_time"
+     data-width="100%"
+    ></div>
+        </article>
+    </section>
+
+        </div>
+        <div class="col-sm-3" id="sidebar">
+            <aside>
+
+<section class="well well-sm">
+    <ul class="list-group list-group-flush">
+        <li class="list-group-item"><h4><i class="fa fa-eye"></i><span class="icon-label">0 Hits</span></h4>
+    <li class="list-group-item"><h4><i class="fa fa-fire fa-lg"></i><span class="icon-label">Popular Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Recent Posts</span></h4>
+        <ul class="list-group" id="recentposts">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
+                    OpenGL over VNC
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
+                    Fix VMWare Player 3D Support Issue
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
+                    Google DNS Configuration on Ubuntu 16.04
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
+                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
+                    Backing Up Files Using Amazon Glacier
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/categories/index.html"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Categories</span></h4></a>
+        <ul class="list-group" id="categories">
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/os161/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> os161 [27]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/linux/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> linux [24]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/android/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> android [20]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/errors/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> errors [14]
+                </a>
+            </li>
+            <li class="list-group-item">
+                <a href="http://jhshi.me/blog/category/network/index.html">
+                  <i class="fa fa-folder-open fa-lg"></i> network [11]
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><a href="http://jhshi.me/blog/tags/index.html"><h4><i class="fa fa-tags fa-lg"></i><span class="icon-label">Tags</span></h4></a>
+        <ul class="list-group list-inline tagcloud" id="tags">
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/aosp/index.html">
+                    AOSP
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/backup/index.html">
+                    backup
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/beamer/index.html">
+                    beamer
+                </a>
+            </li>
+            <li class="list-group-item tag-7">
+                <a href="http://jhshi.me/blog/tag/blog/index.html">
+                    blog
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/c/index.html">
+                    c
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/gdb/index.html">
+                    gdb
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/hammerhead/index.html">
+                    hammerhead
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/jekyll/index.html">
+                    jekyll
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/mac/index.html">
+                    mac
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ns2/index.html">
+                    ns2
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ota/index.html">
+                    OTA
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/plugin/index.html">
+                    plugin
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/python/index.html">
+                    python
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/ruby/index.html">
+                    ruby
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ssh/index.html">
+                    ssh
+                </a>
+            </li>
+            <li class="list-group-item tag-4">
+                <a href="http://jhshi.me/blog/tag/synchronization/index.html">
+                    synchronization
+                </a>
+            </li>
+            <li class="list-group-item tag-1">
+                <a href="http://jhshi.me/blog/tag/syscall/index.html">
+                    syscall
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/travis/index.html">
+                    travis
+                </a>
+            </li>
+            <li class="list-group-item tag-6">
+                <a href="http://jhshi.me/blog/tag/ubuntu/index.html">
+                    ubuntu
+                </a>
+            </li>
+            <li class="list-group-item tag-2">
+                <a href="http://jhshi.me/blog/tag/vm/index.html">
+                    vm
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Social</span></h4>
+      <ul class="list-group" id="social">
+        <li class="list-group-item"><a href="https://github.com/jhshi"><i class="fa fa-github-square fa-lg"></i> github</a></li>
+        <li class="list-group-item"><a href="http://stackoverflow.com/users/963538/jinghao-shi"><i class="fa fa-stack-overflow fa-lg"></i> stack-overflow</a></li>
+      </ul>
+    </li>
+
+    <li class="list-group-item"><h4><i class="fa fa-github fa-lg"></i><span class="icon-label">GitHub Repos</span></h4>
+        <div id="gh_repos">
+            <p class="list-group-item">Status updating...</p>
+        </div>
+            <a href="https://github.com/jhshi">@jhshi</a> on GitHub
+    </li>
+    <li class="list-group-item"><h4><i class="fa fa-external-link-square fa-lg"></i><span class="icon-label">Links</span></h4>
+      <ul class="list-group" id="links">
+        <li class="list-group-item">
+            <a href="http://blue.cse.buffalo.edu" target="_blank">
+                blue Systems Group
+            </a>
+        </li>
+        <li class="list-group-item">
+            <a href="http://www.buffalo.edu" target="_blank">
+                University at Buffalo
+            </a>
+        </li>
+      </ul>
+    </li>
+    </ul>
+</section>            </aside>
+        </div>
+    </div>
+</div>
+<footer>
+   <div class="container">
+      <hr>
+      <div class="row">
+         <div class="col-xs-10">&copy; 2018 Jinghao Shi
+            &middot;
+            Updated on 2020-04-02
+            &middot; Powered by <a href="https://github.com/jhshi/pelican-bootstrap3" target="_blank">pelican-bootstrap3</a>,
+            <a href="http://docs.getpelican.com/" target="_blank">Pelican</a>,
+            <a href="http://getbootstrap.com" target="_blank">Bootstrap</a>         </div>
+         <div class="col-xs-2"><p class="pull-right"><i class="fa fa-arrow-up"></i> <a href="#">Back to top</a></p></div>
+      </div>
+   </div>
+</footer>
+<script src="http://jhshi.me/theme/js/jquery.min.js"></script>
+
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="http://jhshi.me/theme/js/bootstrap.min.js"></script>
+
+<!-- Enable responsive features in IE8 with Respond.js (https://github.com/scottjehl/Respond) -->
+<script src="http://jhshi.me/theme/js/respond.min.js"></script>
+
+    <!-- GitHub JS -->
+    <script type="text/javascript">
+        $(document).ready(function () {
+            if (!window.jXHR) {
+                var jxhr = document.createElement('script');
+                jxhr.type = 'text/javascript';
+                jxhr.src = 'http://jhshi.me/theme/js/jXHR.js';
+                var s = document.getElementsByTagName('script')[0];
+                s.parentNode.insertBefore(jxhr, s);
+            }
+
+            github.showRepos({
+                user: 'jhshi',
+                count: 5,
+                skip_forks: true,
+                target: '#gh_repos'
+            });
+        });
+    </script>
+    <script src="http://jhshi.me/theme/js/github.js" type="text/javascript"></script>
+    <!-- End GitHub JS Code -->
+    <!-- Google Analytics -->
+    <script type="text/javascript">
+
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-39842003-1']);
+        _gaq.push(['_trackPageview']);
+
+        (function () {
+            var ga = document.createElement('script');
+            ga.type = 'text/javascript';
+            ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+    <!-- End Google Analytics Code -->
+
+        <script type="text/javascript">var addthis_config = {"data_track_addressbar": true};</script>
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5a6b8e0310bbbd35"></script>
+</body>
+</html>
