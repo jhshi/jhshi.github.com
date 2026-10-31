@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Pearls in Life</title><link href="http://jhshi.me/" rel="alternate"></link><link href="http://jhshi.me/feeds/os161.atom.xml" rel="self"></link><id>http://jhshi.me/</id><updated>2014-04-08T20:45:00-04:00</updated><entry><title>OS161 Debug Tips</title><link href="http://jhshi.me/2014/04/08/os161-debug-tips/index.html" rel="alternate"></link><updated>2014-04-08T20:45:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-04-08:2014/04/08/os161-debug-tips/index.html</id><summary type="html">&lt;p&gt;In doing OS161 assignments, if you don't know how to use GDB and how to use it
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Pearls in Life</title><link href="http://jhshi.me/" rel="alternate"></link><link href="http://jhshi.me/feeds/os161.atom.xml" rel="self"></link><id>http://jhshi.me/</id><updated>2014-04-08T20:45:00-04:00</updated><subtitle></subtitle><entry><title>OS161 Debug Tips</title><link href="http://jhshi.me/2014/04/08/os161-debug-tips/index.html" rel="alternate"></link><published>2014-04-08T20:45:00-04:00</published><updated>2014-04-08T20:45:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-04-08:2014/04/08/os161-debug-tips/index.html</id><summary type="html">&lt;p&gt;In doing OS161 assignments, if you don't know how to use GDB and how to use it
 efficiently, you're screwed, and will die very ugly. It's a very important skill
 to use GDB to identify what's wrong with your code. That's the first step
 towards to fix the bug.&lt;/p&gt;
@@ -34,7 +34,7 @@ where to back trace the bug.&lt;/p&gt;
 &lt;p&gt;So whenever your kernel panics, you don't panic. Just set a breakpoint at the
 &lt;code&gt;panic&lt;/code&gt; function and do a &lt;code&gt;backtrace&lt;/code&gt; when your kernel got there. You'll find
 out exactly which line of code trigger the panic. Then you can fix it.&lt;/p&gt;
-&lt;p&gt;&lt;img src="/images/panic.png" alt="center" title="center"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="/images/panic.png" title="center" alt="center"&gt;&lt;/p&gt;
 &lt;h3&gt;until: Jump out of the loop&lt;/h3&gt;
 &lt;p&gt;Have you ever try to jump out of a loop and just want to see the suspicious part
 after a loop? For example, you use a &lt;code&gt;for&lt;/code&gt; loop to initialize the file table, or
@@ -72,9 +72,9 @@ conditional breakpoint so GDB will only stop at the breakpoint if the condition
 is true.&lt;/p&gt;
 &lt;p&gt;For example, I only want to step into &lt;code&gt;sys_write&lt;/code&gt; when the &lt;code&gt;fd&lt;/code&gt; is 3. I can do
 this:&lt;/p&gt;
-&lt;p&gt;&lt;img src="/images/condition.png" alt="center" title="center"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="/images/condition.png" title="center" alt="center"&gt;&lt;/p&gt;
 &lt;p&gt;If you have any other GDB tricks that you think is really awesome, welcome to
-comment below and I'd be happy to include them here.&lt;/p&gt;</summary><category term="gdb"></category><category term="debugging"></category></entry><entry><title>OS161: Unknown syscall -1</title><link href="http://jhshi.me/2014/03/06/os161-unknown-syscall-1/index.html" rel="alternate"></link><updated>2014-03-06T16:50:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-03-06:2014/03/06/os161-unknown-syscall-1/index.html</id><summary type="html">&lt;p&gt;When working on OS161 system calls, you'll probably see a bunch of this error,
+comment below and I'd be happy to include them here.&lt;/p&gt;</summary><category term="gdb"></category><category term="debugging"></category></entry><entry><title>OS161: Unknown syscall -1</title><link href="http://jhshi.me/2014/03/06/os161-unknown-syscall-1/index.html" rel="alternate"></link><published>2014-03-06T16:50:00-05:00</published><updated>2014-03-06T16:50:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-03-06:2014/03/06/os161-unknown-syscall-1/index.html</id><summary type="html">&lt;p&gt;When working on OS161 system calls, you'll probably see a bunch of this error,
 especially you haven't implemented &lt;code&gt;_exit&lt;/code&gt; syscall and try to do some basic user
 programs, e.g., &lt;code&gt;p /bin/true&lt;/code&gt;.&lt;/p&gt;
 &lt;p&gt;Note, this problem has been fixed in OS/161 version 1.99.07.&lt;/p&gt;
@@ -237,7 +237,7 @@ this. Here is how:&lt;/p&gt;
 
 
 &lt;p&gt;So if &lt;code&gt;_exit&lt;/code&gt; returns for any reason, we just access an address we know is
-invalid, thus trigger an exception, and the kernel just panics.&lt;/p&gt;</summary><category term="syscall"></category></entry><entry><title>OS161 Tool Chain Setup</title><link href="http://jhshi.me/2013/12/15/os161-tool-chain-setup/index.html" rel="alternate"></link><updated>2013-12-15T18:01:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-12-15:2013/12/15/os161-tool-chain-setup/index.html</id><summary type="html">&lt;p&gt;This post shows how to install os161 toolchain, including &lt;code&gt;bmake&lt;/code&gt;, &lt;code&gt;sys161&lt;/code&gt;,
+invalid, thus trigger an exception, and the kernel just panics.&lt;/p&gt;</summary><category term="syscall"></category></entry><entry><title>OS161 Tool Chain Setup</title><link href="http://jhshi.me/2013/12/15/os161-tool-chain-setup/index.html" rel="alternate"></link><published>2013-12-15T18:01:00-05:00</published><updated>2013-12-15T18:01:00-05:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-12-15:2013/12/15/os161-tool-chain-setup/index.html</id><summary type="html">&lt;p&gt;This post shows how to install os161 toolchain, including &lt;code&gt;bmake&lt;/code&gt;, &lt;code&gt;sys161&lt;/code&gt;,
 etc. on your local machine.&lt;/p&gt;
 
 
@@ -562,7 +562,7 @@ OS/161 kernel &lt;span class="o"&gt;[&lt;/span&gt;? &lt;span class="k"&gt;for&lt
 &lt;li&gt;&lt;a href="http://www.eecs.harvard.edu/~dholland/os161/resources/setup.html"&gt;OS/161 Toolchain Setup&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="http://www.cs.hmc.edu/~geoff/classes/hmc.cs134.201209/buildos161.html"&gt;Building System/161 and the OS/161 Toolchain&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="http://www.ops-class.org/asst/0"&gt;ASST0: Introduction to OS/161&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;</summary><category term="toolchain"></category><category term="bmake"></category><category term="sys161"></category><category term="texinfo"></category><category term="binutils"></category><category term="gcc"></category><category term="gdb"></category></entry><entry><title>OS161 Synchronization Primitives: RWLock</title><link href="http://jhshi.me/2013/04/05/os161-synchronization-primitives-rwlock/index.html" rel="alternate"></link><updated>2013-04-05T13:30:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-04-05:2013/04/05/os161-synchronization-primitives-rwlock/index.html</id><summary type="html">&lt;p&gt;The idea of &lt;a href="http://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock"&gt;Reader-Writer Lock&lt;/a&gt; is quite simple. In normal &lt;a href="/2013/04/04/os161-synchronization-primitives-lock"&gt;lock&lt;/a&gt;,
+&lt;/ul&gt;</summary><category term="toolchain"></category><category term="bmake"></category><category term="sys161"></category><category term="texinfo"></category><category term="binutils"></category><category term="gcc"></category><category term="gdb"></category></entry><entry><title>OS161 Synchronization Primitives: RWLock</title><link href="http://jhshi.me/2013/04/05/os161-synchronization-primitives-rwlock/index.html" rel="alternate"></link><published>2013-04-05T13:30:00-04:00</published><updated>2013-04-05T13:30:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-04-05:2013/04/05/os161-synchronization-primitives-rwlock/index.html</id><summary type="html">&lt;p&gt;The idea of &lt;a href="http://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock"&gt;Reader-Writer Lock&lt;/a&gt; is quite simple. In normal &lt;a href="/2013/04/04/os161-synchronization-primitives-lock"&gt;lock&lt;/a&gt;,
 we don't differentiate the threads. That said, each thread who wants to enter the
 critical section must first acquire the lock. But on a second thought, you may
 find that threads actually have different behavior inside the critical section:
@@ -623,7 +623,7 @@ acquire a lock before he can acquire the resource. &lt;/p&gt;
 &lt;li&gt;Acquire &lt;strong&gt;ALL&lt;/strong&gt; the resources by doing &lt;code&gt;P&lt;/code&gt; &lt;code&gt;MAX_READERS&lt;/code&gt; times&lt;/li&gt;
 &lt;li&gt;Release the lock. It's safe now since we got all the resources.&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;For &lt;code&gt;rwlock_release_write&lt;/code&gt;, just release all the resources.&lt;/p&gt;</summary><category term="rwlock"></category><category term="synchronization"></category></entry><entry><title>OS161 Synchronization Primitives: CV</title><link href="http://jhshi.me/2013/04/05/os161-synchronization-primitives-cv/index.html" rel="alternate"></link><updated>2013-04-05T12:37:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-04-05:2013/04/05/os161-synchronization-primitives-cv/index.html</id><summary type="html">&lt;p&gt;&lt;a href="http://en.wikipedia.org/wiki/Monitor_(synchronization)"&gt;Condition variable&lt;/a&gt; is used for a thread to wait for some condition to be
+&lt;p&gt;For &lt;code&gt;rwlock_release_write&lt;/code&gt;, just release all the resources.&lt;/p&gt;</summary><category term="rwlock"></category><category term="synchronization"></category></entry><entry><title>OS161 Synchronization Primitives: CV</title><link href="http://jhshi.me/2013/04/05/os161-synchronization-primitives-cv/index.html" rel="alternate"></link><published>2013-04-05T12:37:00-04:00</published><updated>2013-04-05T12:37:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-04-05:2013/04/05/os161-synchronization-primitives-cv/index.html</id><summary type="html">&lt;p&gt;&lt;a href="http://en.wikipedia.org/wiki/Monitor_(synchronization)"&gt;Condition variable&lt;/a&gt; is used for a thread to wait for some condition to be
 true before continuing. The implementation is quite simple compared to
 &lt;a href="/2013/04/04/os161-synchronization-primitives-lock"&gt;lock&lt;/a&gt;, yet the difficult part is to understand how a CV is supposed to
 used.&lt;/p&gt;
@@ -695,7 +695,7 @@ basically told you everything you need to do. &lt;/p&gt;
 &lt;p&gt;So before &lt;code&gt;cv_wait&lt;/code&gt;, we should already hold the lock (so that we can release
 it). And after &lt;code&gt;cv_wait&lt;/code&gt;, we still hold the lock.&lt;/p&gt;
 &lt;p&gt;In &lt;code&gt;cv_signal&lt;/code&gt;, we just wake up somebody in the wait channel using
-&lt;code&gt;wchan_wakeone&lt;/code&gt;.&lt;/p&gt;</summary><category term="cv"></category><category term="synchronization"></category></entry><entry><title>OS161 Synchronization Primitives: Lock</title><link href="http://jhshi.me/2013/04/04/os161-synchronization-primitives-lock/index.html" rel="alternate"></link><updated>2013-04-04T15:23:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-04-04:2013/04/04/os161-synchronization-primitives-lock/index.html</id><summary type="html">&lt;p&gt;Lock is basically just a semaphore whose initial counter is 1. &lt;code&gt;lock_acquire&lt;/code&gt; is
+&lt;code&gt;wchan_wakeone&lt;/code&gt;.&lt;/p&gt;</summary><category term="cv"></category><category term="synchronization"></category></entry><entry><title>OS161 Synchronization Primitives: Lock</title><link href="http://jhshi.me/2013/04/04/os161-synchronization-primitives-lock/index.html" rel="alternate"></link><published>2013-04-04T15:23:00-04:00</published><updated>2013-04-04T15:23:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-04-04:2013/04/04/os161-synchronization-primitives-lock/index.html</id><summary type="html">&lt;p&gt;Lock is basically just a semaphore whose initial counter is 1. &lt;code&gt;lock_acquire&lt;/code&gt; is
 like &lt;code&gt;P&lt;/code&gt;, while &lt;code&gt;lock_release&lt;/code&gt; is like &lt;code&gt;V&lt;/code&gt;. You probably want to go over 
 &lt;a href="/2013/04/04/os161-synchronization-primitives-semaphore"&gt;my previous post about semaphore&lt;/a&gt;&lt;/p&gt;
 
@@ -754,7 +754,7 @@ accidentally loose a lock.&lt;/strong&gt; For example,&lt;/p&gt;
 returns.&lt;/p&gt;
 &lt;p&gt;The simplest way would be, keep a counter (initial value 0) for each lock. When 
 a thread acquires a lock, increase that counter. When it release the lock, decrease 
-the counter, only actually release a lock when the counter reaches 0.&lt;/p&gt;</summary><category term="synchronization"></category><category term="lock"></category></entry><entry><title>OS161 Synchronization Primitives: Semaphore</title><link href="http://jhshi.me/2013/04/04/os161-synchronization-primitives-semaphore/index.html" rel="alternate"></link><updated>2013-04-04T14:52:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-04-04:2013/04/04/os161-synchronization-primitives-semaphore/index.html</id><summary type="html">&lt;p&gt;&lt;a href="http://en.wikipedia.org/wiki/Semaphore_(programming)"&gt;Semaphore&lt;/a&gt; denotes a certain number of shared resources. Basically, it's
+the counter, only actually release a lock when the counter reaches 0.&lt;/p&gt;</summary><category term="synchronization"></category><category term="lock"></category></entry><entry><title>OS161 Synchronization Primitives: Semaphore</title><link href="http://jhshi.me/2013/04/04/os161-synchronization-primitives-semaphore/index.html" rel="alternate"></link><published>2013-04-04T14:52:00-04:00</published><updated>2013-04-04T14:52:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-04-04:2013/04/04/os161-synchronization-primitives-semaphore/index.html</id><summary type="html">&lt;p&gt;&lt;a href="http://en.wikipedia.org/wiki/Semaphore_(programming)"&gt;Semaphore&lt;/a&gt; denotes a certain number of shared resources. Basically, it's
 one counter and two operations on this counter, namely &lt;code&gt;P&lt;/code&gt; and &lt;code&gt;V&lt;/code&gt;. &lt;code&gt;P&lt;/code&gt; is used
 to acquire one resource (thus decrementing the counter) while &lt;code&gt;V&lt;/code&gt; is used to
 release one resource (thus incrementing the counter).&lt;/p&gt;
@@ -800,7 +800,7 @@ guys have a place to wait, we also need an &lt;strong&gt;wait channel&lt;/strong
 &lt;li&gt;Increment the &lt;code&gt;counter&lt;/code&gt; by 1&lt;/li&gt;
 &lt;li&gt;Wake up some poor guy in the wait channel by calling &lt;code&gt;wchan_wakeone&lt;/code&gt;)&lt;/li&gt;
 &lt;li&gt;Release the spin lock and return&lt;/li&gt;
-&lt;/ol&gt;</summary><category term="semaphore"></category><category term="synchronization"></category></entry><entry><title>Console Input Messed up in OS161</title><link href="http://jhshi.me/2013/03/15/console-input-messed-up-in-os161/index.html" rel="alternate"></link><updated>2013-03-15T04:26:57-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-03-15:2013/03/15/console-input-messed-up-in-os161/index.html</id><summary type="html">&lt;p&gt;When you finished the process system call (e.g., &lt;code&gt;fork&lt;/code&gt;, &lt;code&gt;execv&lt;/code&gt;) and test your
+&lt;/ol&gt;</summary><category term="semaphore"></category><category term="synchronization"></category></entry><entry><title>Console Input Messed up in OS161</title><link href="http://jhshi.me/2013/03/15/console-input-messed-up-in-os161/index.html" rel="alternate"></link><published>2013-03-15T04:26:57-04:00</published><updated>2013-03-15T04:26:57-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2013-03-15:2013/03/15/console-input-messed-up-in-os161/index.html</id><summary type="html">&lt;p&gt;When you finished the process system call (e.g., &lt;code&gt;fork&lt;/code&gt;, &lt;code&gt;execv&lt;/code&gt;) and test your
 system call by executing some user program, you'll probably find that the
 console input behavior is messed up. &lt;/p&gt;
 
@@ -851,7 +851,7 @@ case the user program doesn't do this.&lt;/p&gt;
 &lt;p&gt;Also note that &lt;code&gt;waitpid&lt;/code&gt; and &lt;code&gt;exit&lt;/code&gt; are in fact user land system call, and we can
 not directly call them in kernel, so you may need to make some "shortcuts" in
 your system call implementation to let the kernel be able to call &lt;code&gt;sys_waitpid&lt;/code&gt;
-and &lt;code&gt;sys_exit&lt;/code&gt;.&lt;/p&gt;</summary><category term="console"></category><category term="exit"></category><category term="waitpid"></category><category term="syscall"></category></entry><entry><title>OS161 SAME_STACK Check Fail in Trap</title><link href="http://jhshi.me/2012/05/02/os161-same_stack-check-fail-in-trap/index.html" rel="alternate"></link><updated>2012-05-02T18:02:11-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-05-02:2012/05/02/os161-same_stack-check-fail-in-trap/index.html</id><summary type="html">&lt;p&gt;There are several &lt;code&gt;SAME_STACK&lt;/code&gt; asserts in &lt;code&gt;$OS161_SRC/kern/arch/mips/locore/trap.c&lt;/code&gt; to
+and &lt;code&gt;sys_exit&lt;/code&gt;.&lt;/p&gt;</summary><category term="console"></category><category term="exit"></category><category term="waitpid"></category><category term="syscall"></category></entry><entry><title>OS161 SAME_STACK Check Fail in Trap</title><link href="http://jhshi.me/2012/05/02/os161-same_stack-check-fail-in-trap/index.html" rel="alternate"></link><published>2012-05-02T18:02:11-04:00</published><updated>2012-05-02T18:02:11-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-05-02:2012/05/02/os161-same_stack-check-fail-in-trap/index.html</id><summary type="html">&lt;p&gt;There are several &lt;code&gt;SAME_STACK&lt;/code&gt; asserts in &lt;code&gt;$OS161_SRC/kern/arch/mips/locore/trap.c&lt;/code&gt; to
 ensure that &lt;strong&gt;current thread did not run out of kernel stack&lt;/strong&gt;. &lt;/p&gt;
 
 
@@ -904,7 +904,7 @@ but probably a bug shipped with the kernel.&lt;/p&gt;
 suffice.&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;KASSERT&lt;/span&gt;&lt;span class="p"&gt;(((&lt;/span&gt;&lt;span class="kt"&gt;vaddr_t&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="n"&gt;tf&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;=&lt;/span&gt; &lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="kt"&gt;vaddr_t&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="n"&gt;curthread&lt;/span&gt;&lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;&lt;span class="n"&gt;t_stack&lt;/span&gt;&lt;span class="p"&gt;));&lt;/span&gt; 
 &lt;span class="n"&gt;KASSERT&lt;/span&gt;&lt;span class="p"&gt;(((&lt;/span&gt;&lt;span class="kt"&gt;vaddr_t&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="n"&gt;tf&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="kt"&gt;vaddr_t&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="n"&gt;curthread&lt;/span&gt;&lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;&lt;span class="n"&gt;t_stack&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="n"&gt;STACK_SIZE&lt;/span&gt;&lt;span class="p"&gt;));&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;</summary><category term="stack"></category></entry><entry><title>OS161 Duplicated TLB entries</title><link href="http://jhshi.me/2012/05/02/os161-duplicated-tlb-entries/index.html" rel="alternate"></link><updated>2012-05-02T17:18:47-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-05-02:2012/05/02/os161-duplicated-tlb-entries/index.html</id><summary type="html">&lt;p&gt;Sys161 will panic if you try to write a TLB entry with a &lt;code&gt;entryhi&lt;/code&gt;, but
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="stack"></category></entry><entry><title>OS161 Duplicated TLB entries</title><link href="http://jhshi.me/2012/05/02/os161-duplicated-tlb-entries/index.html" rel="alternate"></link><published>2012-05-02T17:18:47-04:00</published><updated>2012-05-02T17:18:47-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-05-02:2012/05/02/os161-duplicated-tlb-entries/index.html</id><summary type="html">&lt;p&gt;Sys161 will panic if you try to write a TLB entry with a &lt;code&gt;entryhi&lt;/code&gt;, but
 there are already a TLB entry with the same &lt;code&gt;entryhi&lt;/code&gt; but in a different TLB
 slot. This is because &lt;strong&gt;entryhi should be a UNIQUE key in the TLB bank.&lt;/strong&gt;&lt;/p&gt;
 
@@ -921,7 +921,7 @@ and also write a stale value. Things get totally messed up and errors such as
 &lt;code&gt;tlb_write&lt;/code&gt;" flow and make sure that this flow won't get interrupted.&lt;/strong&gt; So you 
 really want to disable interrupt (&lt;code&gt;int x = splhigh()&lt;/code&gt;) before you do &lt;code&gt;tlb_probe&lt;/code&gt; 
 and re-enable it (&lt;code&gt;splx(x)&lt;/code&gt;) after &lt;code&gt;tlb_write&lt;/code&gt;. Alternatively, you can also use a
-spin lock to protect your access to TLB.&lt;/p&gt;</summary><category term="tlb"></category><category term="vm"></category></entry><entry><title>OS161 Swapping</title><link href="http://jhshi.me/2012/04/28/os161-swapping/index.html" rel="alternate"></link><updated>2012-04-28T17:27:39-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-28:2012/04/28/os161-swapping/index.html</id><summary type="html">&lt;p&gt;Now that you can &lt;a href="/2012/04/24/os161-physical-page-management"&gt;allocate/free physical pages&lt;/a&gt;, and you have &lt;a href="/2012/04/27/os161-tlb-miss-and-page-fault"&gt;demand paging
+spin lock to protect your access to TLB.&lt;/p&gt;</summary><category term="tlb"></category><category term="vm"></category></entry><entry><title>OS161 Swapping</title><link href="http://jhshi.me/2012/04/28/os161-swapping/index.html" rel="alternate"></link><published>2012-04-28T17:27:39-04:00</published><updated>2012-04-28T17:27:39-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-28:2012/04/28/os161-swapping/index.html</id><summary type="html">&lt;p&gt;Now that you can &lt;a href="/2012/04/24/os161-physical-page-management"&gt;allocate/free physical pages&lt;/a&gt;, and you have &lt;a href="/2012/04/27/os161-tlb-miss-and-page-fault"&gt;demand paging
 through handling TLB miss&lt;/a&gt;. Let's get the final part work: swapping.&lt;/p&gt;
 
 
@@ -997,7 +997,7 @@ write its content to swap file. We can use the &lt;code&gt;swapout&lt;/code&gt; 
 &lt;p&gt;In &lt;code&gt;vm_fault&lt;/code&gt; with fault type &lt;code&gt;VM_FAULT_READ&lt;/code&gt; or &lt;code&gt;VM_FAULT_WRITE&lt;/code&gt;, when we find that
 this page is not Present (&lt;code&gt;PTE_P&lt;/code&gt;), instead of allocate a new page for it, we
 need to further check if this page was swapped (&lt;code&gt;PTE_S&lt;/code&gt;), if yes then we need to
-swap it in, if no then we can allocate a new physical page for it.&lt;/p&gt;</summary><category term="swap"></category><category term="vm"></category></entry><entry><title>OS161 TLB Miss and Page Fault</title><link href="http://jhshi.me/2012/04/27/os161-tlb-miss-and-page-fault/index.html" rel="alternate"></link><updated>2012-04-27T23:27:26-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-27:2012/04/27/os161-tlb-miss-and-page-fault/index.html</id><summary type="html">&lt;p&gt;Now we've set up user address space, it's time to handle TLB/page faults. Note
+swap it in, if no then we can allocate a new physical page for it.&lt;/p&gt;</summary><category term="swap"></category><category term="vm"></category></entry><entry><title>OS161 TLB Miss and Page Fault</title><link href="http://jhshi.me/2012/04/27/os161-tlb-miss-and-page-fault/index.html" rel="alternate"></link><published>2012-04-27T23:27:26-04:00</published><updated>2012-04-27T23:27:26-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-27:2012/04/27/os161-tlb-miss-and-page-fault/index.html</id><summary type="html">&lt;p&gt;Now we've set up user address space, it's time to handle TLB/page faults. Note
 that there is a difference between TLB and page faults:&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;
@@ -1015,7 +1015,7 @@ that there is a difference between TLB and page faults:&lt;/p&gt;
 &lt;h3&gt;TLB Entry Format&lt;/h3&gt;
 &lt;p&gt;In sys161, which simulates MIPS R3000, there are totally 64 TLB entries. Each
 entry is a 64-bit value that has the following format:&lt;/p&gt;
-&lt;p&gt;&lt;img src="/images/2012-04-27-mipsr3000-tlb.png" class="center"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img class="center" src="/images/2012-04-27-mipsr3000-tlb.png"&gt;&lt;/p&gt;
 &lt;p&gt;Section 18.6 of &lt;a href="http://pages.cs.wisc.edu/~remzi/OSFEP/vm-tlbs.pdf"&gt;this document&lt;/a&gt; contains a detailed description of the 
 meaning of each bits. But briefly, VPN (abbr. for Virtual Page Frame Number) 
 is the high 20 bits of a virtual address and PPN is the high 20 bits of a 
@@ -1091,7 +1091,7 @@ can lead to some really weird bugs.&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;Assumption is the source of all evil. Use a lot KASSET to make your
 assumption explicit and check if they are right.&lt;/strong&gt;&lt;/p&gt;
 &lt;/li&gt;
-&lt;/ul&gt;</summary><category term="tlb"></category><category term="page fault"></category><category term="vm"></category></entry><entry><title>OS161 sbrk System Call</title><link href="http://jhshi.me/2012/04/27/os161-sbrk-system-call/index.html" rel="alternate"></link><updated>2012-04-27T22:17:36-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-27:2012/04/27/os161-sbrk-system-call/index.html</id><summary type="html">&lt;p&gt;If you're not familiar with &lt;code&gt;sbrk&lt;/code&gt; system call, here is &lt;a href="http://en.wikipedia.org/wiki/Sbrk"&gt;it's wiki&lt;/a&gt;, 
+&lt;/ul&gt;</summary><category term="tlb"></category><category term="page fault"></category><category term="vm"></category></entry><entry><title>OS161 sbrk System Call</title><link href="http://jhshi.me/2012/04/27/os161-sbrk-system-call/index.html" rel="alternate"></link><published>2012-04-27T22:17:36-04:00</published><updated>2012-04-27T22:17:36-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-27:2012/04/27/os161-sbrk-system-call/index.html</id><summary type="html">&lt;p&gt;If you're not familiar with &lt;code&gt;sbrk&lt;/code&gt; system call, here is &lt;a href="http://en.wikipedia.org/wiki/Sbrk"&gt;it's wiki&lt;/a&gt;, 
 and its &lt;a href="http://www.cs.utah.edu/flux/moss/node39.html"&gt;interface description&lt;/a&gt;. In a nutshell,
 &lt;code&gt;malloc&lt;/code&gt; will use &lt;code&gt;sbrk&lt;/code&gt; to get heap space.&lt;/p&gt;
 
@@ -1111,7 +1111,7 @@ of unaligned pointers&lt;/p&gt;
 &lt;/ul&gt;
 &lt;p&gt;After all these checking, just return &lt;code&gt;heap_end&lt;/code&gt; as a &lt;code&gt;void*&lt;/code&gt; pointer and increase
 &lt;code&gt;heap_end&lt;/code&gt; by &lt;code&gt;inc&lt;/code&gt;. Of course, like any other system calls, you need to add a 
-case entry in the &lt;code&gt;syscall&lt;/code&gt; function.&lt;/p&gt;</summary><category term="heap"></category><category term="sbrk"></category><category term="syscall"></category><category term="vm"></category></entry><entry><title>OS161 User Address Space</title><link href="http://jhshi.me/2012/04/24/os161-user-address-space/index.html" rel="alternate"></link><updated>2012-04-24T23:14:14-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-24:2012/04/24/os161-user-address-space/index.html</id><summary type="html">&lt;p&gt;Now we've set up our coremap and also have the routines to allocate and free
+case entry in the &lt;code&gt;syscall&lt;/code&gt; function.&lt;/p&gt;</summary><category term="heap"></category><category term="sbrk"></category><category term="syscall"></category><category term="vm"></category></entry><entry><title>OS161 User Address Space</title><link href="http://jhshi.me/2012/04/24/os161-user-address-space/index.html" rel="alternate"></link><published>2012-04-24T23:14:14-04:00</published><updated>2012-04-24T23:14:14-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-24:2012/04/24/os161-user-address-space/index.html</id><summary type="html">&lt;p&gt;Now we've set up our coremap and also have the routines to allocate and free
 physical pages. It's the time to set up user's virtual address space.&lt;/p&gt;
 &lt;p&gt;Basically, we'll adopt &lt;em&gt;two-level page table&lt;/em&gt;. If you're not
 already familiar with this, you can check out the &lt;a href="http://en.wikipedia.org/wiki/Page_table"&gt;page table wiki&lt;/a&gt; 
@@ -1189,7 +1189,7 @@ we just compare addrspace's current hew&lt;code&gt;and the region end, and set
 the&lt;/code&gt;heap_start&lt;code&gt;right after (&lt;/code&gt;vaddr+sz&lt;code&gt;). Don't forget to _proper align the&lt;/code&gt;heap_start`(by page bound)_, of course.&lt;/p&gt;
 &lt;p&gt;This should also be the place we record each region information (e.g., base,
 size, permission, etc) so that we can check them in &lt;code&gt;vm_fault&lt;/code&gt;.&lt;/p&gt;
-&lt;p&gt;&lt;img src="/images/2012-04-24-mips-as1.png" class="center"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img class="center" src="/images/2012-04-24-mips-as1.png"&gt;&lt;/p&gt;
 &lt;h3&gt;Miscellaneous&lt;/h3&gt;
 &lt;p&gt;In &lt;code&gt;as_activate&lt;/code&gt;, if you don't use the ASID field of TLB entry, then you can just
 shoot down all the tlb entries. It's the easiest to way to go.&lt;/p&gt;
@@ -1197,7 +1197,7 @@ shoot down all the tlb entries. It's the easiest to way to go.&lt;/p&gt;
 since we're going to load content (code, date) into them. And in
 &lt;code&gt;as_complete_load&lt;/code&gt;, we need to change their page table permissions back to
 whatever the original value.&lt;/p&gt;
-&lt;p&gt;In &lt;code&gt;as_define_stack&lt;/code&gt;, we just return &lt;code&gt;USERSTACKTOP&lt;/code&gt;.&lt;/p&gt;</summary><category term="addrspace"></category><category term="vm"></category><category term="page table"></category></entry><entry><title>OS161 Physical Page Management</title><link href="http://jhshi.me/2012/04/24/os161-physical-page-management/index.html" rel="alternate"></link><updated>2012-04-24T22:11:05-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-24:2012/04/24/os161-physical-page-management/index.html</id><summary type="html">&lt;p&gt;We'll talk about &lt;code&gt;page_alloc&lt;/code&gt;, &lt;code&gt;page_free&lt;/code&gt;, &lt;code&gt;alloc_kpages&lt;/code&gt; and &lt;code&gt;free_kpages&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;In &lt;code&gt;as_define_stack&lt;/code&gt;, we just return &lt;code&gt;USERSTACKTOP&lt;/code&gt;.&lt;/p&gt;</summary><category term="addrspace"></category><category term="vm"></category><category term="page table"></category></entry><entry><title>OS161 Physical Page Management</title><link href="http://jhshi.me/2012/04/24/os161-physical-page-management/index.html" rel="alternate"></link><published>2012-04-24T22:11:05-04:00</published><updated>2012-04-24T22:11:05-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-24:2012/04/24/os161-physical-page-management/index.html</id><summary type="html">&lt;p&gt;We'll talk about &lt;code&gt;page_alloc&lt;/code&gt;, &lt;code&gt;page_free&lt;/code&gt;, &lt;code&gt;alloc_kpages&lt;/code&gt; and &lt;code&gt;free_kpages&lt;/code&gt;.&lt;/p&gt;
 
 
 &lt;h3&gt;Allocate one single physical page with &lt;code&gt;page_alloc&lt;/code&gt;&lt;/h3&gt;
@@ -1236,7 +1236,7 @@ we can free all these &lt;code&gt;npages&lt;/code&gt;page.&lt;/p&gt;
 address space (&lt;code&gt;page-&amp;gt;as != NULL&lt;/code&gt;), then we need first unmap it, and shoot down
 the TLB entry if needed. We'll talk about user address space management lately.&lt;/p&gt;
 &lt;p&gt;Only one tip for this part, &lt;strong&gt;do not forget to protect every access to coremap
-using lock (but not spinlock).&lt;/strong&gt;&lt;/p&gt;</summary><category term="vm"></category><category term="coremap"></category></entry><entry><title>OS161 Coremap</title><link href="http://jhshi.me/2012/04/24/os161-coremap/index.html" rel="alternate"></link><updated>2012-04-24T21:35:28-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-24:2012/04/24/os161-coremap/index.html</id><summary type="html">&lt;p&gt;The first concern of OS161 virtual memory system is how to manage physical
+using lock (but not spinlock).&lt;/strong&gt;&lt;/p&gt;</summary><category term="vm"></category><category term="coremap"></category></entry><entry><title>OS161 Coremap</title><link href="http://jhshi.me/2012/04/24/os161-coremap/index.html" rel="alternate"></link><published>2012-04-24T21:35:28-04:00</published><updated>2012-04-24T21:35:28-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-24:2012/04/24/os161-coremap/index.html</id><summary type="html">&lt;p&gt;The first concern of OS161 virtual memory system is how to manage physical
 pages. Generally, we can pack a physical page's information into a structure
 (called &lt;code&gt;struct coremap_entry&lt;/code&gt;) and &lt;strong&gt;use this struct to represent a physical page&lt;/strong&gt;. 
 &lt;strong&gt;We use an array of &lt;code&gt;struct coremap_entry&lt;/code&gt; to keep all physical pages information.&lt;/strong&gt; 
@@ -1251,7 +1251,7 @@ This array, aka, &lt;strong&gt;coremap&lt;/strong&gt;, will be one of the most i
 &lt;li&gt;Other info (e.g. need by paging algorithm)&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;A page can have for different states, as shown below.&lt;/p&gt;
-&lt;p&gt;&lt;img src="/images/2012-04-24-page-state.png" class="center"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img class="center" src="/images/2012-04-24-page-state.png"&gt;&lt;/p&gt;
 &lt;p&gt;This diagram is quite clear. Several points to note:&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;
@@ -1298,7 +1298,7 @@ data, or memory mapped I/Os. And we just mark pages between [&lt;code&gt;freeadd
 &lt;code&gt;astaddr&lt;/code&gt;] as free.&lt;/p&gt;
 &lt;p&gt;At the end of &lt;code&gt;vm_bootstrap&lt;/code&gt;, we may want to &lt;strong&gt;set some flags to indicate that
 vm has already bootstrapped,&lt;/strong&gt; since functions like &lt;code&gt;alloc_kpages&lt;/code&gt; may call
-different routines to get physical page before and after &lt;code&gt;vm_bootstrap&lt;/code&gt;.&lt;/p&gt;</summary><category term="vm"></category><category term="coremap"></category></entry><entry><title>OS161 Virtual Memory Resources</title><link href="http://jhshi.me/2012/04/19/os161-virtual-memory-resources/index.html" rel="alternate"></link><updated>2012-04-19T18:29:56-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-19:2012/04/19/os161-virtual-memory-resources/index.html</id><summary type="html">&lt;p&gt;Here are various documents that I found helpful for implementing OS161 virtual
+different routines to get physical page before and after &lt;code&gt;vm_bootstrap&lt;/code&gt;.&lt;/p&gt;</summary><category term="vm"></category><category term="coremap"></category></entry><entry><title>OS161 Virtual Memory Resources</title><link href="http://jhshi.me/2012/04/19/os161-virtual-memory-resources/index.html" rel="alternate"></link><published>2012-04-19T18:29:56-04:00</published><updated>2012-04-19T18:29:56-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-04-19:2012/04/19/os161-virtual-memory-resources/index.html</id><summary type="html">&lt;p&gt;Here are various documents that I found helpful for implementing OS161 virtual
 memory system. &lt;/p&gt;
 
 
@@ -1316,7 +1316,7 @@ memory system. &lt;/p&gt;
 &lt;li&gt;&lt;a href="http://people.csail.mit.edu/rinard/osnotes/h10.html"&gt;http://people.csail.mit.edu/rinard/osnotes/h10.html&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;A lecture note about MIPS stack and heap, helpful when implementing &lt;code&gt;sbrk&lt;/code&gt; system call.&lt;/p&gt;
-&lt;p&gt;&lt;a href="http://www.howardhuang.us/teaching/cs232/04-Functions-in-MIPS.pdf"&gt;http://www.howardhuang.us/teaching/cs232/04-Functions-in-MIPS.pdf&lt;/a&gt;&lt;/p&gt;</summary><category term="vm"></category><category term="resources"></category></entry><entry><title>OS161: Arguments Passing in System Call</title><link href="http://jhshi.me/2012/03/28/os161-arguments-passing-in-system-call/index.html" rel="alternate"></link><updated>2012-03-28T21:59:26-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-28:2012/03/28/os161-arguments-passing-in-system-call/index.html</id><summary type="html">&lt;p&gt;One principle of kernel programming is that: &lt;strong&gt;do not trust anything users
+&lt;p&gt;&lt;a href="http://www.howardhuang.us/teaching/cs232/04-Functions-in-MIPS.pdf"&gt;http://www.howardhuang.us/teaching/cs232/04-Functions-in-MIPS.pdf&lt;/a&gt;&lt;/p&gt;</summary><category term="vm"></category><category term="resources"></category></entry><entry><title>OS161: Arguments Passing in System Call</title><link href="http://jhshi.me/2012/03/28/os161-arguments-passing-in-system-call/index.html" rel="alternate"></link><published>2012-03-28T21:59:26-04:00</published><updated>2012-03-28T21:59:26-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-28:2012/03/28/os161-arguments-passing-in-system-call/index.html</id><summary type="html">&lt;p&gt;One principle of kernel programming is that: &lt;strong&gt;do not trust anything users
 passed in&lt;/strong&gt;. Since we assume that users are bad, they will do anything they can
 to crash the kernel (just as &lt;code&gt;$OS161_SRC/user/testbin/badcall/badcall.c&lt;/code&gt; do). So 
 we need pay special attention to the arguments of the system calls, &lt;strong&gt;especially the
@@ -1378,7 +1378,7 @@ buffers. We can use &lt;code&gt;copyin&lt;/code&gt; or &lt;code&gt;copyout&lt;/c
 
     &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; 
 &lt;span class="p"&gt;}&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;</summary><category term="syscall"></category><category term="argument passing"></category><category term="copyin"></category><category term="copyout"></category></entry><entry><title>OS161: General Tips for System Call</title><link href="http://jhshi.me/2012/03/21/os161-general-tips-for-system-call/index.html" rel="alternate"></link><updated>2012-03-21T14:45:32-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-21:2012/03/21/os161-general-tips-for-system-call/index.html</id><summary type="html">&lt;p&gt;Here are some practice that will hopefully make you feel more comfortable and
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="syscall"></category><category term="argument passing"></category><category term="copyin"></category><category term="copyout"></category></entry><entry><title>OS161: General Tips for System Call</title><link href="http://jhshi.me/2012/03/21/os161-general-tips-for-system-call/index.html" rel="alternate"></link><published>2012-03-21T14:45:32-04:00</published><updated>2012-03-21T14:45:32-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-21:2012/03/21/os161-general-tips-for-system-call/index.html</id><summary type="html">&lt;p&gt;Here are some practice that will hopefully make you feel more comfortable and
 more productive when you poking around with os161 syscalls.&lt;/p&gt;
 
 
@@ -1423,7 +1423,7 @@ you don't want to bother), so use the "&lt;code&gt;printf&lt;/code&gt; debug met
 &lt;ul&gt;
 &lt;li&gt;&lt;a href="http://www.cs.cmu.edu/~gilpin/tutorial/"&gt;GDB Tutorial from CMU&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="http://www.eecs.harvard.edu/~mdw/course/cs161/handouts/gdb.html"&gt;Tips from Harvard&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;</summary><category term="bmake"></category><category term="ctags"></category><category term="gdb"></category><category term="syscall"></category></entry><entry><title>OS161: How to Add a System Call</title><link href="http://jhshi.me/2012/03/21/os161-how-to-add-a-system-call/index.html" rel="alternate"></link><updated>2012-03-21T14:15:41-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-21:2012/03/21/os161-how-to-add-a-system-call/index.html</id><summary type="html">&lt;p&gt;Let's use the &lt;code&gt;fork&lt;/code&gt; system call as an example. For convinience, let's assume
+&lt;/ul&gt;</summary><category term="bmake"></category><category term="ctags"></category><category term="gdb"></category><category term="syscall"></category></entry><entry><title>OS161: How to Add a System Call</title><link href="http://jhshi.me/2012/03/21/os161-how-to-add-a-system-call/index.html" rel="alternate"></link><published>2012-03-21T14:15:41-04:00</published><updated>2012-03-21T14:15:41-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-21:2012/03/21/os161-how-to-add-a-system-call/index.html</id><summary type="html">&lt;p&gt;Let's use the &lt;code&gt;fork&lt;/code&gt; system call as an example. For convinience, let's assume
 &lt;code&gt;$OS161_SRC&lt;/code&gt; is your os161 source root directory.&lt;/p&gt;
 
 
@@ -1502,7 +1502,7 @@ file for examples.&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;./config ASST3
-&lt;/pre&gt;&lt;/div&gt;</summary><category term="syscall"></category></entry><entry><title>OS161 Process Scheduling</title><link href="http://jhshi.me/2012/03/18/os161-process-scheduling/index.html" rel="alternate"></link><updated>2012-03-18T15:19:27-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-18:2012/03/18/os161-process-scheduling/index.html</id><summary type="html">&lt;p&gt;OS161 provides a simple round-robin scheduler by default. It works like this: &lt;/p&gt;
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="syscall"></category></entry><entry><title>OS161 Process Scheduling</title><link href="http://jhshi.me/2012/03/18/os161-process-scheduling/index.html" rel="alternate"></link><published>2012-03-18T15:19:27-04:00</published><updated>2012-03-18T15:19:27-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-18:2012/03/18/os161-process-scheduling/index.html</id><summary type="html">&lt;p&gt;OS161 provides a simple round-robin scheduler by default. It works like this: &lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;
 &lt;p&gt;&lt;code&gt;hardclock&lt;/code&gt; from &lt;code&gt;$OS161_SRC/kern/thread/clock.c&lt;/code&gt; will be periodically called 
@@ -1581,7 +1581,7 @@ leave &lt;code&gt;thread_switch&lt;/code&gt; unchanged. A &lt;code&gt;threadlist
 &lt;p&gt;&lt;strong&gt;One problem of MLFQ is starvation&lt;/strong&gt;. So you may want to periodically reset all
 threads' priority to medium level for fairness.&lt;/p&gt;
 &lt;p&gt;That's all. Here's just a work solution. Much work has be done if you want
-better scheduling for performance.&lt;/p&gt;</summary><category term="scheduling"></category><category term="MLFQ"></category></entry><entry><title>OS161 File System Calls</title><link href="http://jhshi.me/2012/03/14/os161-file-system-calls/index.html" rel="alternate"></link><updated>2012-03-14T21:19:17-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-14:2012/03/14/os161-file-system-calls/index.html</id><summary type="html">&lt;p&gt;Assume you've read my previous post on &lt;a href="/2012/03/14/os161-file-operation-overview/"&gt;file operations in OS161&lt;/a&gt;,
+better scheduling for performance.&lt;/p&gt;</summary><category term="scheduling"></category><category term="MLFQ"></category></entry><entry><title>OS161 File System Calls</title><link href="http://jhshi.me/2012/03/14/os161-file-system-calls/index.html" rel="alternate"></link><published>2012-03-14T21:19:17-04:00</published><updated>2012-03-14T21:19:17-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-14:2012/03/14/os161-file-system-calls/index.html</id><summary type="html">&lt;p&gt;Assume you've read my previous post on &lt;a href="/2012/03/14/os161-file-operation-overview/"&gt;file operations in OS161&lt;/a&gt;,
 then everything is quite straightforward. One more thing, remember to protect
 every access to the file descriptor data structure using lock!&lt;/p&gt;
 &lt;p&gt;Let's get started.&lt;/p&gt;
@@ -1677,7 +1677,7 @@ variable, say &lt;code&gt;sys_pos&lt;/code&gt;. Then we use &lt;code&gt;copyin&l
 (&lt;code&gt;$v0:$v1&lt;/code&gt;) (&lt;code&gt;$v0&lt;/code&gt; stores high 32-bit and &lt;code&gt;$v1&lt;/code&gt; stores low 32-bit). And note that
 after the &lt;code&gt;switch&lt;/code&gt; statement, &lt;code&gt;retval&lt;/code&gt; will be assigned to $v0, so here we just
 need to copy the low 32-bit of &lt;code&gt;sys_lseek&lt;/code&gt;'s return value to $v1, and high
-32-bit to &lt;code&gt;retval&lt;/code&gt;.&lt;/p&gt;</summary><category term="open"></category><category term="read"></category><category term="write"></category><category term="close"></category><category term="dup2"></category><category term="lseek"></category><category term="syscall"></category></entry><entry><title>OS161 File Operation Overview</title><link href="http://jhshi.me/2012/03/14/os161-file-operation-overview/index.html" rel="alternate"></link><updated>2012-03-14T20:33:50-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-14:2012/03/14/os161-file-operation-overview/index.html</id><summary type="html">&lt;p&gt;In user space, when open a file, user program will get a file descriptor (a
+32-bit to &lt;code&gt;retval&lt;/code&gt;.&lt;/p&gt;</summary><category term="open"></category><category term="read"></category><category term="write"></category><category term="close"></category><category term="dup2"></category><category term="lseek"></category><category term="syscall"></category></entry><entry><title>OS161 File Operation Overview</title><link href="http://jhshi.me/2012/03/14/os161-file-operation-overview/index.html" rel="alternate"></link><published>2012-03-14T20:33:50-04:00</published><updated>2012-03-14T20:33:50-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-14:2012/03/14/os161-file-operation-overview/index.html</id><summary type="html">&lt;p&gt;In user space, when open a file, user program will get a file descriptor (a
 integer) that represent that file. User can use this descriptor to perform various
 operations on this file: read, write, seek, etc. As I see it, this design is
 quite clean in that:&lt;/p&gt;
@@ -1776,7 +1776,7 @@ because that's where the first user thread is born. And later user threads will
 just inherits the three file handles of console from then on.&lt;/p&gt;
 &lt;p&gt;BTW, &lt;strong&gt;how to open console&lt;/strong&gt;? The path name should be "con:", flags should
 be: &lt;code&gt;O_RDONLY&lt;/code&gt; for stdin, &lt;code&gt;O_WRONLY&lt;/code&gt; for stdout and stderr; options should be &lt;code&gt;0664&lt;/code&gt;
-(Note the zero prefix, it's a octal number).&lt;/p&gt;</summary><category term="file"></category><category term="syscall"></category><category term="fdtable"></category></entry><entry><title>OS161 exit and waitpid System Call</title><link href="http://jhshi.me/2012/03/12/os161-exit-and-waitpid-system-call/index.html" rel="alternate"></link><updated>2012-03-12T15:51:46-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-12:2012/03/12/os161-exit-and-waitpid-system-call/index.html</id><summary type="html">&lt;p&gt;Before going on, assume you've read my previous post on &lt;a href="/2012/03/12/os161-pid-management"&gt;pid management&lt;/a&gt;&lt;/p&gt;
+(Note the zero prefix, it's a octal number).&lt;/p&gt;</summary><category term="file"></category><category term="syscall"></category><category term="fdtable"></category></entry><entry><title>OS161 exit and waitpid System Call</title><link href="http://jhshi.me/2012/03/12/os161-exit-and-waitpid-system-call/index.html" rel="alternate"></link><published>2012-03-12T15:51:46-04:00</published><updated>2012-03-12T15:51:46-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-12:2012/03/12/os161-exit-and-waitpid-system-call/index.html</id><summary type="html">&lt;p&gt;Before going on, assume you've read my previous post on &lt;a href="/2012/03/12/os161-pid-management"&gt;pid management&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;Thanks to the &lt;code&gt;struct process&lt;/code&gt;, our work is much simplified. Quoting &lt;a href="http://en.wikipedia.org/wiki/Eric_S._Raymond"&gt;Eric S.Raymond &lt;/a&gt; 
 here.&lt;/p&gt;
 &lt;blockquote&gt;
@@ -1817,7 +1817,7 @@ thing to note that the exitcode must be maked using the MACROs in
 to set the real &lt;code&gt;exitcode&lt;/code&gt; as &lt;code&gt;_MKWAIT_EXIT(_exitcode)&lt;/code&gt;.&lt;/p&gt;
 &lt;p&gt;And if we are smarter, we can first check if parent exist or if parent has
 exited, then we even don't bother fill the exitcode since no one cares! Anyway,
-it's just a tiny shortcut, and totally optional.&lt;/p&gt;</summary><category term="exit"></category><category term="waitpid"></category><category term="syscall"></category></entry><entry><title>OS161 pid Management</title><link href="http://jhshi.me/2012/03/12/os161-pid-management/index.html" rel="alternate"></link><updated>2012-03-12T15:13:54-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-12:2012/03/12/os161-pid-management/index.html</id><summary type="html">&lt;p&gt;There are many way to manage each process's pid. Here is the way I do it.&lt;/p&gt;
+it's just a tiny shortcut, and totally optional.&lt;/p&gt;</summary><category term="exit"></category><category term="waitpid"></category><category term="syscall"></category></entry><entry><title>OS161 pid Management</title><link href="http://jhshi.me/2012/03/12/os161-pid-management/index.html" rel="alternate"></link><published>2012-03-12T15:13:54-04:00</published><updated>2012-03-12T15:13:54-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-12:2012/03/12/os161-pid-management/index.html</id><summary type="html">&lt;p&gt;There are many way to manage each process's pid. Here is the way I do it.&lt;/p&gt;
 &lt;p&gt;I decided to make minimal modification to &lt;code&gt;$OS161_SRC/kern/thread/thread.c&lt;/code&gt;,
 in case anything is ruined. So I only add two things to the thread module. One
 is I add a &lt;code&gt;t_pid&lt;/code&gt; field to &lt;code&gt;struct thread&lt;/code&gt; so that &lt;code&gt;getpid&lt;/code&gt; system call is
@@ -1884,7 +1884,7 @@ special MACROs:&lt;/p&gt;
 allocate pid from 1. We can also see this from the &lt;code&gt;__PID_MIN (2)&lt;/code&gt; macro in
 &lt;code&gt;$OS161_SRC/kern/inlude/kern/limits.h&lt;/code&gt;.&lt;/p&gt;
 &lt;p&gt;Once a available slot is found, we need to create a &lt;code&gt;struct process&lt;/code&gt; and
-initialize it appropriately, especially it's ppid (-1 or other invalid value).&lt;/p&gt;</summary><category term="pid"></category><category term="syscall"></category></entry><entry><title>OS161 execv System Call</title><link href="http://jhshi.me/2012/03/11/os161-execv-system-call/index.html" rel="alternate"></link><updated>2012-03-11T22:27:47-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-11:2012/03/11/os161-execv-system-call/index.html</id><summary type="html">&lt;p&gt;Basically, &lt;code&gt;execv&lt;/code&gt; do more or less the same thing with &lt;code&gt;runprogram&lt;/code&gt; in
+initialize it appropriately, especially it's ppid (-1 or other invalid value).&lt;/p&gt;</summary><category term="pid"></category><category term="syscall"></category></entry><entry><title>OS161 execv System Call</title><link href="http://jhshi.me/2012/03/11/os161-execv-system-call/index.html" rel="alternate"></link><published>2012-03-11T22:27:47-04:00</published><updated>2012-03-11T22:27:47-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-11:2012/03/11/os161-execv-system-call/index.html</id><summary type="html">&lt;p&gt;Basically, &lt;code&gt;execv&lt;/code&gt; do more or less the same thing with &lt;code&gt;runprogram&lt;/code&gt; in
 &lt;code&gt;$OS161_SRC/kern/syscall/runprogram.c&lt;/code&gt;. The overall flow of &lt;code&gt;sys_execv&lt;/code&gt; are:&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;&lt;em&gt;Copy arguments from user space into kernel buffer&lt;/em&gt;&lt;/li&gt;
@@ -1909,7 +1909,7 @@ copy this buffer into user stack in bulk. Note that in MIPS, &lt;em&gt;pointers 
 aligned by 4&lt;/em&gt;. So don't forget to padding when necessary&lt;/p&gt;
 &lt;p&gt;For convenience, assume that arguments are {&lt;code&gt;foo&lt;/code&gt;, &lt;code&gt;os161&lt;/code&gt;, &lt;code&gt;execv&lt;/code&gt;, &lt;code&gt;NULL&lt;/code&gt;}.
 Then after packing, my kernel buffer looks like this:&lt;/p&gt;
-&lt;p&gt;&lt;img src="/images/2012-03-11-kargv.png" class="center"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img class="center" src="/images/2012-03-11-kargv.png"&gt;&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;Typo&lt;/strong&gt;: &lt;code&gt;kargv[2]&lt;/code&gt; should be 28, instead of 26.&lt;/p&gt;
 &lt;p&gt;Note that &lt;code&gt;kargv[i]&lt;/code&gt; stores the &lt;em&gt;offset&lt;/em&gt; of the i'th arguments within the
 &lt;code&gt;kargv&lt;/code&gt; array, since up to now we don't know their real user address yet.&lt;/p&gt;
@@ -1926,7 +1926,7 @@ sure. We can use &lt;code&gt;as_define_stack&lt;/code&gt; to get the value of in
 otherwise some weird bus error or TLB miss will occur.&lt;/p&gt;
 &lt;p&gt;The steps are shown as follows (here we assume &lt;code&gt;stackptr&lt;/code&gt; initial value is
 &lt;code&gt;0x80000000&lt;/code&gt;):&lt;/p&gt;
-&lt;p&gt;&lt;img src="/images/2012-03-11-stackptr.png" alt="Change of &lt;code&gt;stackptr&lt;/code&gt;" class="center" title="Change of &lt;code&gt;stackptr&lt;/code&gt;"&gt;&lt;/p&gt;</summary><category term="execv"></category><category term="syscall"></category></entry><entry><title>OS161 fork System Call</title><link href="http://jhshi.me/2012/03/11/os161-fork-system-call/index.html" rel="alternate"></link><updated>2012-03-11T20:42:34-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-11:2012/03/11/os161-fork-system-call/index.html</id><summary type="html">&lt;p&gt;If you're not already familiar with UNIX fork system call, here is it's
+&lt;p&gt;&lt;img class="center" src="/images/2012-03-11-stackptr.png" title="Change of &lt;code&gt;stackptr&lt;/code&gt;" alt="Change of &lt;code&gt;stackptr&lt;/code&gt;"&gt;&lt;/p&gt;</summary><category term="execv"></category><category term="syscall"></category></entry><entry><title>OS161 fork System Call</title><link href="http://jhshi.me/2012/03/11/os161-fork-system-call/index.html" rel="alternate"></link><published>2012-03-11T20:42:34-04:00</published><updated>2012-03-11T20:42:34-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2012-03-11:2012/03/11/os161-fork-system-call/index.html</id><summary type="html">&lt;p&gt;If you're not already familiar with UNIX fork system call, here is it's
 &lt;a href="http://linux.die.net/man/2/fork"&gt;function description&lt;/a&gt; and its &lt;a href="http://en.wikipedia.org/wiki/Fork_(operating_system)"&gt;entry on Wikipedia&lt;/a&gt;.&lt;/p&gt;
 &lt;p&gt;Basically, in &lt;code&gt;sys_fork&lt;/code&gt;, we need to do the follow things:&lt;/p&gt;
 &lt;ol&gt;

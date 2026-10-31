@@ -159,7 +159,7 @@ copy this buffer into user stack in bulk. Note that in MIPS, <em>pointers must b
 aligned by 4</em>. So don't forget to padding when necessary</p>
 <p>For convenience, assume that arguments are {<code>foo</code>, <code>os161</code>, <code>execv</code>, <code>NULL</code>}.
 Then after packing, my kernel buffer looks like this:</p>
-<p><img src="/images/2012-03-11-kargv.png" class="center"></p>
+<p><img class="center" src="/images/2012-03-11-kargv.png"></p>
 <p><strong>Typo</strong>: <code>kargv[2]</code> should be 28, instead of 26.</p>
 <p>Note that <code>kargv[i]</code> stores the <em>offset</em> of the i'th arguments within the
 <code>kargv</code> array, since up to now we don't know their real user address yet.</p>
@@ -176,17 +176,17 @@ sure. We can use <code>as_define_stack</code> to get the value of initial stack 
 otherwise some weird bus error or TLB miss will occur.</p>
 <p>The steps are shown as follows (here we assume <code>stackptr</code> initial value is
 <code>0x80000000</code>):</p>
-<p><img src="/images/2012-03-11-stackptr.png" alt="Change of <code>stackptr</code>" class="center" title="Change of <code>stackptr</code>"></p>
+<p><img class="center" src="/images/2012-03-11-stackptr.png" title="Change of <code>stackptr</code>" alt="Change of <code>stackptr</code>"></p>
             </div>
             <!-- /.entry-content -->
 <section class="well" id="related-posts">
     <h4>Related Posts:</h4>
     <ul>
+        <li><a href="http://jhshi.me/2014/03/06/os161-unknown-syscall-1/index.html">OS161: Unknown syscall -1</a></li>
+        <li><a href="http://jhshi.me/2013/03/15/console-input-messed-up-in-os161/index.html">Console Input Messed up in OS161</a></li>
+        <li><a href="http://jhshi.me/2012/04/27/os161-sbrk-system-call/index.html">OS161 sbrk System Call</a></li>
         <li><a href="http://jhshi.me/2012/03/28/os161-arguments-passing-in-system-call/index.html">OS161: Arguments Passing in System Call</a></li>
         <li><a href="http://jhshi.me/2012/03/21/os161-general-tips-for-system-call/index.html">OS161: General Tips for System Call</a></li>
-        <li><a href="http://jhshi.me/2012/03/21/os161-how-to-add-a-system-call/index.html">OS161: How to Add a System Call</a></li>
-        <li><a href="http://jhshi.me/2012/03/14/os161-file-operation-overview/index.html">OS161 File Operation Overview</a></li>
-        <li><a href="http://jhshi.me/2012/03/12/os161-exit-and-waitpid-system-call/index.html">OS161 exit and waitpid System Call</a></li>
     </ul>
 </section>
 <section class="well" id="related-posts">
@@ -221,36 +221,6 @@ otherwise some weird bus error or TLB miss will occur.</p>
 
 <section class="well well-sm">
     <ul class="list-group list-group-flush">
-        <li class="list-group-item"><h4><i class="fa fa-eye"></i><span class="icon-label">0 Hits</span></h4>
-    <li class="list-group-item"><h4><i class="fa fa-fire fa-lg"></i><span class="icon-label">Popular Posts</span></h4>
-        <ul class="list-group" id="recentposts">
-            <li class="list-group-item">
-                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
-                    OpenGL over VNC
-                </a>
-            </li>
-            <li class="list-group-item">
-                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
-                    Fix VMWare Player 3D Support Issue
-                </a>
-            </li>
-            <li class="list-group-item">
-                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
-                    Google DNS Configuration on Ubuntu 16.04
-                </a>
-            </li>
-            <li class="list-group-item">
-                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
-                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
-                </a>
-            </li>
-            <li class="list-group-item">
-                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
-                    Backing Up Files Using Amazon Glacier
-                </a>
-            </li>
-        </ul>
-    </li>
     <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Recent Posts</span></h4>
         <ul class="list-group" id="recentposts">
             <li class="list-group-item">
@@ -326,11 +296,6 @@ otherwise some weird bus error or TLB miss will occur.</p>
                     beamer
                 </a>
             </li>
-            <li class="list-group-item tag-7">
-                <a href="http://jhshi.me/blog/tag/blog/index.html">
-                    blog
-                </a>
-            </li>
             <li class="list-group-item tag-4">
                 <a href="http://jhshi.me/blog/tag/c/index.html">
                     c
@@ -359,6 +324,11 @@ otherwise some weird bus error or TLB miss will occur.</p>
             <li class="list-group-item tag-4">
                 <a href="http://jhshi.me/blog/tag/ns2/index.html">
                     ns2
+                </a>
+            </li>
+            <li class="list-group-item tag-7">
+                <a href="http://jhshi.me/blog/tag/opengl/index.html">
+                    OpenGL
                 </a>
             </li>
             <li class="list-group-item tag-4">
@@ -451,7 +421,7 @@ otherwise some weird bus error or TLB miss will occur.</p>
       <div class="row">
          <div class="col-xs-10">&copy; 2018 Jinghao Shi
             &middot;
-            Updated on 2020-04-02
+            Updated on 2026-10-31
             &middot; Powered by <a href="https://github.com/jhshi/pelican-bootstrap3" target="_blank">pelican-bootstrap3</a>,
             <a href="http://docs.getpelican.com/" target="_blank">Pelican</a>,
             <a href="http://getbootstrap.com" target="_blank">Bootstrap</a>         </div>

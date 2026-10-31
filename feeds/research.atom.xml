@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Pearls in Life</title><link href="http://jhshi.me/" rel="alternate"></link><link href="http://jhshi.me/feeds/research.atom.xml" rel="self"></link><id>http://jhshi.me/</id><updated>2016-07-12T13:58:33-04:00</updated><entry><title>Setting Up USRPN2x0 in VirtualBox</title><link href="http://jhshi.me/2016/07/12/setting-up-usrpn2x0-in-virtualbox/index.html" rel="alternate"></link><updated>2016-07-12T13:58:33-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-07-12:2016/07/12/setting-up-usrpn2x0-in-virtualbox/index.html</id><summary type="html">&lt;p&gt;This post shows how to connect to USRP N2x0 from a Ubuntu guest OS inside
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Pearls in Life</title><link href="http://jhshi.me/" rel="alternate"></link><link href="http://jhshi.me/feeds/research.atom.xml" rel="self"></link><id>http://jhshi.me/</id><updated>2016-07-12T13:58:33-04:00</updated><subtitle></subtitle><entry><title>Setting Up USRPN2x0 in VirtualBox</title><link href="http://jhshi.me/2016/07/12/setting-up-usrpn2x0-in-virtualbox/index.html" rel="alternate"></link><published>2016-07-12T13:58:33-04:00</published><updated>2016-07-12T13:58:33-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-07-12:2016/07/12/setting-up-usrpn2x0-in-virtualbox/index.html</id><summary type="html">&lt;p&gt;This post shows how to connect to USRP N2x0 from a Ubuntu guest OS inside
 Virtualbox running on a Windows host.&lt;/p&gt;
 
 &lt;div class="section" id="host-os"&gt;
@@ -54,7 +54,7 @@ default via 10.0.2.2 dev enp0s3  proto static  metric 100
 &lt;p&gt;You should receive ping responses and &lt;tt class="docutils literal"&gt;uhd_find_devices&lt;/tt&gt; should be able to
 find the USRP devices.&lt;/p&gt;
 &lt;/div&gt;
-</summary><category term="USRP"></category><category term="N210"></category><category term="N200"></category><category term="VirtualBox"></category><category term="route"></category></entry><entry><title>Customize USRP N2x0 DSP RX Chain</title><link href="http://jhshi.me/2016/07/08/customize-usrp-n2x0-dsp-rx-chain/index.html" rel="alternate"></link><updated>2016-07-08T15:19:08-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-07-08:2016/07/08/customize-usrp-n2x0-dsp-rx-chain/index.html</id><summary type="html">&lt;p&gt;In one of my research projects, I need to develop some signal processing logic
+</summary><category term="USRP"></category><category term="N210"></category><category term="N200"></category><category term="VirtualBox"></category><category term="route"></category></entry><entry><title>Customize USRP N2x0 DSP RX Chain</title><link href="http://jhshi.me/2016/07/08/customize-usrp-n2x0-dsp-rx-chain/index.html" rel="alternate"></link><published>2016-07-08T15:19:08-04:00</published><updated>2016-07-08T15:19:08-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2016-07-08:2016/07/08/customize-usrp-n2x0-dsp-rx-chain/index.html</id><summary type="html">&lt;p&gt;In one of my research projects, I need to develop some signal processing logic
 that runs on the FPGA of the USRP, to meeting some delay and timing
 requirements. Here is a general overview of the steps to customize the DSP Rx
 chain of USRP N2x0 devices. Details of my particular customization will be
@@ -141,7 +141,7 @@ the same as before since the default Custom module only passes through signals.&
 &lt;p&gt;Note: to flash the FPGA image, you'll also need a &lt;em&gt;compatible&lt;/em&gt; firmware image.
 So I recommend you to clone the uhd and fpga repos and build them together.&lt;/p&gt;
 &lt;/div&gt;
-</summary><category term="usrp"></category><category term="sdr"></category><category term="dsp"></category><category term="fpga"></category></entry><entry><title>Google Mobile Faculty Summit</title><link href="http://jhshi.me/2015/10/10/google-mobile-summit/index.html" rel="alternate"></link><updated>2015-10-10T13:38:37-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2015-10-10:2015/10/10/google-mobile-summit/index.html</id><summary type="html">&lt;p&gt;I have been attending the &lt;a href="https://goo.gl/bMCcJI"&gt;Google Mobile Summit&lt;/a&gt; for past two days. I'll
+</summary><category term="usrp"></category><category term="sdr"></category><category term="dsp"></category><category term="fpga"></category></entry><entry><title>Google Mobile Faculty Summit</title><link href="http://jhshi.me/2015/10/10/google-mobile-summit/index.html" rel="alternate"></link><published>2015-10-10T13:38:37-04:00</published><updated>2015-10-10T13:38:37-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2015-10-10:2015/10/10/google-mobile-summit/index.html</id><summary type="html">&lt;p&gt;I have been attending the &lt;a href="https://goo.gl/bMCcJI"&gt;Google Mobile Summit&lt;/a&gt; for past two days. I'll
 share some of the exciting projects that Google is doing as well as my personal
 take away from them.&lt;/p&gt;
 
@@ -196,13 +196,13 @@ developed this tiny tiny sensing system that can actually be embedded in the
 contact lenses. The lenses now measures the glucose level in the tears for early
 diabetes detection. It is amazing they may managed to pack so many stuff
 (sensors, battery, antenna) in such small form factor. My only concern is
-that...do the lenses heat up?&lt;/p&gt;</summary><category term="google"></category><category term="loon"></category><category term="nearme"></category></entry><entry><title>How Android Wifi State Machine Works</title><link href="http://jhshi.me/2014/04/25/how-android-wifi-state-machine-works/index.html" rel="alternate"></link><updated>2014-04-25T10:39:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-04-25:2014/04/25/how-android-wifi-state-machine-works/index.html</id><summary type="html">&lt;p&gt;Recently, I studied how Android Wi-Fi subsystem works. I was more specifically
+that...do the lenses heat up?&lt;/p&gt;</summary><category term="google"></category><category term="loon"></category><category term="nearme"></category></entry><entry><title>How Android Wifi State Machine Works</title><link href="http://jhshi.me/2014/04/25/how-android-wifi-state-machine-works/index.html" rel="alternate"></link><published>2014-04-25T10:39:00-04:00</published><updated>2014-04-25T10:39:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-04-25:2014/04/25/how-android-wifi-state-machine-works/index.html</id><summary type="html">&lt;p&gt;Recently, I studied how Android Wi-Fi subsystem works. I was more specifically
 interested to learn the scan behavior. The source code related to this is mainly
 in &lt;code&gt;framework/base/wifi/java/android/net/wifi/&lt;/code&gt; within AOSP source tree.&lt;/p&gt;
 
 
 &lt;h3&gt;The Big Picture&lt;/h3&gt;
-&lt;p&gt;&lt;img src="/images/android_wifi.png" class="center"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img class="center" src="/images/android_wifi.png"&gt;&lt;/p&gt;
 &lt;p&gt;Android uses a customized wpa_supplicant to perform AP authentication and
 association, and also communicate with underlying driver. The &lt;code&gt;WifiNative&lt;/code&gt; class
 is used to send various commands to wpa_supplicant ,and the &lt;code&gt;WifiMonitor&lt;/code&gt; class
@@ -225,7 +225,7 @@ exit from current state and all its ancestor state &lt;strong&gt;up to but not i
 closest common ancestor, then enter all of the new states below the closet
 common ancestor down to the new state. &lt;/p&gt;
 &lt;p&gt;Here is a simple example HSM. &lt;/p&gt;
-&lt;p&gt;&lt;img src="/images/hsm_example.png" class="center"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img class="center" src="/images/hsm_example.png"&gt;&lt;/p&gt;
 &lt;p&gt;&lt;code&gt;S4&lt;/code&gt; is the initial state. When we first start the HSM, &lt;code&gt;S0.enter()&lt;/code&gt;,
 &lt;code&gt;S1.enter()&lt;/code&gt; and &lt;code&gt;S4.enter()&lt;/code&gt; will be called in sequence. Suppose we want to
 transit from &lt;code&gt;S0&lt;/code&gt; to &lt;code&gt;S7&lt;/code&gt;, since the closet common ancestor is &lt;code&gt;S0&lt;/code&gt;, &lt;code&gt;S4.exit()&lt;/code&gt;
@@ -236,7 +236,7 @@ sequence.&lt;/p&gt;
 &lt;h3&gt;Wifi State Machine&lt;/h3&gt;
 &lt;p&gt;Here is a subset of the whole Android Wifi HSM, states about P2P connections are
 omitted.&lt;/p&gt;
-&lt;p&gt;&lt;img src="/images/android_wifi_hsm.png" class="center"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img class="center" src="/images/android_wifi_hsm.png"&gt;&lt;/p&gt;
 &lt;p&gt;So in Initial state's &lt;code&gt;enter()&lt;/code&gt; function, we check if the driver is loaded, and
 transit to Driver Loaded state if yes. Then we start wpa_supplicant and transit&lt;/p&gt;
 &lt;p&gt;When we receive &lt;code&gt;SUP_CONNECTED_EVENT&lt;/code&gt;, we switch to Driver Started state. &lt;strong&gt;But
@@ -268,7 +268,7 @@ event.&lt;/p&gt;
 &lt;h3&gt;Android Scan Interval&lt;/h3&gt;
 &lt;p&gt;Here is the statistics of scan interval distribution collected on 129 Nexus S
 phones for about 5 months.&lt;/p&gt;
-&lt;p&gt;&lt;img src="/images/scan_interval_stats.png" class="center"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img class="center" src="/images/scan_interval_stats.png"&gt;&lt;/p&gt;
 &lt;p&gt;We can see that there are 4 peaks in the distribution. The peak around 15
 seconds is due to wpa_supplicant scan interval, and the peak around 300 is due
 to framework periodic scan. The peak around 60 seconds is not much clear yet,
@@ -278,7 +278,7 @@ scan results are clustered together in a small time windows (1~2 seconds).  This
 is because when the driver is scanning, it'll report every time it detects one
 AP. So in one scan, multiple scan result event will be triggered. And every time
 when there is a low level scan result event, Android will report the complete
-updated scan result list.&lt;/p&gt;</summary><category term="android"></category><category term="wifi"></category><category term="state machine"></category><category term="wpa_supplicant"></category></entry><entry><title>Switch Channel Without Breaking TCP Connection in OpenWrt</title><link href="http://jhshi.me/2014/03/21/switch-channel-without-breaking-tcp-connection-in-openwrt/index.html" rel="alternate"></link><updated>2014-03-21T12:46:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-03-21:2014/03/21/switch-channel-without-breaking-tcp-connection-in-openwrt/index.html</id><summary type="html">&lt;p&gt;Recently, I've been working on dynamic channel selection based on channel
+updated scan result list.&lt;/p&gt;</summary><category term="android"></category><category term="wifi"></category><category term="state machine"></category><category term="wpa_supplicant"></category></entry><entry><title>Switch Channel Without Breaking TCP Connection in OpenWrt</title><link href="http://jhshi.me/2014/03/21/switch-channel-without-breaking-tcp-connection-in-openwrt/index.html" rel="alternate"></link><published>2014-03-21T12:46:00-04:00</published><updated>2014-03-21T12:46:00-04:00</updated><author><name>Jinghao Shi</name></author><id>tag:jhshi.me,2014-03-21:2014/03/21/switch-channel-without-breaking-tcp-connection-in-openwrt/index.html</id><summary type="html">&lt;p&gt;Recently, I've been working on dynamic channel selection based on channel
 utilization. One problem I encountered is: how to switch both AP and devices'
 channel without interrupting existing TCP connection.&lt;/p&gt;
 

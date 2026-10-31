@@ -146,7 +146,7 @@ in <code>framework/base/wifi/java/android/net/wifi/</code> within AOSP source tr
 
 
 <h3>The Big Picture</h3>
-<p><img src="/images/android_wifi.png" class="center"></p>
+<p><img class="center" src="/images/android_wifi.png"></p>
 <p>Android uses a customized wpa_supplicant to perform AP authentication and
 association, and also communicate with underlying driver. The <code>WifiNative</code> class
 is used to send various commands to wpa_supplicant ,and the <code>WifiMonitor</code> class
@@ -169,7 +169,7 @@ exit from current state and all its ancestor state <strong>up to but not include
 closest common ancestor, then enter all of the new states below the closet
 common ancestor down to the new state. </p>
 <p>Here is a simple example HSM. </p>
-<p><img src="/images/hsm_example.png" class="center"></p>
+<p><img class="center" src="/images/hsm_example.png"></p>
 <p><code>S4</code> is the initial state. When we first start the HSM, <code>S0.enter()</code>,
 <code>S1.enter()</code> and <code>S4.enter()</code> will be called in sequence. Suppose we want to
 transit from <code>S0</code> to <code>S7</code>, since the closet common ancestor is <code>S0</code>, <code>S4.exit()</code>
@@ -180,7 +180,7 @@ sequence.</p>
 <h3>Wifi State Machine</h3>
 <p>Here is a subset of the whole Android Wifi HSM, states about P2P connections are
 omitted.</p>
-<p><img src="/images/android_wifi_hsm.png" class="center"></p>
+<p><img class="center" src="/images/android_wifi_hsm.png"></p>
 <p>So in Initial state's <code>enter()</code> function, we check if the driver is loaded, and
 transit to Driver Loaded state if yes. Then we start wpa_supplicant and transit</p>
 <p>When we receive <code>SUP_CONNECTED_EVENT</code>, we switch to Driver Started state. <strong>But
@@ -212,7 +212,7 @@ event.</p>
 <h3>Android Scan Interval</h3>
 <p>Here is the statistics of scan interval distribution collected on 129 Nexus S
 phones for about 5 months.</p>
-<p><img src="/images/scan_interval_stats.png" class="center"></p>
+<p><img class="center" src="/images/scan_interval_stats.png"></p>
 <p>We can see that there are 4 peaks in the distribution. The peak around 15
 seconds is due to wpa_supplicant scan interval, and the peak around 300 is due
 to framework periodic scan. The peak around 60 seconds is not much clear yet,
@@ -261,36 +261,6 @@ updated scan result list.</p>
 
 <section class="well well-sm">
     <ul class="list-group list-group-flush">
-        <li class="list-group-item"><h4><i class="fa fa-eye"></i><span class="icon-label">0 Hits</span></h4>
-    <li class="list-group-item"><h4><i class="fa fa-fire fa-lg"></i><span class="icon-label">Popular Posts</span></h4>
-        <ul class="list-group" id="recentposts">
-            <li class="list-group-item">
-                <a href="http://jhshi.me/2018/02/11/opengl-over-vnc/index.html">
-                    OpenGL over VNC
-                </a>
-            </li>
-            <li class="list-group-item">
-                <a href="http://jhshi.me/2018/01/23/fix-vmware-player-3d-support-issue/index.html">
-                    Fix VMWare Player 3D Support Issue
-                </a>
-            </li>
-            <li class="list-group-item">
-                <a href="http://jhshi.me/2017/09/29/google-dns-configuration-on-ubuntu-1604/index.html">
-                    Google DNS Configuration on Ubuntu 16.04
-                </a>
-            </li>
-            <li class="list-group-item">
-                <a href="http://jhshi.me/2017/09/21/fix-touchpad-natual-scrolling-of-ubuntu-1604-on-thinkpad-x1/index.html">
-                    Fix Touchpad Natual Scrolling of Ubuntu 16.04 on Thinkpad X1
-                </a>
-            </li>
-            <li class="list-group-item">
-                <a href="http://jhshi.me/2017/03/06/backing-up-files-using-amazon-glacier/index.html">
-                    Backing Up Files Using Amazon Glacier
-                </a>
-            </li>
-        </ul>
-    </li>
     <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">Recent Posts</span></h4>
         <ul class="list-group" id="recentposts">
             <li class="list-group-item">
@@ -366,11 +336,6 @@ updated scan result list.</p>
                     beamer
                 </a>
             </li>
-            <li class="list-group-item tag-7">
-                <a href="http://jhshi.me/blog/tag/blog/index.html">
-                    blog
-                </a>
-            </li>
             <li class="list-group-item tag-4">
                 <a href="http://jhshi.me/blog/tag/c/index.html">
                     c
@@ -399,6 +364,11 @@ updated scan result list.</p>
             <li class="list-group-item tag-4">
                 <a href="http://jhshi.me/blog/tag/ns2/index.html">
                     ns2
+                </a>
+            </li>
+            <li class="list-group-item tag-7">
+                <a href="http://jhshi.me/blog/tag/opengl/index.html">
+                    OpenGL
                 </a>
             </li>
             <li class="list-group-item tag-4">
@@ -491,7 +461,7 @@ updated scan result list.</p>
       <div class="row">
          <div class="col-xs-10">&copy; 2018 Jinghao Shi
             &middot;
-            Updated on 2020-04-02
+            Updated on 2026-10-31
             &middot; Powered by <a href="https://github.com/jhshi/pelican-bootstrap3" target="_blank">pelican-bootstrap3</a>,
             <a href="http://docs.getpelican.com/" target="_blank">Pelican</a>,
             <a href="http://getbootstrap.com" target="_blank">Bootstrap</a>         </div>
