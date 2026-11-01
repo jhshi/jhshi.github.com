@@ -1,4 +1,4 @@
 User-agent: *
 Disallow: 
 
-Sitemap: http://jhshi.me/sitemap.xml 
+Sitemap: https://jhshi.me/sitemap.xml 
